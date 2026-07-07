@@ -4,6 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
     <title>Registro de Actividades - Hijos</title>
+    
+    <!-- Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- Librería para PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
     <style>
         * {
             margin: 0;
@@ -19,7 +26,6 @@
             overflow-x: hidden;
         }
 
-        /* ============ SIDEBAR ============ */
         .sidebar {
             position: fixed;
             top: 0;
@@ -149,7 +155,6 @@
             color: #4a6cf7;
         }
 
-        /* ============ OVERLAY ============ */
         .sidebar-overlay {
             position: fixed;
             top: 0;
@@ -168,7 +173,6 @@
             pointer-events: all;
         }
 
-        /* ============ MAIN CONTENT ============ */
         .main-content {
             flex: 1;
             padding: 16px;
@@ -179,7 +183,6 @@
             max-width: 100%;
         }
 
-        /* ============ TOP BAR ============ */
         .topbar {
             display: flex;
             align-items: center;
@@ -233,7 +236,6 @@
             color: #6b7a8f;
         }
 
-        /* ============ CONTENT VIEWS ============ */
         .view {
             display: none;
             animation: fadeSlide 0.3s ease;
@@ -256,6 +258,7 @@
             display: flex;
             align-items: center;
             gap: 10px;
+            flex-wrap: wrap;
         }
 
         .view-title .badge-count {
@@ -267,7 +270,93 @@
             color: #6b7a8f;
         }
 
-        /* ============ FORMULARIOS ============ */
+        .view-actions {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        .btn-pdf {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: #dc2626;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-pdf:active {
+            transform: scale(0.95);
+            background: #b91c1c;
+        }
+
+        .btn-share {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: #4a6cf7;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-share:active {
+            transform: scale(0.95);
+            background: #3a5cd7;
+        }
+
+        .btn-sync {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: #0ca76b;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-sync:active {
+            transform: scale(0.95);
+            background: #0a8a59;
+        }
+
+        .btn-secondary {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: #eef2f7;
+            color: #1a2a3a;
+            border: none;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-secondary:active {
+            transform: scale(0.95);
+            background: #dce3ec;
+        }
+
         .form-group {
             margin-bottom: 16px;
         }
@@ -325,25 +414,6 @@
             background: #3a5cd7;
         }
 
-        .btn-secondary {
-            width: 100%;
-            padding: 14px;
-            background: #eef2f7;
-            color: #1a2a3a;
-            border: none;
-            border-radius: 14px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .btn-secondary:active {
-            transform: scale(0.97);
-            background: #dce3ec;
-        }
-
-        /* ============ CARDS Y LISTAS ============ */
         .activity-list {
             margin-top: 12px;
         }
@@ -434,7 +504,6 @@
             font-size: 15px;
         }
 
-        /* ============ TOAST ============ */
         .toast {
             position: fixed;
             bottom: 30px;
@@ -460,7 +529,46 @@
             transform: translateX(-50%) translateY(0);
         }
 
-        /* ============ RESPONSIVE ============ */
+        .sync-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: #eef2f7;
+            border-radius: 10px;
+            font-size: 12px;
+            color: #6b7a8f;
+        }
+
+        .sync-status .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .sync-status .dot.online {
+            background: #0ca76b;
+        }
+
+        .sync-status .dot.offline {
+            background: #ef4444;
+        }
+
+        .sync-status .dot.syncing {
+            background: #f59e0b;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        #pdfContent {
+            display: none;
+        }
+
         @media (min-width: 768px) {
             .sidebar {
                 transform: translateX(0) !important;
@@ -493,6 +601,10 @@
                 grid-template-columns: 1fr 1fr;
                 gap: 16px;
             }
+
+            .view-actions {
+                justify-content: flex-end;
+            }
         }
 
         @media (max-width: 767px) {
@@ -511,6 +623,15 @@
             .sidebar {
                 width: 280px;
             }
+
+            .view-actions {
+                flex-direction: column;
+            }
+
+            .btn-pdf, .btn-secondary, .btn-share, .btn-sync {
+                width: 100%;
+                justify-content: center;
+            }
         }
 
         @media (max-width: 400px) {
@@ -528,7 +649,6 @@
             }
         }
 
-        /* ============ SCROLLBAR SIDEBAR ============ */
         .sidebar::-webkit-scrollbar {
             width: 4px;
         }
@@ -542,28 +662,85 @@
             border-radius: 10px;
         }
 
-        /* Select estilizado */
         select {
             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7a8f' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
             background-repeat: no-repeat;
             background-position: right 14px center;
             padding-right: 40px;
         }
+
+        .pdf-report {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            padding: 30px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .pdf-report h1 {
+            color: #1a2a3a;
+            border-bottom: 3px solid #4a6cf7;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        .pdf-report .pdf-meta {
+            color: #6b7a8f;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+
+        .pdf-report table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 16px;
+        }
+
+        .pdf-report th {
+            background: #4a6cf7;
+            color: white;
+            padding: 10px 12px;
+            text-align: left;
+            font-size: 13px;
+        }
+
+        .pdf-report td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #eef2f7;
+            font-size: 13px;
+        }
+
+        .pdf-report tr:nth-child(even) {
+            background: #f8fafc;
+        }
+
+        .pdf-report .total {
+            margin-top: 16px;
+            font-weight: 600;
+            color: #1a2a3a;
+            text-align: right;
+            font-size: 14px;
+        }
+
+        .pdf-report .footer {
+            margin-top: 30px;
+            padding-top: 16px;
+            border-top: 1px solid #eef2f7;
+            font-size: 12px;
+            color: #8a9aa8;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
 
-    <!-- ============ OVERLAY ============ -->
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-    <!-- ============ SIDEBAR ============ -->
     <nav class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <h2>📋 Menú <span>v1.0</span></h2>
             <p>Registro de actividades</p>
         </div>
 
-        <!-- Acceso Directo -->
         <div class="sidebar-group">
             <div class="sidebar-item active" data-view="registrar">
                 <div class="icon primary">📝</div>
@@ -574,7 +751,6 @@
             </div>
         </div>
 
-        <!-- Reportes -->
         <div class="sidebar-group">
             <div class="sidebar-group-label">📊 Reportes</div>
             <div class="sidebar-item" data-view="diario">
@@ -600,7 +776,6 @@
             </div>
         </div>
 
-        <!-- Gestión -->
         <div class="sidebar-group">
             <div class="sidebar-group-label">⚙️ Gestión</div>
             <div class="sidebar-item" data-view="hijos">
@@ -621,32 +796,30 @@
             </div>
         </div>
 
-        <!-- Estadísticas rápidas -->
         <div style="padding: 16px 20px; margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.05);">
             <div style="display: flex; justify-content: space-between; color: rgba(255,255,255,0.4); font-size: 12px;">
                 <span>Total registros</span>
                 <span style="color: white; font-weight: 600;" id="totalRegistros">0</span>
             </div>
+            <div class="sync-status" style="margin-top: 12px; background: rgba(255,255,255,0.05);">
+                <span class="dot offline" id="statusDot"></span>
+                <span id="statusText" style="color: rgba(255,255,255,0.6);">Conectando...</span>
+                <button onclick="sincronizarDatos()" style="background: none; border: none; color: #4a6cf7; cursor: pointer; font-size: 12px; margin-left: auto;">↻ Sincronizar</button>
+            </div>
         </div>
     </nav>
 
-    <!-- ============ MAIN CONTENT ============ -->
     <div class="main-content">
 
-        <!-- TOP BAR -->
         <div class="topbar">
-            <button class="menu-toggle" id="menuToggle" aria-label="Abrir menú">
-                ☰
-            </button>
-            <div class="topbar-title" id="pageTitle">
-                Registro <small>de actividades</small>
-            </div>
+            <button class="menu-toggle" id="menuToggle" aria-label="Abrir menú">☰</button>
+            <div class="topbar-title" id="pageTitle">Registro <small>de actividades</small></div>
             <div class="topbar-actions">
                 <button onclick="window.location.reload()" title="Recargar">🔄</button>
             </div>
         </div>
 
-        <!-- ========== VISTA: REGISTRAR ========== -->
+        <!-- VISTA REGISTRAR -->
         <div class="view active" id="view-registrar">
             <div class="view-title">📝 Registrar Actividad</div>
             <form id="formActividad">
@@ -675,9 +848,13 @@
             <div id="registrarMensaje" style="margin-top:12px;font-size:14px;color:#0ca76b;text-align:center;"></div>
         </div>
 
-        <!-- ========== VISTA: DIARIO ========== -->
+        <!-- VISTA DIARIO -->
         <div class="view" id="view-diario">
             <div class="view-title">📅 Reporte Diario <span class="badge-count" id="diarioCount">0</span></div>
+            <div class="view-actions">
+                <button class="btn-pdf" onclick="exportarPDF('diario')">📄 Exportar PDF</button>
+                <button class="btn-share" onclick="compartirReporte('diario')">📤 Compartir</button>
+            </div>
             <div id="diarioLista" class="activity-list">
                 <div class="empty-state">
                     <span class="emoji">📭</span>
@@ -686,7 +863,7 @@
             </div>
         </div>
 
-        <!-- ========== VISTA: RANGO ========== -->
+        <!-- VISTA RANGO -->
         <div class="view" id="view-rango">
             <div class="view-title">📆 Reporte por Rango</div>
             <div class="form-row">
@@ -700,10 +877,14 @@
                 </div>
             </div>
             <button class="btn-primary" id="btnFiltrarRango">🔍 Filtrar</button>
+            <div class="view-actions" style="margin-top:12px;">
+                <button class="btn-pdf" onclick="exportarPDF('rango')">📄 Exportar PDF</button>
+                <button class="btn-share" onclick="compartirReporte('rango')">📤 Compartir</button>
+            </div>
             <div id="rangoLista" class="activity-list" style="margin-top:16px;"></div>
         </div>
 
-        <!-- ========== VISTA: POR HIJO ========== -->
+        <!-- VISTA HIJO -->
         <div class="view" id="view-hijo">
             <div class="view-title">👤 Reporte por Hijo</div>
             <div class="form-group">
@@ -713,10 +894,14 @@
                 </select>
             </div>
             <button class="btn-primary" id="btnFiltrarHijo">🔍 Filtrar</button>
+            <div class="view-actions" style="margin-top:12px;">
+                <button class="btn-pdf" onclick="exportarPDF('hijo')">📄 Exportar PDF</button>
+                <button class="btn-share" onclick="compartirReporte('hijo')">📤 Compartir</button>
+            </div>
             <div id="hijoLista" class="activity-list" style="margin-top:16px;"></div>
         </div>
 
-        <!-- ========== VISTA: HIJOS ========== -->
+        <!-- VISTA HIJOS -->
         <div class="view" id="view-hijos">
             <div class="view-title">👨‍👦 Hijos</div>
             <form id="formHijo">
@@ -735,7 +920,7 @@
             <div id="listaHijos" style="margin-top:16px;"></div>
         </div>
 
-        <!-- ========== VISTA: ACTIVIDADES ========== -->
+        <!-- VISTA ACTIVIDADES -->
         <div class="view" id="view-actividades">
             <div class="view-title">🎯 Actividades</div>
             <form id="formActividadGestion">
@@ -750,19 +935,35 @@
 
     </div>
 
-    <!-- TOAST -->
     <div class="toast" id="toast"></div>
+    <div id="pdfContent"></div>
 
     <script>
         // ============================================================
-        //  DATA Y PERSISTENCIA
+        // 🔥 CONFIGURACIÓN DE SUPABASE - TUS DATOS
+        // ============================================================
+        const SUPABASE_URL = "https://gomgfwqqvufxzkcsfqkf.supabase.co";
+        const SUPABASE_ANON_KEY = "sb_publishable_y5L1au_br_Fs7Qz31R5pdQ_CT1vX_";
+        
+        // ============================================================
+        //  INICIALIZAR SUPABASE
+        // ============================================================
+        const supabase = supabase_js.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        let syncEnabled = true;
+        let currentUser = 'familia_default';
+        
+        // ============================================================
+        //  DATA LOCAL (CACHE)
         // ============================================================
         let data = {
             hijos: [],
             actividades: [],
             registros: []
         };
-
+        
+        // ============================================================
+        //  FUNCIONES DE PERSISTENCIA
+        // ============================================================
         function loadData() {
             const stored = localStorage.getItem('actividadesData');
             if (stored) {
@@ -793,17 +994,20 @@
             }
             saveData();
         }
-
+        
         function saveData() {
             localStorage.setItem('actividadesData', JSON.stringify(data));
             actualizarContadores();
+            if (syncEnabled) {
+                guardarEnSupabase();
+            }
         }
-
+        
         function nextId(arr) {
             if (arr.length === 0) return 1;
             return Math.max(...arr.map(item => item.id)) + 1;
         }
-
+        
         // ============================================================
         //  HELPERS
         // ============================================================
@@ -811,13 +1015,13 @@
         function getActividad(id) { return data.actividades.find(a => a.id === id); }
         function getNombreHijo(id) { const h = getHijo(id); return h ? h.nombre : 'Desconocido'; }
         function getNombreActividad(id) { const a = getActividad(id); return a ? a.nombre : 'Desconocida'; }
-
+        
         function formatDate(dateStr) {
             if (!dateStr) return '';
             const parts = dateStr.split('-');
             return `${parts[2]}/${parts[1]}/${parts[0]}`;
         }
-
+        
         function showToast(msg, isError = false) {
             const t = document.getElementById('toast');
             t.textContent = msg;
@@ -826,7 +1030,7 @@
             clearTimeout(t._timeout);
             t._timeout = setTimeout(() => t.classList.remove('show'), 2500);
         }
-
+        
         function actualizarContadores() {
             document.getElementById('hijosCount').textContent = data.hijos.length;
             document.getElementById('actividadesCount').textContent = data.actividades.length;
@@ -837,344 +1041,20 @@
             const badge = document.querySelector('#view-diario .badge-count');
             if (badge) badge.textContent = diarioCount;
         }
-
-        // ============================================================
-        //  NAVEGACIÓN
-        // ============================================================
-        function showView(viewId) {
-            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-            document.querySelectorAll('.sidebar-item').forEach(item => {
-                item.classList.remove('active');
-            });
-
-            if (viewId) {
-                const target = document.getElementById('view-' + viewId);
-                if (target) {
-                    target.classList.add('active');
-                    document.querySelector(`.sidebar-item[data-view="${viewId}"]`)?.classList.add('active');
-                    const item = document.querySelector(`.sidebar-item[data-view="${viewId}"]`);
-                    if (item) {
-                        const name = item.querySelector('.name')?.textContent || 'Registro';
-                        document.querySelector('.topbar-title').innerHTML = name + ' <small>de actividades</small>';
-                    }
-                    if (viewId === 'diario') renderDiario();
-                    if (viewId === 'hijos') renderListaHijos();
-                    if (viewId === 'actividades') renderListaActividadesGestion();
-                    if (viewId === 'registrar') cargarSelects();
-                    if (viewId === 'hijo') cargarSelectHijoReporte();
-                }
-                closeSidebar();
+        
+        function actualizarEstadoConexion(conectado) {
+            const dot = document.getElementById('statusDot');
+            const text = document.getElementById('statusText');
+            if (conectado) {
+                dot.className = 'dot online';
+                text.textContent = '✅ Sincronizado en la nube';
+                text.style.color = 'rgba(255,255,255,0.8)';
+            } else {
+                dot.className = 'dot offline';
+                text.textContent = '📱 Modo local (sin nube)';
+                text.style.color = 'rgba(255,255,255,0.6)';
             }
         }
-
-        document.querySelectorAll('.sidebar-item[data-view]').forEach(item => {
-            item.addEventListener('click', function() {
-                showView(this.dataset.view);
-            });
-        });
-
+        
         // ============================================================
-        //  SIDEBAR TOGGLE
-        // ============================================================
-        function toggleSidebar() {
-            document.getElementById('sidebar').classList.toggle('open');
-            document.getElementById('sidebarOverlay').classList.toggle('show');
-        }
-
-        function closeSidebar() {
-            document.getElementById('sidebar').classList.remove('open');
-            document.getElementById('sidebarOverlay').classList.remove('show');
-        }
-
-        document.getElementById('menuToggle').addEventListener('click', toggleSidebar);
-        document.getElementById('sidebarOverlay').addEventListener('click', closeSidebar);
-
-        document.querySelectorAll('.sidebar-item').forEach(item => {
-            item.addEventListener('click', closeSidebar);
-        });
-
-        // ============================================================
-        //  REGISTRAR ACTIVIDAD
-        // ============================================================
-        function cargarSelects() {
-            const selHijo = document.getElementById('selectHijo');
-            const selAct = document.getElementById('selectActividad');
-            const fecha = document.getElementById('fechaActividad');
-            
-            if (!fecha.value) {
-                fecha.value = new Date().toISOString().split('T')[0];
-            }
-
-            selHijo.innerHTML = '<option value="">Seleccionar...</option>';
-            data.hijos.forEach(h => {
-                selHijo.innerHTML += `<option value="${h.id}">${h.nombre} (${h.edad} años)</option>`;
-            });
-
-            selAct.innerHTML = '<option value="">Seleccionar...</option>';
-            data.actividades.forEach(a => {
-                selAct.innerHTML += `<option value="${a.id}">${a.nombre}</option>`;
-            });
-        }
-
-        document.getElementById('formActividad').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const hijoId = parseInt(document.getElementById('selectHijo').value);
-            const actividadId = parseInt(document.getElementById('selectActividad').value);
-            const descripcion = document.getElementById('descActividad').value.trim();
-            const fecha = document.getElementById('fechaActividad').value;
-
-            if (!hijoId || !actividadId || !fecha) {
-                showToast('⚠️ Completa todos los campos obligatorios', true);
-                return;
-            }
-
-            data.registros.push({
-                id: nextId(data.registros),
-                hijoId,
-                actividadId,
-                descripcion: descripcion || 'Sin descripción',
-                fecha
-            });
-            saveData();
-            document.getElementById('registrarMensaje').textContent = '✅ Actividad registrada correctamente';
-            setTimeout(() => document.getElementById('registrarMensaje').textContent = '', 3000);
-            this.reset();
-            cargarSelects();
-            showToast('✅ Actividad guardada');
-        });
-
-        // ============================================================
-        //  REPORTE DIARIO
-        // ============================================================
-        function renderDiario() {
-            const hoy = new Date().toISOString().split('T')[0];
-            const lista = document.getElementById('diarioLista');
-            const filtrados = data.registros.filter(r => r.fecha === hoy);
-            
-            if (filtrados.length === 0) {
-                lista.innerHTML = `<div class="empty-state"><span class="emoji">📭</span><p>No hay actividades registradas hoy</p></div>`;
-                return;
-            }
-
-            let html = '';
-            filtrados.sort((a,b) => a.id - b.id);
-            filtrados.forEach(r => {
-                html += `
-                    <div class="activity-item">
-                        <div class="act-title">${getNombreHijo(r.hijoId)} — ${getNombreActividad(r.actividadId)}</div>
-                        <div class="act-meta">
-                            <span>📝 ${r.descripcion}</span>
-                            <span>📅 ${formatDate(r.fecha)}</span>
-                        </div>
-                    </div>
-                `;
-            });
-            lista.innerHTML = html;
-            actualizarContadores();
-        }
-
-        // ============================================================
-        //  REPORTE POR RANGO
-        // ============================================================
-        document.getElementById('btnFiltrarRango').addEventListener('click', function() {
-            const desde = document.getElementById('fechaDesde').value;
-            const hasta = document.getElementById('fechaHasta').value;
-            const lista = document.getElementById('rangoLista');
-
-            if (!desde || !hasta) {
-                showToast('⚠️ Selecciona ambas fechas', true);
-                return;
-            }
-
-            const filtrados = data.registros.filter(r => r.fecha >= desde && r.fecha <= hasta);
-            if (filtrados.length === 0) {
-                lista.innerHTML = `<div class="empty-state"><span class="emoji">📭</span><p>No hay actividades en este rango</p></div>`;
-                return;
-            }
-
-            let html = '';
-            filtrados.sort((a,b) => a.fecha.localeCompare(b.fecha));
-            filtrados.forEach(r => {
-                html += `
-                    <div class="activity-item">
-                        <div class="act-title">${getNombreHijo(r.hijoId)} — ${getNombreActividad(r.actividadId)}</div>
-                        <div class="act-meta">
-                            <span>📝 ${r.descripcion}</span>
-                            <span>📅 ${formatDate(r.fecha)}</span>
-                        </div>
-                    </div>
-                `;
-            });
-            lista.innerHTML = html;
-        });
-
-        // ============================================================
-        //  REPORTE POR HIJO
-        // ============================================================
-        function cargarSelectHijoReporte() {
-            const sel = document.getElementById('selectHijoReporte');
-            sel.innerHTML = '<option value="">Todos</option>';
-            data.hijos.forEach(h => {
-                sel.innerHTML += `<option value="${h.id}">${h.nombre}</option>`;
-            });
-        }
-
-        document.getElementById('btnFiltrarHijo').addEventListener('click', function() {
-            const hijoId = parseInt(document.getElementById('selectHijoReporte').value);
-            const lista = document.getElementById('hijoLista');
-            
-            let filtrados = data.registros;
-            if (hijoId) {
-                filtrados = filtrados.filter(r => r.hijoId === hijoId);
-            }
-
-            if (filtrados.length === 0) {
-                lista.innerHTML = `<div class="empty-state"><span class="emoji">📭</span><p>No hay actividades para este filtro</p></div>`;
-                return;
-            }
-
-            let html = '';
-            filtrados.sort((a,b) => a.fecha.localeCompare(b.fecha));
-            filtrados.forEach(r => {
-                html += `
-                    <div class="activity-item">
-                        <div class="act-title">${getNombreHijo(r.hijoId)} — ${getNombreActividad(r.actividadId)}</div>
-                        <div class="act-meta">
-                            <span>📝 ${r.descripcion}</span>
-                            <span>📅 ${formatDate(r.fecha)}</span>
-                        </div>
-                    </div>
-                `;
-            });
-            lista.innerHTML = html;
-        });
-
-        // ============================================================
-        //  GESTIÓN HIJOS
-        // ============================================================
-        document.getElementById('formHijo').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const nombre = document.getElementById('nombreHijo').value.trim();
-            const edad = parseInt(document.getElementById('edadHijo').value);
-
-            if (!nombre) {
-                showToast('⚠️ Ingresa un nombre', true);
-                return;
-            }
-
-            data.hijos.push({
-                id: nextId(data.hijos),
-                nombre,
-                edad: edad || 0
-            });
-            saveData();
-            renderListaHijos();
-            this.reset();
-            showToast('👶 Hijo agregado');
-            cargarSelects();
-            cargarSelectHijoReporte();
-        });
-
-        function renderListaHijos() {
-            const cont = document.getElementById('listaHijos');
-            if (data.hijos.length === 0) {
-                cont.innerHTML = `<div class="empty-state"><span class="emoji">👶</span><p>No hay hijos registrados</p></div>`;
-                return;
-            }
-            let html = '';
-            data.hijos.forEach(h => {
-                const count = data.registros.filter(r => r.hijoId === h.id).length;
-                html += `
-                    <div class="child-card">
-                        <div class="child-info">
-                            <div class="child-name">${h.nombre}</div>
-                            <div class="child-age">${h.edad} años · ${count} actividades</div>
-                        </div>
-                        <button class="btn-delete" data-delhijo="${h.id}">Eliminar</button>
-                    </div>
-                `;
-            });
-            cont.innerHTML = html;
-
-            cont.querySelectorAll('[data-delhijo]').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const id = parseInt(this.dataset.delhijo);
-                    if (confirm('¿Eliminar a este hijo y todas sus actividades?')) {
-                        data.hijos = data.hijos.filter(h => h.id !== id);
-                        data.registros = data.registros.filter(r => r.hijoId !== id);
-                        saveData();
-                        renderListaHijos();
-                        cargarSelects();
-                        cargarSelectHijoReporte();
-                        showToast('🗑️ Eliminado');
-                    }
-                });
-            });
-        }
-
-        // ============================================================
-        //  GESTIÓN ACTIVIDADES
-        // ============================================================
-        document.getElementById('formActividadGestion').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const nombre = document.getElementById('nombreActividad').value.trim();
-            if (!nombre) {
-                showToast('⚠️ Ingresa un nombre de actividad', true);
-                return;
-            }
-
-            data.actividades.push({
-                id: nextId(data.actividades),
-                nombre
-            });
-            saveData();
-            renderListaActividadesGestion();
-            this.reset();
-            showToast('🎯 Actividad agregada');
-            cargarSelects();
-        });
-
-        function renderListaActividadesGestion() {
-            const cont = document.getElementById('listaActividadesGestion');
-            if (data.actividades.length === 0) {
-                cont.innerHTML = `<div class="empty-state"><span class="emoji">🎯</span><p>No hay actividades registradas</p></div>`;
-                return;
-            }
-            let html = '';
-            data.actividades.forEach(a => {
-                const count = data.registros.filter(r => r.actividadId === a.id).length;
-                html += `
-                    <div class="child-card">
-                        <div class="child-info">
-                            <div class="child-name">${a.nombre}</div>
-                            <div class="child-age">${count} registros</div>
-                        </div>
-                        <button class="btn-delete" data-delact="${a.id}">Eliminar</button>
-                    </div>
-                `;
-            });
-            cont.innerHTML = html;
-
-            cont.querySelectorAll('[data-delact]').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const id = parseInt(this.dataset.delact);
-                    if (confirm('¿Eliminar esta actividad y todos sus registros?')) {
-                        data.actividades = data.actividades.filter(a => a.id !== id);
-                        data.registros = data.registros.filter(r => r.actividadId !== id);
-                        saveData();
-                        renderListaActividadesGestion();
-                        cargarSelects();
-                        showToast('🗑️ Eliminado');
-                    }
-                });
-            });
-        }
-
-        // ============================================================
-        //  INICIALIZACIÓN
-        // ============================================================
-        loadData();
-        showView('registrar');
-    </script>
-</body>
-</html>
+        //  SUPABASE - GUARD
