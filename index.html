@@ -1014,4 +1014,167 @@
         function cargarSelectHijoReporte() {
             const sel = document.getElementById('selectHijoReporte');
             sel.innerHTML = '<option value="">Todos</option>';
-            data.h
+            data.hijos.forEach(h => {
+                sel.innerHTML += `<option value="${h.id}">${h.nombre}</option>`;
+            });
+        }
+
+        document.getElementById('btnFiltrarHijo').addEventListener('click', function() {
+            const hijoId = parseInt(document.getElementById('selectHijoReporte').value);
+            const lista = document.getElementById('hijoLista');
+            
+            let filtrados = data.registros;
+            if (hijoId) {
+                filtrados = filtrados.filter(r => r.hijoId === hijoId);
+            }
+
+            if (filtrados.length === 0) {
+                lista.innerHTML = `<div class="empty-state"><span class="emoji">📭</span><p>No hay actividades para este filtro</p></div>`;
+                return;
+            }
+
+            let html = '';
+            filtrados.sort((a,b) => a.fecha.localeCompare(b.fecha));
+            filtrados.forEach(r => {
+                html += `
+                    <div class="activity-item">
+                        <div class="act-title">${getNombreHijo(r.hijoId)} — ${getNombreActividad(r.actividadId)}</div>
+                        <div class="act-meta">
+                            <span>📝 ${r.descripcion}</span>
+                            <span>📅 ${formatDate(r.fecha)}</span>
+                        </div>
+                    </div>
+                `;
+            });
+            lista.innerHTML = html;
+        });
+
+        // ============================================================
+        //  GESTIÓN HIJOS
+        // ============================================================
+        document.getElementById('formHijo').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const nombre = document.getElementById('nombreHijo').value.trim();
+            const edad = parseInt(document.getElementById('edadHijo').value);
+
+            if (!nombre) {
+                showToast('⚠️ Ingresa un nombre', true);
+                return;
+            }
+
+            data.hijos.push({
+                id: nextId(data.hijos),
+                nombre,
+                edad: edad || 0
+            });
+            saveData();
+            renderListaHijos();
+            this.reset();
+            showToast('👶 Hijo agregado');
+            cargarSelects();
+            cargarSelectHijoReporte();
+        });
+
+        function renderListaHijos() {
+            const cont = document.getElementById('listaHijos');
+            if (data.hijos.length === 0) {
+                cont.innerHTML = `<div class="empty-state"><span class="emoji">👶</span><p>No hay hijos registrados</p></div>`;
+                return;
+            }
+            let html = '';
+            data.hijos.forEach(h => {
+                const count = data.registros.filter(r => r.hijoId === h.id).length;
+                html += `
+                    <div class="child-card">
+                        <div class="child-info">
+                            <div class="child-name">${h.nombre}</div>
+                            <div class="child-age">${h.edad} años · ${count} actividades</div>
+                        </div>
+                        <button class="btn-delete" data-delhijo="${h.id}">Eliminar</button>
+                    </div>
+                `;
+            });
+            cont.innerHTML = html;
+
+            cont.querySelectorAll('[data-delhijo]').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const id = parseInt(this.dataset.delhijo);
+                    if (confirm('¿Eliminar a este hijo y todas sus actividades?')) {
+                        data.hijos = data.hijos.filter(h => h.id !== id);
+                        data.registros = data.registros.filter(r => r.hijoId !== id);
+                        saveData();
+                        renderListaHijos();
+                        cargarSelects();
+                        cargarSelectHijoReporte();
+                        showToast('🗑️ Eliminado');
+                    }
+                });
+            });
+        }
+
+        // ============================================================
+        //  GESTIÓN ACTIVIDADES
+        // ============================================================
+        document.getElementById('formActividadGestion').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const nombre = document.getElementById('nombreActividad').value.trim();
+            if (!nombre) {
+                showToast('⚠️ Ingresa un nombre de actividad', true);
+                return;
+            }
+
+            data.actividades.push({
+                id: nextId(data.actividades),
+                nombre
+            });
+            saveData();
+            renderListaActividadesGestion();
+            this.reset();
+            showToast('🎯 Actividad agregada');
+            cargarSelects();
+        });
+
+        function renderListaActividadesGestion() {
+            const cont = document.getElementById('listaActividadesGestion');
+            if (data.actividades.length === 0) {
+                cont.innerHTML = `<div class="empty-state"><span class="emoji">🎯</span><p>No hay actividades registradas</p></div>`;
+                return;
+            }
+            let html = '';
+            data.actividades.forEach(a => {
+                const count = data.registros.filter(r => r.actividadId === a.id).length;
+                html += `
+                    <div class="child-card">
+                        <div class="child-info">
+                            <div class="child-name">${a.nombre}</div>
+                            <div class="child-age">${count} registros</div>
+                        </div>
+                        <button class="btn-delete" data-delact="${a.id}">Eliminar</button>
+                    </div>
+                `;
+            });
+            cont.innerHTML = html;
+
+            cont.querySelectorAll('[data-delact]').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const id = parseInt(this.dataset.delact);
+                    if (confirm('¿Eliminar esta actividad y todos sus registros?')) {
+                        data.actividades = data.actividades.filter(a => a.id !== id);
+                        data.registros = data.registros.filter(r => r.actividadId !== id);
+                        saveData();
+                        renderListaActividadesGestion();
+                        cargarSelects();
+                        showToast('🗑️ Eliminado');
+                    }
+                });
+            });
+        }
+
+        // ============================================================
+        //  INICIALIZACIÓN
+        // ============================================================
+        loadData();
+        showView('registrar');
+    </script>
+</body>
+</html>
