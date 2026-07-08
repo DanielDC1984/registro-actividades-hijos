@@ -222,21 +222,6 @@
             transition: all 0.2s;
         }
         .btn-pdf:active { transform: scale(0.95); background: #b91c1c; }
-        .btn-share {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 20px;
-            background: #4a6cf7;
-            color: white;
-            border: none;
-            border-radius: 12px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .btn-share:active { transform: scale(0.95); background: #3a5cd7; }
         .form-group { margin-bottom: 16px; }
         .form-group label {
             display: block;
@@ -413,7 +398,7 @@
         @media (max-width: 767px) {
             .main-content { padding: 12px; }
             .view-actions { flex-direction: column; }
-            .btn-pdf, .btn-share { width: 100%; justify-content: center; }
+            .btn-pdf { width: 100%; justify-content: center; }
         }
     </style>
 </head>
@@ -423,7 +408,7 @@
 
     <nav class="sidebar" id="sidebar">
         <div class="sidebar-header">
-            <h2>📋 Menú <span>v1.0</span></h2>
+            <h2>📋 Menú <span>v1.1</span></h2>
             <p>Registro de actividades</p>
         </div>
 
@@ -613,7 +598,6 @@
         const SUPABASE_URL = "https://gomgfwqqvufxzkcsfqkf.supabase.co";
         const SUPABASE_ANON_KEY = "sb_publishable_y5L1au_br_Fs7Qz31R5pdQ_CT1vX_";
         
-        // Uso del constructor global inyectado por la CDN de Supabase v2
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         const FAMILIA_ID = 'familia_default';
         
@@ -625,10 +609,41 @@
             initForms();
             loadData();
             
-            // Asignación de filtros de reportes
+            // Activar la escucha en tiempo real para cambios en Supabase
+            activarTiempoReal();
+
             document.getElementById('btnFiltrarRango').addEventListener('click', renderReporteRango);
             document.getElementById('btnFiltrarHijo').addEventListener('click', renderReporteHijo);
         });
+
+        // ============================================================
+        //  NUEVA FUNCIÓN: TIEMPO REAL (REALTIME VÍA WEBSOCKETS)
+        // ============================================================
+        function activarTiempoReal() {
+            supabaseClient
+                .channel('cambios-familia')
+                .on('postgres_changes', { 
+                    event: 'UPDATE', 
+                    schema: 'public', 
+                    table: 'familias', 
+                    filter: `id=eq.${FAMILIA_ID}` 
+                }, payload => {
+                    console.log('¡Cambio detectado en la nube en tiempo real!', payload.new);
+                    if (payload.new) {
+                        data.hijos = payload.new.hijos || [];
+                        data.actividades = payload.new.actividades || [];
+                        data.registros = payload.new.registros || [];
+                        saveDataLocal(false); // Guardar localmente SIN volver a subir a la nube loop
+                        renderAll();
+                        showToast('🔄 Datos sincronizados en tiempo real');
+                    }
+                })
+                .subscribe((status) => {
+                    if (status === 'SUBSCRIBED') {
+                        console.log('Escuchando cambios de forma automática...');
+                    }
+                });
+        }
 
         // ============================================================
         //  NAVEGACIÓN INTERFAZ MÓVIL Y ESCRITORIO
@@ -981,6 +996,7 @@
 
         function showToast(msg, isError = false) {
             const t = document.getElementById('toast');
+            if(!t) return;
             t.textContent = msg;
             t.style.background = isError ? '#ef4444' : '#1a2a3a';
             t.classList.add('show');
