@@ -4,28 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
     <title>Registro de Actividades - Hijos</title>
-    
-    <!-- Supabase SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
-    <!-- Librería para PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    
     <style>
+        /* ============ ESTILOS COMPLETOS ============ */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
             font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
         }
-
         body {
             background: #f0f4f8;
             display: flex;
             min-height: 100vh;
             overflow-x: hidden;
         }
-
         .sidebar {
             position: fixed;
             top: 0;
@@ -40,17 +34,12 @@
             box-shadow: 4px 0 20px rgba(0,0,0,0.3);
             overflow-y: auto;
         }
-
-        .sidebar.open {
-            transform: translateX(0);
-        }
-
+        .sidebar.open { transform: translateX(0); }
         .sidebar-header {
             padding: 0 20px 20px;
             border-bottom: 1px solid rgba(255,255,255,0.1);
             margin-bottom: 16px;
         }
-
         .sidebar-header h2 {
             color: white;
             font-size: 20px;
@@ -58,7 +47,6 @@
             align-items: center;
             gap: 10px;
         }
-
         .sidebar-header h2 span {
             background: #4a6cf7;
             padding: 2px 10px;
@@ -66,17 +54,12 @@
             font-size: 11px;
             font-weight: 500;
         }
-
         .sidebar-header p {
             color: rgba(255,255,255,0.6);
             font-size: 13px;
             margin-top: 4px;
         }
-
-        .sidebar-group {
-            margin-bottom: 20px;
-        }
-
+        .sidebar-group { margin-bottom: 20px; }
         .sidebar-group-label {
             color: rgba(255,255,255,0.4);
             font-size: 11px;
@@ -86,34 +69,25 @@
             margin-bottom: 6px;
             font-weight: 600;
         }
-
         .sidebar-item {
             display: flex;
             align-items: center;
             gap: 12px;
             padding: 12px 20px;
             color: rgba(255,255,255,0.7);
-            text-decoration: none;
-            transition: all 0.2s;
             cursor: pointer;
             border-left: 3px solid transparent;
+            transition: all 0.2s;
         }
-
         .sidebar-item:hover {
             background: rgba(255,255,255,0.05);
             color: white;
         }
-
-        .sidebar-item:active {
-            background: rgba(74,108,247,0.2);
-        }
-
         .sidebar-item.active {
             background: rgba(74,108,247,0.15);
             color: white;
             border-left-color: #4a6cf7;
         }
-
         .sidebar-item .icon {
             width: 32px;
             height: 32px;
@@ -124,29 +98,15 @@
             font-size: 16px;
             flex-shrink: 0;
         }
-
         .sidebar-item .icon.primary { background: rgba(74,108,247,0.2); }
         .sidebar-item .icon.green { background: rgba(12,167,107,0.2); }
         .sidebar-item .icon.purple { background: rgba(124,92,252,0.2); }
         .sidebar-item .icon.orange { background: rgba(245,158,11,0.2); }
         .sidebar-item .icon.blue { background: rgba(59,130,246,0.2); }
         .sidebar-item .icon.red { background: rgba(239,68,68,0.2); }
-
-        .sidebar-item .info {
-            flex: 1;
-        }
-
-        .sidebar-item .info .name {
-            font-size: 14px;
-            font-weight: 500;
-        }
-
-        .sidebar-item .info .desc {
-            font-size: 11px;
-            color: rgba(255,255,255,0.4);
-            margin-top: 1px;
-        }
-
+        .sidebar-item .info { flex: 1; }
+        .sidebar-item .info .name { font-size: 14px; font-weight: 500; }
+        .sidebar-item .info .desc { font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 1px; }
         .sidebar-item .badge {
             background: rgba(74,108,247,0.3);
             padding: 2px 10px;
@@ -154,7 +114,6 @@
             font-size: 11px;
             color: #4a6cf7;
         }
-
         .sidebar-overlay {
             position: fixed;
             top: 0;
@@ -167,22 +126,17 @@
             pointer-events: none;
             transition: opacity 0.3s;
         }
-
         .sidebar-overlay.show {
             opacity: 1;
             pointer-events: all;
         }
-
         .main-content {
             flex: 1;
             padding: 16px;
-            margin-left: 0;
-            transition: margin-left 0.3s;
             min-height: 100vh;
             width: 100%;
             max-width: 100%;
         }
-
         .topbar {
             display: flex;
             align-items: center;
@@ -191,7 +145,6 @@
             border-bottom: 1px solid #eef2f7;
             margin-bottom: 20px;
         }
-
         .menu-toggle {
             background: none;
             border: none;
@@ -200,33 +153,19 @@
             padding: 4px;
             color: #1a2a3a;
             line-height: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
         }
-
-        .menu-toggle:active {
-            transform: scale(0.9);
-        }
-
         .topbar-title {
             font-size: 18px;
             font-weight: 700;
             color: #1a2a3a;
             flex: 1;
         }
-
         .topbar-title small {
             font-weight: 400;
             font-size: 13px;
             color: #8a9aa8;
         }
-
-        .topbar-actions {
-            display: flex;
-            gap: 8px;
-        }
-
+        .topbar-actions { display: flex; gap: 8px; }
         .topbar-actions button {
             background: none;
             border: none;
@@ -235,21 +174,15 @@
             padding: 4px;
             color: #6b7a8f;
         }
-
         .view {
             display: none;
             animation: fadeSlide 0.3s ease;
         }
-
-        .view.active {
-            display: block;
-        }
-
+        .view.active { display: block; }
         @keyframes fadeSlide {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
-
         .view-title {
             font-size: 20px;
             font-weight: 700;
@@ -260,7 +193,6 @@
             gap: 10px;
             flex-wrap: wrap;
         }
-
         .view-title .badge-count {
             background: #eef2f7;
             padding: 2px 12px;
@@ -269,14 +201,12 @@
             font-weight: 500;
             color: #6b7a8f;
         }
-
         .view-actions {
             display: flex;
             gap: 10px;
             margin-bottom: 16px;
             flex-wrap: wrap;
         }
-
         .btn-pdf {
             display: inline-flex;
             align-items: center;
@@ -291,12 +221,7 @@
             cursor: pointer;
             transition: all 0.2s;
         }
-
-        .btn-pdf:active {
-            transform: scale(0.95);
-            background: #b91c1c;
-        }
-
+        .btn-pdf:active { transform: scale(0.95); background: #b91c1c; }
         .btn-share {
             display: inline-flex;
             align-items: center;
@@ -311,12 +236,7 @@
             cursor: pointer;
             transition: all 0.2s;
         }
-
-        .btn-share:active {
-            transform: scale(0.95);
-            background: #3a5cd7;
-        }
-
+        .btn-share:active { transform: scale(0.95); background: #3a5cd7; }
         .btn-secondary {
             display: inline-flex;
             align-items: center;
@@ -331,16 +251,8 @@
             cursor: pointer;
             transition: all 0.2s;
         }
-
-        .btn-secondary:active {
-            transform: scale(0.95);
-            background: #dce3ec;
-        }
-
-        .form-group {
-            margin-bottom: 16px;
-        }
-
+        .btn-secondary:active { transform: scale(0.95); background: #dce3ec; }
+        .form-group { margin-bottom: 16px; }
         .form-group label {
             display: block;
             font-size: 14px;
@@ -348,7 +260,6 @@
             color: #2a3a4a;
             margin-bottom: 4px;
         }
-
         .form-group input,
         .form-group select,
         .form-group textarea {
@@ -362,7 +273,6 @@
             -webkit-appearance: none;
             appearance: none;
         }
-
         .form-group input:focus,
         .form-group select:focus,
         .form-group textarea:focus {
@@ -370,12 +280,7 @@
             border-color: #4a6cf7;
             background: white;
         }
-
-        .form-group textarea {
-            min-height: 80px;
-            resize: vertical;
-        }
-
+        .form-group textarea { min-height: 80px; resize: vertical; }
         .btn-primary {
             width: 100%;
             padding: 14px;
@@ -388,16 +293,8 @@
             cursor: pointer;
             transition: all 0.2s;
         }
-
-        .btn-primary:active {
-            transform: scale(0.97);
-            background: #3a5cd7;
-        }
-
-        .activity-list {
-            margin-top: 12px;
-        }
-
+        .btn-primary:active { transform: scale(0.97); background: #3a5cd7; }
+        .activity-list { margin-top: 12px; }
         .activity-item {
             background: #f8fafc;
             padding: 14px 16px;
@@ -405,12 +302,7 @@
             margin-bottom: 8px;
             border-left: 4px solid #4a6cf7;
         }
-
-        .activity-item .act-title {
-            font-weight: 600;
-            color: #1a2a3a;
-        }
-
+        .activity-item .act-title { font-weight: 600; color: #1a2a3a; }
         .activity-item .act-meta {
             font-size: 12px;
             color: #8a9aa8;
@@ -419,13 +311,11 @@
             gap: 8px;
             flex-wrap: wrap;
         }
-
         .activity-item .act-meta span {
             background: #eef2f7;
             padding: 2px 10px;
             border-radius: 12px;
         }
-
         .child-card {
             background: #f8fafc;
             padding: 16px;
@@ -436,22 +326,9 @@
             justify-content: space-between;
             gap: 12px;
         }
-
-        .child-card .child-info {
-            flex: 1;
-        }
-
-        .child-card .child-name {
-            font-weight: 600;
-            font-size: 16px;
-            color: #1a2a3a;
-        }
-
-        .child-card .child-age {
-            font-size: 13px;
-            color: #8a9aa8;
-        }
-
+        .child-card .child-info { flex: 1; }
+        .child-card .child-name { font-weight: 600; font-size: 16px; color: #1a2a3a; }
+        .child-card .child-age { font-size: 13px; color: #8a9aa8; }
         .child-card .btn-delete {
             background: #ef4444;
             border: none;
@@ -463,27 +340,14 @@
             cursor: pointer;
             flex-shrink: 0;
         }
-
-        .child-card .btn-delete:active {
-            transform: scale(0.95);
-        }
-
+        .child-card .btn-delete:active { transform: scale(0.95); }
         .empty-state {
             text-align: center;
             padding: 40px 20px;
             color: #8a9aa8;
         }
-
-        .empty-state .emoji {
-            font-size: 48px;
-            display: block;
-            margin-bottom: 12px;
-        }
-
-        .empty-state p {
-            font-size: 15px;
-        }
-
+        .empty-state .emoji { font-size: 48px; display: block; margin-bottom: 12px; }
+        .empty-state p { font-size: 15px; }
         .toast {
             position: fixed;
             bottom: 30px;
@@ -503,52 +367,43 @@
             z-index: 2000;
             box-shadow: 0 8px 30px rgba(0,0,0,0.2);
         }
-
         .toast.show {
             opacity: 1;
             transform: translateX(-50%) translateY(0);
         }
-
         .sync-status {
             display: flex;
             align-items: center;
             gap: 8px;
             padding: 8px 12px;
-            background: #eef2f7;
+            background: rgba(255,255,255,0.05);
             border-radius: 10px;
             font-size: 12px;
-            color: #6b7a8f;
+            color: rgba(255,255,255,0.6);
         }
-
         .sync-status .dot {
             width: 8px;
             height: 8px;
             border-radius: 50%;
             display: inline-block;
         }
-
-        .sync-status .dot.online {
-            background: #0ca76b;
-        }
-
-        .sync-status .dot.offline {
-            background: #ef4444;
-        }
-
+        .sync-status .dot.online { background: #0ca76b; }
+        .sync-status .dot.offline { background: #ef4444; }
         .sync-status .dot.syncing {
             background: #f59e0b;
             animation: pulse 1s infinite;
         }
-
         @keyframes pulse {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.3; }
         }
-
-        #pdfContent {
-            display: none;
+        #pdfContent { display: none; }
+        select {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7a8f' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+            padding-right: 40px;
         }
-
         @media (min-width: 768px) {
             .sidebar {
                 transform: translateX(0) !important;
@@ -557,124 +412,49 @@
                 height: 100vh;
                 flex-shrink: 0;
             }
-
-            .sidebar-overlay {
-                display: none !important;
-            }
-
+            .sidebar-overlay { display: none !important; }
             .main-content {
-                margin-left: 0;
                 padding: 24px 32px;
                 max-width: calc(100% - 280px);
             }
-
-            .menu-toggle {
-                display: none !important;
-            }
-
-            .topbar-title {
-                font-size: 22px;
-            }
-
+            .menu-toggle { display: none !important; }
+            .topbar-title { font-size: 22px; }
             .form-row {
                 display: grid;
                 grid-template-columns: 1fr 1fr;
                 gap: 16px;
             }
-
-            .view-actions {
-                justify-content: flex-end;
-            }
+            .view-actions { justify-content: flex-end; }
         }
-
         @media (max-width: 767px) {
-            .main-content {
-                padding: 12px;
-            }
-
-            .topbar {
-                padding: 4px 0 12px;
-            }
-
-            .view-title {
-                font-size: 18px;
-            }
-
-            .sidebar {
-                width: 280px;
-            }
-
-            .view-actions {
-                flex-direction: column;
-            }
-
-            .btn-pdf, .btn-secondary, .btn-share {
-                width: 100%;
-                justify-content: center;
-            }
+            .main-content { padding: 12px; }
+            .topbar { padding: 4px 0 12px; }
+            .view-title { font-size: 18px; }
+            .sidebar { width: 280px; }
+            .view-actions { flex-direction: column; }
+            .btn-pdf, .btn-secondary, .btn-share { width: 100%; justify-content: center; }
         }
-
         @media (max-width: 400px) {
-            .sidebar {
-                width: 260px;
-            }
-
-            .child-card {
-                flex-wrap: wrap;
-            }
-
-            .child-card .btn-delete {
-                width: 100%;
-                text-align: center;
-            }
+            .sidebar { width: 260px; }
+            .child-card { flex-wrap: wrap; }
+            .child-card .btn-delete { width: 100%; text-align: center; }
         }
-
-        .sidebar::-webkit-scrollbar {
-            width: 4px;
-        }
-
-        .sidebar::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        .sidebar::-webkit-scrollbar-thumb {
-            background: rgba(255,255,255,0.2);
-            border-radius: 10px;
-        }
-
-        select {
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7a8f' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 14px center;
-            padding-right: 40px;
-        }
-
+        .sidebar::-webkit-scrollbar { width: 4px; }
+        .sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
         .pdf-report {
             font-family: 'Segoe UI', Arial, sans-serif;
             padding: 30px;
             max-width: 800px;
             margin: 0 auto;
         }
-
         .pdf-report h1 {
             color: #1a2a3a;
             border-bottom: 3px solid #4a6cf7;
             padding-bottom: 10px;
             margin-bottom: 20px;
         }
-
-        .pdf-report .pdf-meta {
-            color: #6b7a8f;
-            font-size: 14px;
-            margin-bottom: 20px;
-        }
-
-        .pdf-report table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 16px;
-        }
-
+        .pdf-report .pdf-meta { color: #6b7a8f; font-size: 14px; margin-bottom: 20px; }
+        .pdf-report table { width: 100%; border-collapse: collapse; margin-top: 16px; }
         .pdf-report th {
             background: #4a6cf7;
             color: white;
@@ -682,17 +462,12 @@
             text-align: left;
             font-size: 13px;
         }
-
         .pdf-report td {
             padding: 10px 12px;
             border-bottom: 1px solid #eef2f7;
             font-size: 13px;
         }
-
-        .pdf-report tr:nth-child(even) {
-            background: #f8fafc;
-        }
-
+        .pdf-report tr:nth-child(even) { background: #f8fafc; }
         .pdf-report .total {
             margin-top: 16px;
             font-weight: 600;
@@ -700,7 +475,6 @@
             text-align: right;
             font-size: 14px;
         }
-
         .pdf-report .footer {
             margin-top: 30px;
             padding-top: 16px;
@@ -781,7 +555,7 @@
                 <span>Total registros</span>
                 <span style="color: white; font-weight: 600;" id="totalRegistros">0</span>
             </div>
-            <div class="sync-status" style="margin-top: 12px; background: rgba(255,255,255,0.05);">
+            <div class="sync-status" style="margin-top: 12px;">
                 <span class="dot offline" id="statusDot"></span>
                 <span id="statusText" style="color: rgba(255,255,255,0.6);">Conectando...</span>
                 <button onclick="sincronizarAhora()" style="background: none; border: none; color: #4a6cf7; cursor: pointer; font-size: 12px; margin-left: auto;">↻ Sincronizar</button>
@@ -838,7 +612,7 @@
             <div id="diarioLista" class="activity-list">
                 <div class="empty-state">
                     <span class="emoji">📭</span>
-                    <p>Cargando actividades de hoy...</p>
+                    <p>No hay actividades registradas hoy</p>
                 </div>
             </div>
         </div>
@@ -861,7 +635,12 @@
                 <button class="btn-pdf" onclick="exportarPDF('rango')">📄 Exportar PDF</button>
                 <button class="btn-share" onclick="compartirReporte('rango')">📤 Compartir</button>
             </div>
-            <div id="rangoLista" class="activity-list" style="margin-top:16px;"></div>
+            <div id="rangoLista" class="activity-list" style="margin-top:16px;">
+                <div class="empty-state">
+                    <span class="emoji">📭</span>
+                    <p>Selecciona un rango de fechas</p>
+                </div>
+            </div>
         </div>
 
         <!-- VISTA HIJO -->
@@ -878,7 +657,12 @@
                 <button class="btn-pdf" onclick="exportarPDF('hijo')">📄 Exportar PDF</button>
                 <button class="btn-share" onclick="compartirReporte('hijo')">📤 Compartir</button>
             </div>
-            <div id="hijoLista" class="activity-list" style="margin-top:16px;"></div>
+            <div id="hijoLista" class="activity-list" style="margin-top:16px;">
+                <div class="empty-state">
+                    <span class="emoji">👤</span>
+                    <p>Selecciona un hijo para ver sus actividades</p>
+                </div>
+            </div>
         </div>
 
         <!-- VISTA HIJOS -->
@@ -920,18 +704,14 @@
 
     <script>
         // ============================================================
-        // 🔥 CONFIGURACIÓN DE SUPABASE - TUS DATOS
+        // 🔥 CONFIGURACIÓN DE SUPABASE
         // ============================================================
         const SUPABASE_URL = "https://gomgfwqqvufxzkcsfqkf.supabase.co";
         const SUPABASE_ANON_KEY = "sb_publishable_y5L1au_br_Fs7Qz31R5pdQ_CT1vX_";
         
-        // ============================================================
-        //  INICIALIZAR SUPABASE
-        // ============================================================
         const supabase = supabase_js.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        let syncEnabled = true;
-        let sincronizando = false;
         const FAMILIA_ID = 'familia_default';
+        let syncEnabled = true;
         
         // ============================================================
         //  DATA LOCAL
@@ -952,6 +732,7 @@
                     data = JSON.parse(stored);
                 } catch(e) {}
             }
+            
             if (data.hijos.length === 0) {
                 data.hijos = [
                     { id: 1, nombre: 'Mateo', edad: 5 },
@@ -973,7 +754,9 @@
                     { id: 2, hijoId: 2, actividadId: 2, descripcion: 'Dibujó un paisaje', fecha: hoy }
                 ];
             }
+            
             saveDataLocal();
+            cargarDesdeSupabase();
         }
         
         function saveDataLocal() {
@@ -992,4 +775,23 @@
         function getHijo(id) { return data.hijos.find(h => h.id === id); }
         function getActividad(id) { return data.actividades.find(a => a.id === id); }
         function getNombreHijo(id) { const h = getHijo(id); return h ? h.nombre : 'Desconocido'; }
-        function getNombreActividad(id) { const a = getActividad
+        function getNombreActividad(id) { const a = getActividad(id); return a ? a.nombre : 'Desconocida'; }
+        
+        function formatDate(dateStr) {
+            if (!dateStr) return '';
+            const parts = dateStr.split('-');
+            return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        }
+        
+        function showToast(msg, isError = false) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.style.background = isError ? '#ef4444' : '#1a2a3a';
+            t.classList.add('show');
+            clearTimeout(t._timeout);
+            t._timeout = setTimeout(() => t.classList.remove('show'), 3000);
+        }
+        
+        function actualizarContadores() {
+            document.getElementById('hijosCount').textContent = data.hijos.length;
+            document.getElementById
