@@ -731,7 +731,8 @@
                         hijos: data.hijos,
                         actividades: data.actividades,
                         registros: data.registros,
-                        updated_at: new Date()
+                           // ✔️ FORMA CORRECTA: Mantiene el día local del dispositivo
+                        updated_at: new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString()
                     });
 
                 if (error) throw error;
