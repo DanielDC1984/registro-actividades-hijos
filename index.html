@@ -274,7 +274,7 @@
             transition: all 0.2s;
         }
         .btn-edit:hover { background: #d97706; }
-        .btn-delete {
+        .btn-delete-reg {
             background: #ef4444;
             border: none;
             padding: 4px 12px;
@@ -285,7 +285,7 @@
             cursor: pointer;
             transition: all 0.2s;
         }
-        .btn-delete:hover { background: #dc2626; }
+        .btn-delete-reg:hover { background: #dc2626; }
         .activity-list { margin-top: 12px; }
         .activity-item {
             background: white;
@@ -410,7 +410,6 @@
             background-position: right 14px center;
             padding-right: 40px;
         }
-        /* Modal para editar */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -730,7 +729,7 @@
         let data = { hijos: [], actividades: [], registros: [] };
 
         // ============================================================
-        // 🕒 FUNCIÓN PARA OBTENER FECHA LOCAL CORRECTA
+        // 🕒 FUNCIÓN PARA OBTENER FECHA LOCAL CORRECTA (BOLIVIA UTC-4)
         // ============================================================
         function getFechaLocal() {
             const ahora = new Date();
@@ -738,6 +737,15 @@
             const mes = String(ahora.getMonth() + 1).padStart(2, '0');
             const dia = String(ahora.getDate()).padStart(2, '0');
             return `${anio}-${mes}-${dia}`;
+        }
+
+        // ============================================================
+        // 📅 FUNCIÓN PARA FORMATEAR FECHA PARA MOSTRAR (DD/MM/YYYY)
+        // ============================================================
+        function formatearFechaMostrar(fecha) {
+            if (!fecha) return '';
+            const partes = fecha.split('-');
+            return `${partes[2]}/${partes[1]}/${partes[0]}`;
         }
 
         // ============================================================
@@ -752,12 +760,11 @@
             document.getElementById('btnFiltrarRango').addEventListener('click', renderReporteRango);
             document.getElementById('btnFiltrarHijo').addEventListener('click', renderReporteHijo);
 
-            // Modal de edición
             document.getElementById('formEditar').addEventListener('submit', guardarEdicion);
         });
 
         // ============================================================
-        //  TIEMPO REAL (REALTIME VÍA WEBSOCKETS)
+        //  TIEMPO REAL
         // ============================================================
         function activarTiempoReal() {
             supabaseClient
@@ -936,6 +943,7 @@
             selectAct.innerHTML = '<option value="">Seleccionar...</option>' + actHtml;
             editSelectAct.innerHTML = '<option value="">Seleccionar...</option>' + actHtml;
 
+            // ✅ FECHA LOCAL CORRECTA
             document.getElementById('fechaActividad').value = getFechaLocal();
         }
 
@@ -973,7 +981,7 @@
         }
 
         // ============================================================
-        //  RENDERIZADO DE REPORTES CON BOTONES DE EDICIÓN Y ELIMINACIÓN
+        //  RENDERIZADO DE REPORTES CON BOTONES
         // ============================================================
         function renderReporteDiario() {
             const hoy = getFechaLocal();
@@ -1018,7 +1026,7 @@
         }
 
         // ============================================================
-        //  HTML DE LISTA CON BOTONES DE EDICIÓN Y ELIMINACIÓN
+        //  HTML DE LISTA CON BOTONES Y FECHA CORRECTA
         // ============================================================
         function htmlListaItems(lista) {
             if (lista.length === 0) {
@@ -1033,11 +1041,11 @@
                         <div class="act-content">
                             <div class="act-title">${act ? act.nombre : 'Actividad'} - ${hijo ? hijo.nombre : 'Niño'}</div>
                             <div style="font-size:14px; margin-top:4px; color:#2a3a4a;">${r.descripcion || 'Sin descripción'}</div>
-                            <div class="act-meta"><span>📅 ${r.fecha.split('-').reverse().join('/')}</span></div>
+                            <div class="act-meta"><span>📅 ${formatearFechaMostrar(r.fecha)}</span></div>
                         </div>
                         <div class="act-actions">
                             <button class="btn-edit" onclick="abrirModalEditar(${r.id})">✏️ Editar</button>
-                            <button class="btn-delete" onclick="eliminarRegistro(${r.id})">🗑️</button>
+                            <button class="btn-delete-reg" onclick="eliminarRegistro(${r.id})">🗑️</button>
                         </div>
                     </div>
                 `;
@@ -1065,14 +1073,12 @@
                 return;
             }
 
-            // Llenar el modal con los datos del registro
             document.getElementById('editRegistroId').value = id;
             document.getElementById('editSelectHijo').value = registro.hijoId;
             document.getElementById('editSelectActividad').value = registro.actividadId;
             document.getElementById('editDescripcion').value = registro.descripcion || '';
             document.getElementById('editFecha').value = registro.fecha || getFechaLocal();
 
-            // Mostrar modal
             document.getElementById('modalEditar').classList.add('active');
         }
 
