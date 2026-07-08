@@ -10,7 +10,6 @@
         *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}
         body{background:#f0f4f8;display:flex;min-height:100vh;overflow-x:hidden}
         
-        /* ========== LOGIN ========== */
         .login-container{display:flex;justify-content:center;align-items:center;min-height:100vh;width:100%;background:linear-gradient(135deg,#1a2a3a,#2a4a6a);padding:20px}
         .login-box{background:#fff;padding:40px 32px;border-radius:24px;max-width:400px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3)}
         .login-box .logo{text-align:center;font-size:48px;margin-bottom:8px}
@@ -31,11 +30,9 @@
         .login-box .loading-spinner .spinner{border:3px solid #eef2f7;border-top:3px solid #4a6cf7;border-radius:50%;width:30px;height:30px;animation:spin .8s linear infinite;margin:0 auto}
         @keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
         
-        /* ========== APP ========== */
         .app-container{display:none;width:100%;min-height:100vh}
         .app-container.active{display:flex}
         
-        /* ========== SIDEBAR ========== */
         .sidebar{position:fixed;top:0;left:0;width:280px;height:100vh;background:linear-gradient(180deg,#1a2a3a,#0f1a26);padding:20px 0;z-index:1000;transform:translateX(-100%);transition:transform .3s;box-shadow:4px 0 20px rgba(0,0,0,.3);overflow-y:auto}
         .sidebar.open{transform:translateX(0)}
         .sidebar-header{padding:0 20px 20px;border-bottom:1px solid rgba(255,255,255,.1);margin-bottom:16px}
@@ -75,7 +72,6 @@
         .user-info .role-badge.admin{background:#7c5cfc;color:#fff}
         .user-info .role-badge.user{background:#4a6cf7;color:#fff}
         
-        /* ========== ADMIN PANEL ========== */
         .admin-panel{background:#fff;border-radius:14px;padding:16px;margin-top:12px;box-shadow:0 2px 8px rgba(0,0,0,.04)}
         .admin-panel h3{font-size:16px;font-weight:600;color:#1a2a3a;margin-bottom:12px;display:flex;align-items:center;gap:8px}
         .admin-panel .user-item{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:#f8fafc;border-radius:10px;margin-bottom:8px;flex-wrap:wrap;gap:8px}
@@ -96,7 +92,6 @@
         .admin-panel .user-item .actions .btn-delete-user{background:#ef4444;color:#fff}
         .admin-panel .user-item .actions .btn-delete-user:hover{background:#dc2626}
         
-        /* ========== VISTAS ========== */
         .view{display:none;animation:fadeSlide .3s ease}
         .view.active{display:block}
         @keyframes fadeSlide{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
@@ -118,7 +113,6 @@
         .btn-delete-reg:hover{background:#dc2626}
         .activity-list{margin-top:12px;overflow-x:auto}
         
-        /* ========== TABLA ========== */
         .tabla-reporte{width:100%;border-collapse:collapse;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.06);min-width:500px}
         .tabla-reporte thead{background:#1a2a3a;color:#fff}
         .tabla-reporte thead th{padding:12px 14px;text-align:left;font-size:13px;font-weight:600;letter-spacing:.3px}
@@ -431,7 +425,7 @@
         let isRegisterMode = false;
 
         // ============================================================
-        // 📋 SISTEMA DE USUARIOS (LocalStorage + Supabase)
+        // 📋 SISTEMA DE USUARIOS
         // ============================================================
         function getUsers() {
             const stored = localStorage.getItem('usuarios_registrados');
@@ -729,24 +723,30 @@
         function loadData() {
             const stored = localStorage.getItem(getStorageKey());
             if (stored) {
-                try { data = JSON.parse(stored); } catch(e) {}
+                try { data = JSON.parse(stored); } catch(e) { console.error('Error parseando data:', e); }
             }
+            
             // Migrar registros antiguos (sin hora)
             let migrado = false;
-            data.registros = data.registros.map(r => {
-                if (r.fecha && !r.fechaHora) {
-                    migrado = true;
-                    return { ...r, fechaHora: r.fecha + 'T00:00' };
-                }
-                return r;
-            });
-            if (data.hijos.length === 0) {
+            if (data.registros) {
+                data.registros = data.registros.map(r => {
+                    if (r.fecha && !r.fechaHora) {
+                        migrado = true;
+                        return { ...r, fechaHora: r.fecha + 'T00:00' };
+                    }
+                    return r;
+                });
+            } else {
+                data.registros = [];
+            }
+            
+            if (!data.hijos || data.hijos.length === 0) {
                 data.hijos = [
                     { id: 1, nombre: 'Mateo', edad: 5 },
                     { id: 2, nombre: 'Sofía', edad: 3 }
                 ];
             }
-            if (data.actividades.length === 0) {
+            if (!data.actividades || data.actividades.length === 0) {
                 data.actividades = [
                     { id: 1, nombre: 'Lectura' },
                     { id: 2, nombre: 'Dibujo' },
@@ -754,7 +754,7 @@
                     { id: 4, nombre: 'Música' }
                 ];
             }
-            if (data.registros.length === 0) {
+            if (!data.registros || data.registros.length === 0) {
                 const ahora = getFechaHoraLocal();
                 data.registros = [
                     { id: 1, hijoId: 1, actividadId: 1, descripcion: 'Leyó 10 páginas', fechaHora: ahora, usuario: 'admin' },
@@ -799,7 +799,7 @@
                     updateStatus('online', 'Conectado');
                 }
             } catch (err) {
-                console.error(err);
+                console.error('Error cargando de Supabase:', err);
                 updateStatus('offline', 'Offline');
             }
         }
@@ -818,7 +818,7 @@
                 if (error) throw error;
                 updateStatus('online', 'Conectado');
             } catch (err) {
-                console.error(err);
+                console.error('Error guardando en Supabase:', err);
                 updateStatus('offline', 'Error');
             }
         }
@@ -891,9 +891,9 @@
         //  RENDERIZADO
         // ============================================================
         function actualizarContadores() {
-            document.getElementById('hijosCount').textContent = data.hijos.length;
-            document.getElementById('actividadesCount').textContent = data.actividades.length;
-            document.getElementById('totalRegistros').textContent = data.registros.length;
+            document.getElementById('hijosCount').textContent = data.hijos ? data.hijos.length : 0;
+            document.getElementById('actividadesCount').textContent = data.actividades ? data.actividades.length : 0;
+            document.getElementById('totalRegistros').textContent = data.registros ? data.registros.length : 0;
         }
 
         function renderAll() {
@@ -911,19 +911,35 @@
             const selectHijoRep = document.getElementById('selectHijoReporte');
             const editSelectHijo = document.getElementById('editSelectHijo');
             const editSelectAct = document.getElementById('editSelectActividad');
-            const hijosHtml = data.hijos.map(h => `<option value="${h.id}">${h.nombre}</option>`).join('');
-            const actHtml = data.actividades.map(a => `<option value="${a.id}">${a.nombre}</option>`).join('');
-            selectHijo.innerHTML = '<option value="">Seleccionar...</option>' + hijosHtml;
-            selectHijoRep.innerHTML = '<option value="">Seleccionar...</option>' + hijosHtml;
-            editSelectHijo.innerHTML = '<option value="">Seleccionar...</option>' + hijosHtml;
-            selectAct.innerHTML = '<option value="">Seleccionar...</option>' + actHtml;
-            editSelectAct.innerHTML = '<option value="">Seleccionar...</option>' + actHtml;
+            
+            // LIMPIAR Y LLENAR HIJOS
+            let hijosHtml = '<option value="">Seleccionar...</option>';
+            if (data.hijos && data.hijos.length > 0) {
+                data.hijos.forEach(h => {
+                    hijosHtml += `<option value="${h.id}">${h.nombre}${h.edad ? ' ('+h.edad+' años)' : ''}</option>`;
+                });
+            }
+            selectHijo.innerHTML = hijosHtml;
+            selectHijoRep.innerHTML = hijosHtml;
+            editSelectHijo.innerHTML = hijosHtml;
+            
+            // LIMPIAR Y LLENAR ACTIVIDADES
+            let actHtml = '<option value="">Seleccionar...</option>';
+            if (data.actividades && data.actividades.length > 0) {
+                data.actividades.forEach(a => {
+                    actHtml += `<option value="${a.id}">${a.nombre}</option>`;
+                });
+            }
+            selectAct.innerHTML = actHtml;
+            editSelectAct.innerHTML = actHtml;
+            
+            // FECHA Y HORA
             document.getElementById('fechaHoraActividad').value = getFechaHoraLocal();
         }
 
         function renderHijos() {
             const container = document.getElementById('listaHijos');
-            if (data.hijos.length === 0) {
+            if (!data.hijos || data.hijos.length === 0) {
                 container.innerHTML = '<div class="empty-state"><p>No hay hijos</p></div>'; return;
             }
             container.innerHTML = data.hijos.map(h => `
@@ -939,7 +955,7 @@
 
         function renderActividadesGestion() {
             const container = document.getElementById('listaActividadesGestion');
-            if (data.actividades.length === 0) {
+            if (!data.actividades || data.actividades.length === 0) {
                 container.innerHTML = '<div class="empty-state"><p>No hay actividades</p></div>'; return;
             }
             container.innerHTML = data.actividades.map(a => `
@@ -955,10 +971,10 @@
         // ============================================================
         function renderReporteDiario() {
             const hoy = getFechaLocal();
-            const lista = data.registros.filter(r => {
+            const lista = data.registros ? data.registros.filter(r => {
                 const f = r.fechaHora ? r.fechaHora.split('T')[0] : r.fecha;
                 return f === hoy;
-            });
+            }) : [];
             document.getElementById('diarioCount').textContent = lista.length;
             document.getElementById('diarioLista').innerHTML = generarTabla(lista, `📅 Reporte Diario - ${formatearFechaTexto(hoy)}`);
         }
@@ -971,10 +987,10 @@
                 container.innerHTML = `<div class="empty-state"><p>📅 Selecciona ambas fechas</p></div>`;
                 return;
             }
-            const lista = data.registros.filter(r => {
+            const lista = data.registros ? data.registros.filter(r => {
                 const f = r.fechaHora ? r.fechaHora.split('T')[0] : r.fecha;
                 return f >= desde && f <= hasta;
-            });
+            }) : [];
             if (lista.length === 0) {
                 container.innerHTML = `<div class="empty-state"><span class="emoji">📭</span><p>No hay registros</p></div>`;
                 return;
@@ -989,7 +1005,7 @@
                 container.innerHTML = `<div class="empty-state"><p>👤 Selecciona un hijo</p></div>`;
                 return;
             }
-            const lista = data.registros.filter(r => r.hijoId == hijoId);
+            const lista = data.registros ? data.registros.filter(r => r.hijoId == hijoId) : [];
             if (lista.length === 0) {
                 container.innerHTML = `<div class="empty-state"><span class="emoji">📭</span><p>Este hijo no tiene actividades</p></div>`;
                 return;
@@ -998,13 +1014,13 @@
         }
 
         function renderReporteCompleto() {
-            const lista = data.registros;
+            const lista = data.registros || [];
             document.getElementById('completoCount').textContent = lista.length;
             document.getElementById('completoLista').innerHTML = generarTabla(lista, '📊 Reporte Completo - Todos los registros', true);
         }
 
         function generarTabla(lista, titulo, mostrarUsuario = false) {
-            if (lista.length === 0) {
+            if (!lista || lista.length === 0) {
                 return `<div class="empty-state"><span class="emoji">📭</span><p>No hay actividades</p></div>`;
             }
             let html = `
@@ -1023,8 +1039,8 @@
                         <tbody>
             `;
             lista.forEach((r, i) => {
-                const hijo = data.hijos.find(h => h.id == r.hijoId);
-                const act = data.actividades.find(a => a.id == r.actividadId);
+                const hijo = data.hijos ? data.hijos.find(h => h.id == r.hijoId) : null;
+                const act = data.actividades ? data.actividades.find(a => a.id == r.actividadId) : null;
                 const fh = formatearFechaHoraMostrar(r.fechaHora || r.fecha || '');
                 html += `
                     <tr>
@@ -1093,12 +1109,22 @@
             document.getElementById('formActividad').addEventListener('submit', (e) => {
                 e.preventDefault();
                 const user = getCurrentUser();
+                const hijoId = parseInt(document.getElementById('selectHijo').value);
+                const actividadId = parseInt(document.getElementById('selectActividad').value);
+                const descripcion = document.getElementById('descActividad').value.trim();
+                const fechaHora = document.getElementById('fechaHoraActividad').value;
+                
+                if (!hijoId || !actividadId || !fechaHora) {
+                    showToast('⚠️ Completa todos los campos', true);
+                    return;
+                }
+                
                 const nuevoRegistro = {
                     id: Date.now(),
-                    hijoId: parseInt(document.getElementById('selectHijo').value),
-                    actividadId: parseInt(document.getElementById('selectActividad').value),
-                    descripcion: document.getElementById('descActividad').value.trim(),
-                    fechaHora: document.getElementById('fechaHoraActividad').value,
+                    hijoId: hijoId,
+                    actividadId: actividadId,
+                    descripcion: descripcion || 'Sin descripción',
+                    fechaHora: fechaHora,
                     usuario: user ? user.username : 'anonimo'
                 };
                 data.registros.push(nuevoRegistro);
@@ -1113,7 +1139,7 @@
                 e.preventDefault();
                 const nombre = document.getElementById('nombreHijo').value.trim();
                 const edad = document.getElementById('edadHijo').value;
-                if (!nombre) return;
+                if (!nombre) { showToast('⚠️ Ingresa un nombre', true); return; }
                 data.hijos.push({ id: Date.now(), nombre, edad: edad ? parseInt(edad) : null });
                 saveDataLocal();
                 renderAll();
@@ -1124,7 +1150,7 @@
             document.getElementById('formActividadGestion').addEventListener('submit', (e) => {
                 e.preventDefault();
                 const nombre = document.getElementById('nombreActividad').value.trim();
-                if (!nombre) return;
+                if (!nombre) { showToast('⚠️ Ingresa un nombre', true); return; }
                 data.actividades.push({ id: Date.now(), nombre });
                 saveDataLocal();
                 renderAll();
@@ -1152,65 +1178,84 @@
         }
 
         // ============================================================
-        //  EXPORTAR PDF
+        //  EXPORTAR PDF CON FECHA Y HORA
         // ============================================================
         function exportarPDF(tipoReporte) {
             let lista = [], titulo = '';
+            
             if (tipoReporte === 'diario') {
                 const hoy = getFechaLocal();
-                lista = data.registros.filter(r => { const f = r.fechaHora ? r.fechaHora.split('T')[0] : r.fecha; return f === hoy; });
+                lista = data.registros ? data.registros.filter(r => {
+                    const f = r.fechaHora ? r.fechaHora.split('T')[0] : r.fecha;
+                    return f === hoy;
+                }) : [];
                 titulo = `📅 Reporte Diario - ${formatearFechaTexto(hoy)}`;
             } else if (tipoReporte === 'rango') {
                 const desde = document.getElementById('fechaDesde').value;
                 const hasta = document.getElementById('fechaHasta').value;
                 if (!desde || !hasta) { showToast('Selecciona ambas fechas', true); return; }
-                lista = data.registros.filter(r => { const f = r.fechaHora ? r.fechaHora.split('T')[0] : r.fecha; return f >= desde && f <= hasta; });
+                lista = data.registros ? data.registros.filter(r => {
+                    const f = r.fechaHora ? r.fechaHora.split('T')[0] : r.fecha;
+                    return f >= desde && f <= hasta;
+                }) : [];
                 titulo = `📆 Reporte por Rango (${formatearFechaTexto(desde)} - ${formatearFechaTexto(hasta)})`;
             } else if (tipoReporte === 'hijo') {
                 const hijoId = document.getElementById('selectHijoReporte').value;
                 if (!hijoId) { showToast('Selecciona un hijo', true); return; }
-                lista = data.registros.filter(r => r.hijoId == hijoId);
+                lista = data.registros ? data.registros.filter(r => r.hijoId == hijoId) : [];
                 titulo = `👤 Reporte de ${getNombreHijo(parseInt(hijoId))}`;
             } else if (tipoReporte === 'completo') {
-                lista = data.registros;
+                lista = data.registros || [];
                 titulo = `📊 Reporte Completo - Todos los registros`;
             }
-            if (lista.length === 0) { showToast('No hay datos', true); return; }
+            
+            if (!lista || lista.length === 0) { showToast('No hay datos para exportar', true); return; }
 
             const contenedor = document.createElement('div');
             contenedor.style.cssText = 'padding:20px;background:#fff;font-family:Arial,sans-serif;';
+            
             const tituloEl = document.createElement('h1');
             tituloEl.textContent = titulo;
             tituloEl.style.cssText = 'color:#1a2a3a;border-bottom:3px solid #4a6cf7;padding-bottom:10px;margin-bottom:16px;font-size:20px;';
             contenedor.appendChild(tituloEl);
+            
             const fechaEl = document.createElement('p');
-            fechaEl.textContent = `📅 Generado: ${formatearFechaTexto(getFechaLocal())}`;
+            fechaEl.textContent = `📅 Generado: ${formatearFechaTexto(getFechaLocal())} ${new Date().toLocaleTimeString()}`;
             fechaEl.style.cssText = 'color:#6b7a8f;font-size:13px;margin-bottom:16px;';
             contenedor.appendChild(fechaEl);
+            
             const tabla = document.createElement('table');
             tabla.style.cssText = 'width:100%;border-collapse:collapse;font-size:12px;';
             let headers = ['#', 'Hijo', 'Actividad', 'Descripción', 'Fecha', 'Hora'];
             if (tipoReporte === 'completo') headers.push('Usuario');
+            
+            let rows = '';
+            lista.forEach((r, i) => {
+                const hijo = data.hijos ? data.hijos.find(h => h.id == r.hijoId) : null;
+                const act = data.actividades ? data.actividades.find(a => a.id == r.actividadId) : null;
+                const fh = formatearFechaHoraMostrar(r.fechaHora || r.fecha || '');
+                rows += `<tr style="border-bottom:1px solid #eef2f7;">
+                    <td style="padding:8px 12px;">${i+1}</td>
+                    <td style="padding:8px 12px;">${hijo ? hijo.nombre : 'Desconocido'}</td>
+                    <td style="padding:8px 12px;">${act ? act.nombre : 'Desconocida'}</td>
+                    <td style="padding:8px 12px;">${r.descripcion || 'Sin descripción'}</td>
+                    <td style="padding:8px 12px;">${fh.fecha}</td>
+                    <td style="padding:8px 12px;">${fh.hora || '--:--'}</td>
+                    ${tipoReporte === 'completo' ? `<td style="padding:8px 12px;">${r.usuario || 'admin'}</td>` : ''}
+                </tr>`;
+            });
+            
             tabla.innerHTML = `
                 <thead><tr>${headers.map(h => `<th style="background:#1a2a3a;color:#fff;padding:8px 12px;text-align:left;">${h}</th>`).join('')}</tr></thead>
-                <tbody>${lista.map((r, i) => {
-                    const fh = formatearFechaHoraMostrar(r.fechaHora || r.fecha || '');
-                    return `<tr style="border-bottom:1px solid #eef2f7;">
-                        <td style="padding:8px 12px;">${i+1}</td>
-                        <td style="padding:8px 12px;">${getNombreHijo(r.hijoId)}</td>
-                        <td style="padding:8px 12px;">${getNombreActividad(r.actividadId)}</td>
-                        <td style="padding:8px 12px;">${r.descripcion || 'Sin descripción'}</td>
-                        <td style="padding:8px 12px;">${fh.fecha}</td>
-                        <td style="padding:8px 12px;">${fh.hora || '--:--'}</td>
-                        ${tipoReporte === 'completo' ? `<td style="padding:8px 12px;">${r.usuario || 'admin'}</td>` : ''}
-                    </tr>`;
-                }).join('')}</tbody>
+                <tbody>${rows}</tbody>
             `;
             contenedor.appendChild(tabla);
+            
             const totalEl = document.createElement('p');
             totalEl.textContent = `📊 Total: ${lista.length} registros`;
             totalEl.style.cssText = 'margin-top:16px;font-weight:600;color:#1a2a3a;text-align:right;font-size:14px;';
             contenedor.appendChild(totalEl);
+            
             const footerEl = document.createElement('p');
             footerEl.textContent = `Generado automáticamente · ${new Date().toLocaleString()}`;
             footerEl.style.cssText = 'margin-top:20px;padding-top:12px;border-top:1px solid #eef2f7;font-size:10px;color:#8a9aa8;text-align:center;';
@@ -1222,7 +1267,10 @@
                 image: { type: 'jpeg', quality: 0.98 },
                 html2canvas: { scale: 2, useCORS: true, width: 800 },
                 jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
-            }).from(contenedor).save().then(() => showToast('✅ PDF descargado')).catch(() => showToast('❌ Error', true));
+            }).from(contenedor).save().then(() => showToast('✅ PDF descargado')).catch((err) => {
+                console.error(err);
+                showToast('❌ Error al generar PDF', true);
+            });
         }
 
         function showToast(msg, isError = false) {
