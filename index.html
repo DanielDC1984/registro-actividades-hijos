@@ -19,6 +19,159 @@
             min-height: 100vh;
             overflow-x: hidden;
         }
+
+        /* ============ PANTALLA DE LOGIN ============ */
+        .login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            width: 100%;
+            background: linear-gradient(135deg, #1a2a3a 0%, #2a4a6a 100%);
+            padding: 20px;
+        }
+        .login-box {
+            background: white;
+            padding: 40px 32px;
+            border-radius: 24px;
+            max-width: 400px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            animation: fadeSlide 0.5s ease;
+        }
+        .login-box .logo {
+            text-align: center;
+            font-size: 48px;
+            margin-bottom: 8px;
+        }
+        .login-box h1 {
+            text-align: center;
+            font-size: 24px;
+            font-weight: 700;
+            color: #1a2a3a;
+            margin-bottom: 4px;
+        }
+        .login-box .subtitle {
+            text-align: center;
+            color: #8a9aa8;
+            font-size: 14px;
+            margin-bottom: 24px;
+        }
+        .login-box .form-group {
+            margin-bottom: 16px;
+        }
+        .login-box .form-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: #2a3a4a;
+            margin-bottom: 4px;
+        }
+        .login-box .form-group input {
+            width: 100%;
+            padding: 12px 14px;
+            border: 2px solid #e8edf2;
+            border-radius: 12px;
+            font-size: 15px;
+            background: #f8fafc;
+            transition: border 0.2s;
+        }
+        .login-box .form-group input:focus {
+            outline: none;
+            border-color: #4a6cf7;
+            background: white;
+        }
+        .login-box .btn-login {
+            width: 100%;
+            padding: 14px;
+            background: #4a6cf7;
+            color: white;
+            border: none;
+            border-radius: 14px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 8px;
+        }
+        .login-box .btn-login:active { transform: scale(0.97); }
+        .login-box .btn-login:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .login-box .btn-login.admin-btn {
+            background: #7c5cfc;
+        }
+        .login-box .toggle-link {
+            text-align: center;
+            margin-top: 16px;
+            font-size: 14px;
+            color: #8a9aa8;
+        }
+        .login-box .toggle-link a {
+            color: #4a6cf7;
+            cursor: pointer;
+            font-weight: 600;
+            text-decoration: none;
+        }
+        .login-box .toggle-link a:hover { text-decoration: underline; }
+        .login-box .error-msg {
+            background: #fee2e2;
+            color: #dc2626;
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 13px;
+            margin-bottom: 12px;
+            display: none;
+        }
+        .login-box .success-msg {
+            background: #dcfce7;
+            color: #16a34a;
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 13px;
+            margin-bottom: 12px;
+            display: none;
+        }
+        .login-box .info-msg {
+            background: #dbeafe;
+            color: #2563eb;
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 13px;
+            margin-bottom: 12px;
+            display: none;
+        }
+        .login-box .loading-spinner {
+            display: none;
+            text-align: center;
+            padding: 8px;
+        }
+        .login-box .loading-spinner .spinner {
+            border: 3px solid #eef2f7;
+            border-top: 3px solid #4a6cf7;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* ============ APP PRINCIPAL ============ */
+        .app-container {
+            display: none;
+            width: 100%;
+            min-height: 100vh;
+        }
+        .app-container.active {
+            display: flex;
+        }
+
+        /* ============ SIDEBAR ============ */
         .sidebar {
             position: fixed;
             top: 0;
@@ -164,7 +317,7 @@
             font-size: 13px;
             color: #8a9aa8;
         }
-        .topbar-actions { display: flex; gap: 8px; }
+        .topbar-actions { display: flex; gap: 8px; align-items: center; }
         .topbar-actions button {
             background: none;
             border: none;
@@ -173,6 +326,122 @@
             padding: 4px;
             color: #6b7a8f;
         }
+        .btn-logout {
+            background: #ef4444 !important;
+            color: white !important;
+            padding: 6px 14px !important;
+            border-radius: 12px !important;
+            font-size: 12px !important;
+            font-weight: 600 !important;
+            border: none;
+            cursor: pointer;
+        }
+        .btn-logout:hover { background: #dc2626 !important; }
+        .user-info {
+            color: rgba(255,255,255,0.6);
+            font-size: 12px;
+            padding: 0 20px;
+            margin-top: 10px;
+            border-top: 1px solid rgba(255,255,255,0.05);
+            padding-top: 12px;
+        }
+        .user-info .username {
+            color: white;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        .user-info .role-badge {
+            display: inline-block;
+            padding: 2px 12px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 600;
+            margin-top: 4px;
+        }
+        .user-info .role-badge.admin {
+            background: #7c5cfc;
+            color: white;
+        }
+        .user-info .role-badge.user {
+            background: #4a6cf7;
+            color: white;
+        }
+
+        /* ============ ADMIN PANEL ============ */
+        .admin-panel {
+            background: white;
+            border-radius: 14px;
+            padding: 16px;
+            margin-top: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+        .admin-panel h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1a2a3a;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .admin-panel .pending-user {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 12px;
+            background: #f8fafc;
+            border-radius: 10px;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .admin-panel .pending-user .user-data {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .admin-panel .pending-user .user-data .name {
+            font-weight: 600;
+            color: #1a2a3a;
+        }
+        .admin-panel .pending-user .user-data .user-pass {
+            font-size: 12px;
+            color: #8a9aa8;
+        }
+        .admin-panel .pending-user .user-data .pending-badge {
+            background: #f59e0b;
+            color: white;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+        .admin-panel .pending-user .actions {
+            display: flex;
+            gap: 6px;
+        }
+        .admin-panel .pending-user .actions button {
+            padding: 4px 14px;
+            border: none;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .admin-panel .pending-user .actions .btn-approve {
+            background: #0ca76b;
+            color: white;
+        }
+        .admin-panel .pending-user .actions .btn-approve:hover { background: #0a8a59; }
+        .admin-panel .pending-user .actions .btn-reject {
+            background: #ef4444;
+            color: white;
+        }
+        .admin-panel .pending-user .actions .btn-reject:hover { background: #dc2626; }
+
+        /* ============ RESTO DE ESTILOS ============ */
         .view {
             display: none;
             animation: fadeSlide 0.3s ease;
@@ -290,7 +559,6 @@
             margin-top: 12px;
             overflow-x: auto;
         }
-        
         .tabla-reporte {
             width: 100%;
             border-collapse: collapse;
@@ -315,9 +583,7 @@
             border-bottom: 1px solid #eef2f7;
             transition: background 0.15s;
         }
-        .tabla-reporte tbody tr:hover {
-            background: #f8fafc;
-        }
+        .tabla-reporte tbody tr:hover { background: #f8fafc; }
         .tabla-reporte tbody td {
             padding: 12px 14px;
             font-size: 14px;
@@ -328,9 +594,7 @@
             white-space: nowrap;
             text-align: center;
         }
-        .tabla-reporte .col-acciones button {
-            margin: 0 2px;
-        }
+        .tabla-reporte .col-acciones button { margin: 0 2px; }
         .tabla-reporte .badge-fecha {
             background: #eef2f7;
             padding: 2px 12px;
@@ -358,11 +622,6 @@
             max-width: 200px;
             word-wrap: break-word;
         }
-        .tabla-reporte .sin-datos {
-            text-align: center;
-            padding: 30px;
-            color: #8a9aa8;
-        }
         .reporte-titulo {
             font-size: 16px;
             font-weight: 600;
@@ -382,37 +641,6 @@
             font-weight: 400;
             color: #6b7a8f;
         }
-        
-        @media (max-width: 768px) {
-            .tabla-reporte {
-                font-size: 13px;
-                min-width: 400px;
-            }
-            .tabla-reporte thead th,
-            .tabla-reporte tbody td {
-                padding: 8px 10px;
-            }
-            .tabla-reporte .descripcion-cell {
-                max-width: 100px;
-            }
-            .reporte-titulo {
-                font-size: 14px;
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 4px;
-            }
-        }
-        @media (max-width: 480px) {
-            .tabla-reporte {
-                font-size: 12px;
-                min-width: 320px;
-            }
-            .tabla-reporte thead th,
-            .tabla-reporte tbody td {
-                padding: 6px 8px;
-            }
-        }
-
         .child-card {
             background: white;
             padding: 16px;
@@ -554,7 +782,7 @@
             transition: all 0.2s;
         }
         .modal-content .modal-actions .btn-secondary:active { transform: scale(0.97); }
-        
+
         @media (min-width: 768px) {
             .sidebar {
                 transform: translateX(0) !important;
@@ -580,227 +808,313 @@
             .main-content { padding: 12px; }
             .view-actions { flex-direction: column; }
             .btn-pdf { width: 100%; justify-content: center; }
+            .login-box { padding: 28px 20px; }
+            .admin-panel .pending-user { flex-direction: column; align-items: stretch; }
+            .admin-panel .pending-user .actions { justify-content: flex-end; }
         }
     </style>
 </head>
 <body>
 
-    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    <!-- ============================================================
+    PANTALLA DE LOGIN
+    ============================================================ -->
+    <div class="login-container" id="loginContainer">
+        <div class="login-box">
+            <div class="logo">📋</div>
+            <h1>Registro de Actividades</h1>
+            <p class="subtitle" id="loginSubtitle">Inicia sesión para gestionar las actividades</p>
 
-    <!-- MODAL PARA EDITAR -->
-    <div class="modal-overlay" id="modalEditar">
-        <div class="modal-content">
-            <div class="modal-title">✏️ Editar Registro</div>
-            <form id="formEditar">
-                <div class="form-group">
-                    <label>👤 Hijo</label>
-                    <select id="editSelectHijo" required>
-                        <option value="">Seleccionar...</option>
-                    </select>
+            <div class="error-msg" id="loginError"></div>
+            <div class="success-msg" id="loginSuccess"></div>
+            <div class="info-msg" id="loginInfo"></div>
+
+            <form id="loginForm">
+                <div id="loginFields">
+                    <div class="form-group">
+                        <label>👤 Usuario</label>
+                        <input type="text" id="loginUsername" placeholder="Ej: juan123" required>
+                    </div>
+                    <div class="form-group">
+                        <label>🔒 Contraseña</label>
+                        <input type="password" id="loginPassword" placeholder="Mínimo 6 caracteres" required minlength="6">
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label>🎯 Actividad</label>
-                    <select id="editSelectActividad" required>
-                        <option value="">Seleccionar...</option>
-                    </select>
+                <div class="loading-spinner" id="loginSpinner">
+                    <div class="spinner"></div>
+                    <p style="margin-top:8px; color:#8a9aa8; font-size:13px;">Cargando...</p>
                 </div>
-                <div class="form-group">
-                    <label>📝 Descripción</label>
-                    <textarea id="editDescripcion" placeholder="Detalles de la actividad..." rows="2"></textarea>
-                </div>
-                <div class="form-group">
-                    <label>📅 Fecha</label>
-                    <input type="date" id="editFecha" required>
-                </div>
-                <input type="hidden" id="editRegistroId">
-                <div class="modal-actions">
-                    <button type="button" class="btn-secondary" onclick="cerrarModalEditar()">Cancelar</button>
-                    <button type="submit" class="btn-primary">💾 Guardar Cambios</button>
-                </div>
+                <button type="submit" class="btn-login" id="loginBtn">🚀 Iniciar Sesión</button>
             </form>
+
+            <div class="toggle-link">
+                <a id="toggleAuthLink">📝 Registrarme</a>
+            </div>
+            
+            <div style="margin-top:12px; text-align:center; font-size:12px; color:#8a9aa8;">
+                <span id="adminHint">🔑 Admin: <strong>admin</strong> | Contraseña: <strong>admin123</strong></span>
+            </div>
         </div>
     </div>
 
-    <nav class="sidebar" id="sidebar">
-        <div class="sidebar-header">
-            <h2>📋 Menú <span>v1.4</span></h2>
-            <p>Registro de actividades</p>
-        </div>
+    <!-- ============================================================
+    APLICACIÓN PRINCIPAL
+    ============================================================ -->
+    <div class="app-container" id="appContainer">
 
-        <div class="sidebar-group">
-            <div class="sidebar-item active" data-view="registrar">
-                <div class="icon primary">📝</div>
-                <div class="info">
-                    <div class="name">Registrar Actividad</div>
-                    <div class="desc">Acceso directo</div>
-                </div>
-            </div>
-        </div>
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-        <div class="sidebar-group">
-            <div class="sidebar-group-label">📊 Reportes</div>
-            <div class="sidebar-item" data-view="diario">
-                <div class="icon green">📅</div>
-                <div class="info">
-                    <div class="name">Reporte Diario</div>
-                    <div class="desc">Actividades de hoy</div>
-                </div>
-            </div>
-            <div class="sidebar-item" data-view="rango">
-                <div class="icon purple">📆</div>
-                <div class="info">
-                    <div class="name">Reporte por Rango</div>
-                    <div class="desc">Filtra por fechas</div>
-                </div>
-            </div>
-            <div class="sidebar-item" data-view="hijo">
-                <div class="icon orange">👤</div>
-                <div class="info">
-                    <div class="name">Reporte por Hijo</div>
-                    <div class="desc">Actividades por niño</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="sidebar-group">
-            <div class="sidebar-group-label">⚙️ Gestión</div>
-            <div class="sidebar-item" data-view="hijos">
-                <div class="icon blue">👨‍👦</div>
-                <div class="info">
-                    <div class="name">Hijos</div>
-                    <div class="desc">Administrar niños</div>
-                </div>
-                <span class="badge" id="hijosCount">0</span>
-            </div>
-            <div class="sidebar-item" data-view="actividades">
-                <div class="icon red">🎯</div>
-                <div class="info">
-                    <div class="name">Actividades</div>
-                    <div class="desc">Gestionar actividades</div>
-                </div>
-                <span class="badge" id="actividadesCount">0</span>
+        <!-- MODAL PARA EDITAR -->
+        <div class="modal-overlay" id="modalEditar">
+            <div class="modal-content">
+                <div class="modal-title">✏️ Editar Registro</div>
+                <form id="formEditar">
+                    <div class="form-group">
+                        <label>👤 Hijo</label>
+                        <select id="editSelectHijo" required>
+                            <option value="">Seleccionar...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>🎯 Actividad</label>
+                        <select id="editSelectActividad" required>
+                            <option value="">Seleccionar...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>📝 Descripción</label>
+                        <textarea id="editDescripcion" placeholder="Detalles de la actividad..." rows="2"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>📅 Fecha</label>
+                        <input type="date" id="editFecha" required>
+                    </div>
+                    <input type="hidden" id="editRegistroId">
+                    <div class="modal-actions">
+                        <button type="button" class="btn-secondary" onclick="cerrarModalEditar()">Cancelar</button>
+                        <button type="submit" class="btn-primary">💾 Guardar Cambios</button>
+                    </div>
+                </form>
             </div>
         </div>
 
-        <div style="padding: 16px 20px; margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.05);">
-            <div style="display: flex; justify-content: space-between; color: rgba(255,255,255,0.4); font-size: 12px;">
-                <span>Total registros</span>
-                <span style="color: white; font-weight: 600;" id="totalRegistros">0</span>
+        <nav class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2>📋 Menú <span>v2.0</span></h2>
+                <p>Registro de actividades</p>
             </div>
-            <div class="sync-status" style="margin-top: 12px;">
-                <span class="dot offline" id="statusDot"></span>
-                <span id="statusText" style="color: rgba(255,255,255,0.6);">Conectando...</span>
-                <button onclick="sincronizarAhora()" style="background: none; border: none; color: #4a6cf7; cursor: pointer; font-size: 12px; margin-left: auto;">↻ Sincronizar</button>
-            </div>
-        </div>
-    </nav>
 
-    <div class="main-content">
-        <div class="topbar">
-            <button class="menu-toggle" id="menuToggle" aria-label="Abrir menú">☰</button>
-            <div class="topbar-title" id="pageTitle">Registro <small>de actividades</small></div>
-            <div class="topbar-actions">
-                <button onclick="window.location.reload()" title="Recargar">🔄</button>
-            </div>
-        </div>
-
-        <div class="view active" id="view-registrar">
-            <div class="view-title">📝 Registrar Actividad</div>
-            <form id="formActividad">
-                <div class="form-group">
-                    <label>👤 Hijo</label>
-                    <select id="selectHijo" required>
-                        <option value="">Seleccionar...</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>🎯 Actividad</label>
-                    <select id="selectActividad" required>
-                        <option value="">Seleccionar...</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>📝 Descripción</label>
-                    <textarea id="descActividad" placeholder="Detalles de la actividad..." rows="2"></textarea>
-                </div>
-                <div class="form-group">
-                    <label>📅 Fecha</label>
-                    <input type="date" id="fechaActividad" required>
-                </div>
-                <button type="submit" class="btn-primary">✅ Guardar Actividad</button>
-            </form>
-        </div>
-
-        <div class="view" id="view-diario">
-            <div class="view-title">📅 Reporte Diario <span class="badge-count" id="diarioCount">0</span></div>
-            <div class="view-actions">
-                <button class="btn-pdf" onclick="exportarPDF('diario')">📄 Exportar PDF</button>
-            </div>
-            <div id="diarioLista" class="activity-list"></div>
-        </div>
-
-        <div class="view" id="view-rango">
-            <div class="view-title">📆 Reporte por Rango</div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label>Desde</label>
-                    <input type="date" id="fechaDesde">
-                </div>
-                <div class="form-group">
-                    <label>Hasta</label>
-                    <input type="date" id="fechaHasta">
+            <div class="sidebar-group">
+                <div class="sidebar-item active" data-view="registrar">
+                    <div class="icon primary">📝</div>
+                    <div class="info">
+                        <div class="name">Registrar Actividad</div>
+                        <div class="desc">Acceso directo</div>
+                    </div>
                 </div>
             </div>
-            <button class="btn-primary" id="btnFiltrarRango" style="margin-bottom:15px;">🔍 Filtrar Rango</button>
-            <div class="view-actions">
-                <button class="btn-pdf" onclick="exportarPDF('rango')">📄 Exportar PDF</button>
-            </div>
-            <div id="rangoLista" class="activity-list"></div>
-        </div>
 
-        <div class="view" id="view-hijo">
-            <div class="view-title">👤 Reporte por Hijo</div>
-            <div class="form-group">
-                <label>Seleccionar Hijo</label>
-                <select id="selectHijoReporte">
-                    <option value="">Seleccionar...</option>
-                </select>
+            <div class="sidebar-group">
+                <div class="sidebar-group-label">📊 Reportes</div>
+                <div class="sidebar-item" data-view="diario">
+                    <div class="icon green">📅</div>
+                    <div class="info">
+                        <div class="name">Reporte Diario</div>
+                        <div class="desc">Actividades de hoy</div>
+                    </div>
+                </div>
+                <div class="sidebar-item" data-view="rango">
+                    <div class="icon purple">📆</div>
+                    <div class="info">
+                        <div class="name">Reporte por Rango</div>
+                        <div class="desc">Filtra por fechas</div>
+                    </div>
+                </div>
+                <div class="sidebar-item" data-view="hijo">
+                    <div class="icon orange">👤</div>
+                    <div class="info">
+                        <div class="name">Reporte por Hijo</div>
+                        <div class="desc">Actividades por niño</div>
+                    </div>
+                </div>
             </div>
-            <button class="btn-primary" id="btnFiltrarHijo" style="margin-bottom:15px;">🔍 Filtrar por Hijo</button>
-            <div class="view-actions">
-                <button class="btn-pdf" onclick="exportarPDF('hijo')">📄 Exportar PDF</button>
-            </div>
-            <div id="hijoLista" class="activity-list"></div>
-        </div>
 
-        <div class="view" id="view-hijos">
-            <div class="view-title">👨‍👦 Hijos</div>
-            <form id="formHijo">
+            <!-- Panel de Admin (solo visible para admin) -->
+            <div class="sidebar-group" id="adminPanelGroup" style="display:none;">
+                <div class="sidebar-group-label">👑 Administración</div>
+                <div class="sidebar-item" data-view="admin">
+                    <div class="icon purple">👥</div>
+                    <div class="info">
+                        <div class="name">Gestionar Usuarios</div>
+                        <div class="desc">Aprobar o rechazar registros</div>
+                    </div>
+                    <span class="badge" id="pendingCount">0</span>
+                </div>
+            </div>
+
+            <div class="sidebar-group">
+                <div class="sidebar-group-label">⚙️ Gestión</div>
+                <div class="sidebar-item" data-view="hijos">
+                    <div class="icon blue">👨‍👦</div>
+                    <div class="info">
+                        <div class="name">Hijos</div>
+                        <div class="desc">Administrar niños</div>
+                    </div>
+                    <span class="badge" id="hijosCount">0</span>
+                </div>
+                <div class="sidebar-item" data-view="actividades">
+                    <div class="icon red">🎯</div>
+                    <div class="info">
+                        <div class="name">Actividades</div>
+                        <div class="desc">Gestionar actividades</div>
+                    </div>
+                    <span class="badge" id="actividadesCount">0</span>
+                </div>
+            </div>
+
+            <div style="padding: 16px 20px; margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.05);">
+                <div style="display: flex; justify-content: space-between; color: rgba(255,255,255,0.4); font-size: 12px;">
+                    <span>Total registros</span>
+                    <span style="color: white; font-weight: 600;" id="totalRegistros">0</span>
+                </div>
+                <div class="sync-status" style="margin-top: 12px;">
+                    <span class="dot online" id="statusDot"></span>
+                    <span id="statusText" style="color: rgba(255,255,255,0.6);">Conectado</span>
+                </div>
+            </div>
+
+            <div class="user-info">
+                <div>👤 <span class="username" id="userDisplayName">usuario</span></div>
+                <div><span class="role-badge user" id="userRoleBadge">Usuario</span></div>
+                <button onclick="cerrarSesion()" style="margin-top:8px; background:#ef4444; color:white; border:none; padding:6px 16px; border-radius:10px; font-size:12px; font-weight:600; cursor:pointer; width:100%;">🚪 Cerrar Sesión</button>
+            </div>
+        </nav>
+
+        <div class="main-content">
+            <div class="topbar">
+                <button class="menu-toggle" id="menuToggle" aria-label="Abrir menú">☰</button>
+                <div class="topbar-title" id="pageTitle">Registro <small>de actividades</small></div>
+                <div class="topbar-actions">
+                    <button onclick="window.location.reload()" title="Recargar">🔄</button>
+                </div>
+            </div>
+
+            <!-- VISTA REGISTRAR -->
+            <div class="view active" id="view-registrar">
+                <div class="view-title">📝 Registrar Actividad</div>
+                <form id="formActividad">
+                    <div class="form-group">
+                        <label>👤 Hijo</label>
+                        <select id="selectHijo" required>
+                            <option value="">Seleccionar...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>🎯 Actividad</label>
+                        <select id="selectActividad" required>
+                            <option value="">Seleccionar...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>📝 Descripción</label>
+                        <textarea id="descActividad" placeholder="Detalles de la actividad..." rows="2"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>📅 Fecha</label>
+                        <input type="date" id="fechaActividad" required>
+                    </div>
+                    <button type="submit" class="btn-primary">✅ Guardar Actividad</button>
+                </form>
+            </div>
+
+            <!-- VISTA ADMIN -->
+            <div class="view" id="view-admin">
+                <div class="view-title">👑 Gestionar Usuarios <span class="badge-count" id="adminPendingCount">0</span></div>
+                <p style="color:#6b7a8f; margin-bottom:16px; font-size:14px;">Aquí puedes aprobar o rechazar las solicitudes de registro de nuevos usuarios.</p>
+                <div id="adminUserList" class="admin-panel">
+                    <div class="empty-state">
+                        <span class="emoji">✅</span>
+                        <p>No hay usuarios pendientes de aprobación</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VISTA DIARIO -->
+            <div class="view" id="view-diario">
+                <div class="view-title">📅 Reporte Diario <span class="badge-count" id="diarioCount">0</span></div>
+                <div class="view-actions">
+                    <button class="btn-pdf" onclick="exportarPDF('diario')">📄 Exportar PDF</button>
+                </div>
+                <div id="diarioLista" class="activity-list"></div>
+            </div>
+
+            <!-- VISTA RANGO -->
+            <div class="view" id="view-rango">
+                <div class="view-title">📆 Reporte por Rango</div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label>Nombre</label>
-                        <input type="text" id="nombreHijo" placeholder="Ej: Mateo" required>
+                        <label>Desde</label>
+                        <input type="date" id="fechaDesde">
                     </div>
                     <div class="form-group">
-                        <label>Edad</label>
-                        <input type="number" id="edadHijo" placeholder="Ej: 5" min="0" max="18">
+                        <label>Hasta</label>
+                        <input type="date" id="fechaHasta">
                     </div>
                 </div>
-                <button type="submit" class="btn-primary">➕ Agregar Hijo</button>
-            </form>
-            <div id="listaHijos" style="margin-top:16px;"></div>
-        </div>
-
-        <div class="view" id="view-actividades">
-            <div class="view-title">🎯 Actividades</div>
-            <form id="formActividadGestion">
-                <div class="form-group">
-                    <label>Nombre de la actividad</label>
-                    <input type="text" id="nombreActividad" placeholder="Ej: Lectura, Deporte..." required>
+                <button class="btn-primary" id="btnFiltrarRango" style="margin-bottom:15px;">🔍 Filtrar Rango</button>
+                <div class="view-actions">
+                    <button class="btn-pdf" onclick="exportarPDF('rango')">📄 Exportar PDF</button>
                 </div>
-                <button type="submit" class="btn-primary">➕ Agregar Actividad</button>
-            </form>
-            <div id="listaActividadesGestion" style="margin-top:16px;"></div>
+                <div id="rangoLista" class="activity-list"></div>
+            </div>
+
+            <!-- VISTA HIJO -->
+            <div class="view" id="view-hijo">
+                <div class="view-title">👤 Reporte por Hijo</div>
+                <div class="form-group">
+                    <label>Seleccionar Hijo</label>
+                    <select id="selectHijoReporte">
+                        <option value="">Seleccionar...</option>
+                    </select>
+                </div>
+                <button class="btn-primary" id="btnFiltrarHijo" style="margin-bottom:15px;">🔍 Filtrar por Hijo</button>
+                <div class="view-actions">
+                    <button class="btn-pdf" onclick="exportarPDF('hijo')">📄 Exportar PDF</button>
+                </div>
+                <div id="hijoLista" class="activity-list"></div>
+            </div>
+
+            <!-- VISTA HIJOS -->
+            <div class="view" id="view-hijos">
+                <div class="view-title">👨‍👦 Hijos</div>
+                <form id="formHijo">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Nombre</label>
+                            <input type="text" id="nombreHijo" placeholder="Ej: Mateo" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Edad</label>
+                            <input type="number" id="edadHijo" placeholder="Ej: 5" min="0" max="18">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-primary">➕ Agregar Hijo</button>
+                </form>
+                <div id="listaHijos" style="margin-top:16px;"></div>
+            </div>
+
+            <!-- VISTA ACTIVIDADES -->
+            <div class="view" id="view-actividades">
+                <div class="view-title">🎯 Actividades</div>
+                <form id="formActividadGestion">
+                    <div class="form-group">
+                        <label>Nombre de la actividad</label>
+                        <input type="text" id="nombreActividad" placeholder="Ej: Lectura, Deporte..." required>
+                    </div>
+                    <button type="submit" class="btn-primary">➕ Agregar Actividad</button>
+                </form>
+                <div id="listaActividadesGestion" style="margin-top:16px;"></div>
+            </div>
         </div>
     </div>
 
@@ -808,15 +1122,207 @@
 
     <script>
         // ============================================================
-        // 🔥 CONFIGURACIÓN DE SUPABASE
+        // 🔥 CONFIGURACIÓN
         // ============================================================
-        const SUPABASE_URL = "https://gomgfwqqvufxzkcsfgkf.supabase.co";
-        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdvbWdmd3FxdnVmeHprY3NmZ2tmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM0NTgyMTgsImV4cCI6MjA5OTAzNDIxOH0.HpRb8p4EIJSQg6xjQx2LO2TJt8L6eG5FOZjnxkqeK_s";
+        const ADMIN_USERNAME = 'admin';
+        const ADMIN_PASSWORD = 'admin123';
         
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        const FAMILIA_ID = 'familia_default';
-        
-        let data = { hijos: [], actividades: [], registros: [] };
+        // ============================================================
+        // 📋 SISTEMA DE USUARIOS (LocalStorage)
+        // ============================================================
+        function getUsers() {
+            const stored = localStorage.getItem('usuarios_registrados');
+            if (stored) {
+                try { return JSON.parse(stored); } catch(e) {}
+            }
+            // Usuario admin por defecto
+            const defaultUsers = [
+                { username: 'admin', password: 'admin123', role: 'admin', approved: true }
+            ];
+            localStorage.setItem('usuarios_registrados', JSON.stringify(defaultUsers));
+            return defaultUsers;
+        }
+
+        function saveUsers(users) {
+            localStorage.setItem('usuarios_registrados', JSON.stringify(users));
+        }
+
+        function getCurrentUser() {
+            const stored = localStorage.getItem('usuario_actual');
+            if (stored) {
+                try { return JSON.parse(stored); } catch(e) {}
+            }
+            return null;
+        }
+
+        function setCurrentUser(user) {
+            localStorage.setItem('usuario_actual', JSON.stringify(user));
+        }
+
+        function clearCurrentUser() {
+            localStorage.removeItem('usuario_actual');
+        }
+
+        // ============================================================
+        // 🔐 FUNCIONES DE AUTENTICACIÓN
+        // ============================================================
+        function mostrarLogin() {
+            document.getElementById('loginContainer').style.display = 'flex';
+            document.getElementById('appContainer').classList.remove('active');
+        }
+
+        function mostrarApp() {
+            document.getElementById('loginContainer').style.display = 'none';
+            document.getElementById('appContainer').classList.add('active');
+            cargarDatosUsuario();
+            actualizarUI();
+        }
+
+        function iniciarSesion(username, password) {
+            const users = getUsers();
+            const user = users.find(u => u.username === username && u.password === password);
+            
+            if (!user) {
+                mostrarError('❌ Usuario o contraseña incorrectos');
+                return false;
+            }
+            
+            if (!user.approved) {
+                mostrarInfo('⏳ Tu cuenta está pendiente de aprobación por el administrador');
+                return false;
+            }
+            
+            setCurrentUser(user);
+            document.getElementById('userDisplayName').textContent = user.username;
+            mostrarApp();
+            showToast('✅ Sesión iniciada correctamente');
+            return true;
+        }
+
+        function registrarUsuario(username, password) {
+            const users = getUsers();
+            
+            // Verificar si el usuario ya existe
+            if (users.find(u => u.username === username)) {
+                mostrarError('❌ El usuario ya existe. Elige otro nombre.');
+                return false;
+            }
+            
+            // Crear usuario pendiente de aprobación
+            users.push({
+                username: username,
+                password: password,
+                role: 'user',
+                approved: false
+            });
+            
+            saveUsers(users);
+            mostrarExito('✅ Registro exitoso. Espera la aprobación del administrador.');
+            
+            // Cambiar a modo login
+            setTimeout(() => {
+                document.getElementById('loginSuccess').style.display = 'none';
+                if (!isRegisterMode) toggleAuthMode();
+            }, 3000);
+            
+            return true;
+        }
+
+        function cerrarSesion() {
+            clearCurrentUser();
+            mostrarLogin();
+            showToast('👋 Sesión cerrada');
+        }
+
+        // ============================================================
+        // 📋 ADMIN - GESTIÓN DE USUARIOS PENDIENTES
+        // ============================================================
+        function getPendingUsers() {
+            const users = getUsers();
+            return users.filter(u => u.role === 'user' && !u.approved);
+        }
+
+        function aprobarUsuario(username) {
+            const users = getUsers();
+            const user = users.find(u => u.username === username);
+            if (user) {
+                user.approved = true;
+                saveUsers(users);
+                renderAdminPanel();
+                actualizarContadoresAdmin();
+                showToast(`✅ Usuario "${username}" aprobado`);
+            }
+        }
+
+        function rechazarUsuario(username) {
+            if (!confirm(`¿Eliminar la solicitud de "${username}"?`)) return;
+            let users = getUsers();
+            users = users.filter(u => u.username !== username);
+            saveUsers(users);
+            renderAdminPanel();
+            actualizarContadoresAdmin();
+            showToast(`🗑️ Solicitud de "${username}" rechazada`);
+        }
+
+        // ============================================================
+        // 🎨 UI - TOGGLE LOGIN/REGISTER
+        // ============================================================
+        let isRegisterMode = false;
+
+        function toggleAuthMode() {
+            isRegisterMode = !isRegisterMode;
+            const link = document.getElementById('toggleAuthLink');
+            const btn = document.getElementById('loginBtn');
+            const title = document.querySelector('.login-box h1');
+            const subtitle = document.getElementById('loginSubtitle');
+            const adminHint = document.getElementById('adminHint');
+            
+            if (isRegisterMode) {
+                link.textContent = '← Volver a Iniciar Sesión';
+                btn.textContent = '📝 Registrarme';
+                title.textContent = 'Crear Cuenta';
+                subtitle.textContent = 'Regístrate para solicitar acceso';
+                adminHint.style.display = 'none';
+                document.getElementById('loginFields').style.display = 'block';
+            } else {
+                link.textContent = '📝 Registrarme';
+                btn.textContent = '🚀 Iniciar Sesión';
+                title.textContent = 'Registro de Actividades';
+                subtitle.textContent = 'Inicia sesión para gestionar las actividades';
+                adminHint.style.display = 'block';
+                document.getElementById('loginFields').style.display = 'block';
+            }
+            document.getElementById('loginError').style.display = 'none';
+            document.getElementById('loginSuccess').style.display = 'none';
+            document.getElementById('loginInfo').style.display = 'none';
+        }
+
+        // ============================================================
+        // 📢 MENSAJES DE LOGIN
+        // ============================================================
+        function mostrarError(msg) {
+            const el = document.getElementById('loginError');
+            el.textContent = msg;
+            el.style.display = 'block';
+            document.getElementById('loginSuccess').style.display = 'none';
+            document.getElementById('loginInfo').style.display = 'none';
+        }
+
+        function mostrarExito(msg) {
+            const el = document.getElementById('loginSuccess');
+            el.textContent = msg;
+            el.style.display = 'block';
+            document.getElementById('loginError').style.display = 'none';
+            document.getElementById('loginInfo').style.display = 'none';
+        }
+
+        function mostrarInfo(msg) {
+            const el = document.getElementById('loginInfo');
+            el.textContent = msg;
+            el.style.display = 'block';
+            document.getElementById('loginError').style.display = 'none';
+            document.getElementById('loginSuccess').style.display = 'none';
+        }
 
         // ============================================================
         // 🕒 FUNCIONES DE FECHA
@@ -832,7 +1338,6 @@
         function formatearFechaMostrar(fecha) {
             if (!fecha) return '';
             const partes = fecha.split('-');
-            // Formato DD/MM/YYYY completo
             return `${partes[2]}/${partes[1]}/${partes[0]}`;
         }
 
@@ -854,46 +1359,116 @@
         }
 
         // ============================================================
-        //  INICIALIZACIÓN
+        // 📊 DATOS DEL USUARIO
         // ============================================================
-        document.addEventListener('DOMContentLoaded', () => {
-            initMenu();
-            initForms();
+        let data = { hijos: [], actividades: [], registros: [] };
+
+        function getStorageKey() {
+            const user = getCurrentUser();
+            return `actividadesData_${user ? user.username : 'anonimo'}`;
+        }
+
+        function loadData() {
+            const stored = localStorage.getItem(getStorageKey());
+            if (stored) {
+                try { data = JSON.parse(stored); } catch(e) {}
+            }
+            if (data.hijos.length === 0) {
+                data.hijos = [
+                    { id: 1, nombre: 'Mateo', edad: 5 },
+                    { id: 2, nombre: 'Sofía', edad: 3 }
+                ];
+            }
+            if (data.actividades.length === 0) {
+                data.actividades = [
+                    { id: 1, nombre: 'Lectura' },
+                    { id: 2, nombre: 'Dibujo' },
+                    { id: 3, nombre: 'Deporte' },
+                    { id: 4, nombre: 'Música' }
+                ];
+            }
+            if (data.registros.length === 0) {
+                const hoy = getFechaLocal();
+                data.registros = [
+                    { id: 1, hijoId: 1, actividadId: 1, descripcion: 'Leyó 10 páginas', fecha: hoy },
+                    { id: 2, hijoId: 2, actividadId: 2, descripcion: 'Dibujó un paisaje', fecha: hoy }
+                ];
+            }
+            saveDataLocal();
+        }
+
+        function saveDataLocal() {
+            localStorage.setItem(getStorageKey(), JSON.stringify(data));
+            actualizarContadores();
+        }
+
+        function cargarDatosUsuario() {
             loadData();
-            activarTiempoReal();
-
-            document.getElementById('btnFiltrarRango').addEventListener('click', renderReporteRango);
-            document.getElementById('btnFiltrarHijo').addEventListener('click', renderReporteHijo);
-
-            document.getElementById('formEditar').addEventListener('submit', guardarEdicion);
-        });
+            renderAll();
+        }
 
         // ============================================================
-        //  TIEMPO REAL
+        // 🎨 ACTUALIZAR UI
         // ============================================================
-        function activarTiempoReal() {
-            supabaseClient
-                .channel('cambios-familia')
-                .on('postgres_changes', { 
-                    event: 'UPDATE', 
-                    schema: 'public', 
-                    table: 'familias', 
-                    filter: `id=eq.${FAMILIA_ID}` 
-                }, payload => {
-                    if (payload.new) {
-                        data.hijos = payload.new.hijos || [];
-                        data.actividades = payload.new.actividades || [];
-                        data.registros = payload.new.registros || [];
-                        saveDataLocal(false);
-                        renderAll();
-                        showToast('🔄 Datos sincronizados en tiempo real');
-                    }
-                })
-                .subscribe((status) => {
-                    if (status === 'SUBSCRIBED') {
-                        console.log('✅ Escuchando cambios automáticos...');
-                    }
-                });
+        function actualizarUI() {
+            const user = getCurrentUser();
+            if (!user) return;
+            
+            // Mostrar/ocultar panel de admin
+            const adminPanel = document.getElementById('adminPanelGroup');
+            const roleBadge = document.getElementById('userRoleBadge');
+            
+            if (user.role === 'admin') {
+                adminPanel.style.display = 'block';
+                roleBadge.textContent = 'Administrador';
+                roleBadge.className = 'role-badge admin';
+                renderAdminPanel();
+                actualizarContadoresAdmin();
+            } else {
+                adminPanel.style.display = 'none';
+                roleBadge.textContent = 'Usuario';
+                roleBadge.className = 'role-badge user';
+            }
+        }
+
+        function actualizarContadoresAdmin() {
+            const pending = getPendingUsers();
+            document.getElementById('pendingCount').textContent = pending.length;
+            document.getElementById('adminPendingCount').textContent = pending.length;
+        }
+
+        function renderAdminPanel() {
+            const container = document.getElementById('adminUserList');
+            const pending = getPendingUsers();
+            
+            if (pending.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <span class="emoji">✅</span>
+                        <p>No hay usuarios pendientes de aprobación</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '<h3>📋 Solicitudes Pendientes</h3>';
+            pending.forEach(u => {
+                html += `
+                    <div class="pending-user">
+                        <div class="user-data">
+                            <span class="name">👤 ${u.username}</span>
+                            <span class="pending-badge">⏳ Pendiente</span>
+                        </div>
+                        <div class="actions">
+                            <button class="btn-approve" onclick="aprobarUsuario('${u.username}')">✅ Aprobar</button>
+                            <button class="btn-reject" onclick="rechazarUsuario('${u.username}')">❌ Rechazar</button>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+            actualizarContadoresAdmin();
         }
 
         // ============================================================
@@ -925,92 +1500,14 @@
                     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
                     document.getElementById(`view-${viewTarget}`).classList.add('active');
 
+                    if (viewTarget === 'admin') renderAdminPanel();
+
                     if (window.innerWidth < 768) {
                         sidebar.classList.remove('open');
                         overlay.classList.remove('show');
                     }
                 });
             });
-        }
-
-        // ============================================================
-        //  DATOS
-        // ============================================================
-        function loadData() {
-            const stored = localStorage.getItem('actividadesData');
-            if (stored) {
-                try { data = JSON.parse(stored); } catch(e) {}
-            }
-            renderAll();
-            cargarDesdeSupabase();
-        }
-
-        async function cargarDesdeSupabase() {
-            updateStatus('syncing', 'Sincronizando...');
-            try {
-                const { data: dbData, error } = await supabaseClient
-                    .from('familias')
-                    .select('*')
-                    .eq('id', FAMILIA_ID)
-                    .single();
-
-                if (error && error.code !== 'PGRST116') throw error;
-
-                if (dbData) {
-                    data.hijos = dbData.hijos || [];
-                    data.actividades = dbData.actividades || [];
-                    data.registros = dbData.registros || [];
-                    saveDataLocal(false); 
-                    renderAll();
-                    updateStatus('online', '✅ Conectado');
-                } else {
-                    updateStatus('online', '✅ Conectado (vacío)');
-                }
-            } catch (err) {
-                console.error("Error cargando:", err);
-                updateStatus('offline', '⚠️ Modo Offline');
-            }
-        }
-
-        async function guardarEnSupabase() {
-            updateStatus('syncing', '⏳ Guardando...');
-            try {
-                const { error } = await supabaseClient
-                    .from('familias')
-                    .upsert({
-                        id: FAMILIA_ID,
-                        hijos: data.hijos,
-                        actividades: data.actividades,
-                        registros: data.registros,
-                        updated_at: new Date().toISOString()
-                    });
-
-                if (error) throw error;
-                updateStatus('online', '✅ Conectado');
-            } catch (err) {
-                console.error("Error al guardar:", err);
-                updateStatus('offline', '⚠️ Sin conexión');
-                showToast('⚠️ Guardado local (sin nube)', true);
-            }
-        }
-
-        function saveDataLocal(sync = true) {
-            localStorage.setItem('actividadesData', JSON.stringify(data));
-            actualizarContadores();
-            if (sync) guardarEnSupabase();
-        }
-
-        function sincronizarAhora() {
-            cargarDesdeSupabase();
-        }
-
-        function updateStatus(state, text) {
-            const dot = document.getElementById('statusDot');
-            const label = document.getElementById('statusText');
-            if(dot && label) {
-                dot.className = `dot ${state}`;
-                label.textContent = text;
-            }
         }
 
         // ============================================================
@@ -1084,13 +1581,12 @@
         }
 
         // ============================================================
-        //  REPORTES EN FORMATO TABLA CON FECHA EN TÍTULO
+        //  REPORTES
         // ============================================================
         function renderReporteDiario() {
             const hoy = getFechaLocal();
             const lista = data.registros.filter(r => r.fecha === hoy);
             document.getElementById('diarioCount').textContent = lista.length;
-            
             const titulo = `📅 Reporte Diario - ${formatearFechaTexto(hoy)}`;
             document.getElementById('diarioLista').innerHTML = generarTabla(lista, titulo);
         }
@@ -1110,7 +1606,6 @@
                 container.innerHTML = `<div class="empty-state"><span class="emoji">📭</span><p>No hay registros en este rango</p></div>`;
                 return;
             }
-            
             const titulo = `📆 Reporte por Rango (${formatearFechaTexto(desde)} - ${formatearFechaTexto(hasta)})`;
             container.innerHTML = generarTabla(lista, titulo);
         }
@@ -1129,15 +1624,11 @@
                 container.innerHTML = `<div class="empty-state"><span class="emoji">📭</span><p>Este hijo no tiene actividades</p></div>`;
                 return;
             }
-            
             const nombreHijo = getNombreHijo(parseInt(hijoId));
             const titulo = `👤 Reporte de ${nombreHijo}`;
             container.innerHTML = generarTabla(lista, titulo);
         }
 
-        // ============================================================
-        //  GENERAR TABLA HTML CON TÍTULO Y COLUMNA DE FECHA
-        // ============================================================
         function generarTabla(lista, titulo) {
             if (lista.length === 0) {
                 return `<div class="empty-state"><span class="emoji">📭</span><p>No hay actividades</p></div>`;
@@ -1191,7 +1682,7 @@
         }
 
         // ============================================================
-        //  ELIMINAR REGISTRO
+        //  CRUD
         // ============================================================
         function eliminarRegistro(id) {
             if (!confirm('¿Eliminar este registro permanentemente?')) return;
@@ -1201,9 +1692,6 @@
             showToast('🗑️ Registro eliminado');
         }
 
-        // ============================================================
-        //  EDITAR REGISTRO
-        // ============================================================
         function abrirModalEditar(id) {
             const registro = data.registros.find(r => r.id === id);
             if (!registro) {
@@ -1258,9 +1746,6 @@
             showToast('✅ Registro actualizado');
         }
 
-        // ============================================================
-        //  FORMULARIOS
-        // ============================================================
         function initForms() {
             document.getElementById('formActividad').addEventListener('submit', (e) => {
                 e.preventDefault();
@@ -1305,9 +1790,6 @@
             });
         }
 
-        // ============================================================
-        //  ELIMINAR HIJO / ACTIVIDAD
-        // ============================================================
         function eliminarHijo(id) {
             if(confirm("¿Eliminar este hijo?")) {
                 data.hijos = data.hijos.filter(h => h.id !== id);
@@ -1327,7 +1809,7 @@
         }
 
         // ============================================================
-        //  EXPORTAR PDF - CON FECHA COMPLETA
+        //  EXPORTAR PDF
         // ============================================================
         function exportarPDF(tipoReporte) {
             let elementoId = "";
@@ -1344,111 +1826,38 @@
                 return;
             }
 
-            // Clonar el elemento para el PDF
             const clon = element.cloneNode(true);
             
-            // ESTILOS COMPLETOS PARA EL PDF - CON FECHA COMPLETA
             const estilo = document.createElement('style');
             estilo.textContent = `
-                .tabla-reporte { 
-                    width: 100%; 
-                    border-collapse: collapse; 
-                    font-size: 11px; 
-                    font-family: 'Segoe UI', Arial, sans-serif;
-                }
-                .tabla-reporte th { 
-                    background: #1a2a3a; 
-                    color: white; 
-                    padding: 10px 14px; 
-                    text-align: left; 
-                    font-weight: 600;
-                    font-size: 11px;
-                }
-                .tabla-reporte td { 
-                    padding: 10px 14px; 
-                    border-bottom: 1px solid #eef2f7; 
-                    font-size: 11px;
-                }
+                .tabla-reporte { width: 100%; border-collapse: collapse; font-size: 11px; font-family: 'Segoe UI', Arial, sans-serif; }
+                .tabla-reporte th { background: #1a2a3a; color: white; padding: 10px 14px; text-align: left; font-weight: 600; }
+                .tabla-reporte td { padding: 10px 14px; border-bottom: 1px solid #eef2f7; font-size: 11px; }
                 .tabla-reporte tr:nth-child(even) { background: #f8fafc; }
-                .tabla-reporte tr:nth-child(odd) { background: #ffffff; }
-                .badge-hijo, .badge-actividad, .badge-fecha { 
-                    display: inline-block; 
-                    padding: 3px 14px; 
-                    border-radius: 12px; 
-                    font-size: 10px;
-                    font-weight: 600;
-                    white-space: nowrap;
-                }
+                .badge-hijo, .badge-actividad, .badge-fecha { display: inline-block; padding: 3px 14px; border-radius: 12px; font-size: 10px; font-weight: 600; white-space: nowrap; }
                 .badge-hijo { background: #e8edff; color: #1a2a3a; }
                 .badge-actividad { background: #f0ecff; color: #1a2a3a; }
-                .badge-fecha { 
-                    background: #eef2f7; 
-                    color: #1a2a3a;
-                    font-weight: 500;
-                    padding: 3px 16px;
-                    min-width: 80px;
-                    text-align: center;
-                }
+                .badge-fecha { background: #eef2f7; color: #1a2a3a; font-weight: 500; padding: 3px 16px; min-width: 80px; text-align: center; }
                 .col-acciones { display: none; }
-                .descripcion-cell { 
-                    max-width: 200px; 
-                    word-wrap: break-word; 
-                }
-                .empty-state { 
-                    text-align: center; 
-                    color: #8a9aa8; 
-                    padding: 30px; 
-                }
-                .reporte-titulo { 
-                    font-size: 16px; 
-                    font-weight: 700; 
-                    padding: 12px 16px; 
-                    background: #f0f4f8; 
-                    margin-bottom: 16px;
-                    border-left: 5px solid #4a6cf7;
-                    color: #1a2a3a;
-                }
-                .fecha-info {
-                    font-weight: 400;
-                    color: #6b7a8f;
-                    font-size: 13px;
-                    float: right;
-                }
-                .footer-pdf {
-                    margin-top: 20px;
-                    font-size: 10px;
-                    color: #8a9aa8;
-                    text-align: center;
-                    border-top: 1px solid #eef2f7;
-                    padding-top: 12px;
-                }
-                /* Forzar que la columna de fecha sea visible y tenga espacio */
-                .tabla-reporte th:nth-child(5),
-                .tabla-reporte td:nth-child(5) {
-                    display: table-cell;
-                    min-width: 90px;
-                    white-space: nowrap;
-                }
+                .descripcion-cell { max-width: 200px; word-wrap: break-word; }
+                .reporte-titulo { font-size: 16px; font-weight: 700; padding: 12px 16px; background: #f0f4f8; margin-bottom: 16px; border-left: 5px solid #4a6cf7; }
+                .fecha-info { font-weight: 400; color: #6b7a8f; font-size: 13px; float: right; }
+                .tabla-reporte th:nth-child(5), .tabla-reporte td:nth-child(5) { display: table-cell; min-width: 90px; white-space: nowrap; }
             `;
             clon.prepend(estilo);
 
-            // Verificar y corregir las fechas en cada fila
             const filas = clon.querySelectorAll('tbody tr');
             filas.forEach(fila => {
                 const celdas = fila.querySelectorAll('td');
                 if (celdas.length >= 5) {
-                    // Asegurar que la fecha esté completa (DD/MM/YYYY)
                     const fechaCelda = celdas[4];
                     const fechaSpan = fechaCelda.querySelector('.badge-fecha');
                     if (fechaSpan) {
                         let fechaTexto = fechaSpan.textContent.trim();
-                        // Si la fecha está incompleta (ej: "07/07/" o "08/07/")
                         if (fechaTexto.match(/^\d{2}\/\d{2}\/$/)) {
-                            // Agregar el año actual
                             const año = new Date().getFullYear();
                             fechaSpan.textContent = fechaTexto + año;
                         }
-                        // Si la fecha solo tiene día/mes (ej: "07/07")
                         if (fechaTexto.match(/^\d{2}\/\d{2}$/)) {
                             const año = new Date().getFullYear();
                             fechaSpan.textContent = fechaTexto + '/' + año;
@@ -1458,18 +1867,17 @@
             });
 
             const opciones = {
-                margin:       10,
-                filename:     nombreArchivo,
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true, width: 950 },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
+                margin: 10,
+                filename: nombreArchivo,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true, width: 950 },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
             };
 
             showToast("⏳ Generando PDF...");
             html2pdf().set(opciones).from(clon).save().then(() => {
                 showToast("✅ PDF descargado");
-            }).catch((err) => {
-                console.error(err);
+            }).catch(() => {
                 showToast("❌ Error al generar PDF", true);
             });
         }
@@ -1483,6 +1891,55 @@
             clearTimeout(t._timeout);
             t._timeout = setTimeout(() => t.classList.remove('show'), 3000);
         }
+
+        // ============================================================
+        //  EVENTOS DE REPORTES
+        // ============================================================
+        document.getElementById('btnFiltrarRango').addEventListener('click', renderReporteRango);
+        document.getElementById('btnFiltrarHijo').addEventListener('click', renderReporteHijo);
+        document.getElementById('formEditar').addEventListener('submit', guardarEdicion);
+
+        // ============================================================
+        //  EVENTO DE LOGIN
+        // ============================================================
+        document.getElementById('loginForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value;
+
+            if (!username || !password) {
+                mostrarError('Completa todos los campos');
+                return;
+            }
+
+            if (isRegisterMode) {
+                registrarUsuario(username, password);
+            } else {
+                iniciarSesion(username, password);
+            }
+        });
+
+        document.getElementById('toggleAuthLink').addEventListener('click', toggleAuthMode);
+
+        // ============================================================
+        //  INICIALIZACIÓN
+        // ============================================================
+        document.addEventListener('DOMContentLoaded', () => {
+            initMenu();
+            initForms();
+            
+            const user = getCurrentUser();
+            if (user) {
+                const users = getUsers();
+                const validUser = users.find(u => u.username === user.username && u.approved);
+                if (validUser) {
+                    document.getElementById('userDisplayName').textContent = user.username;
+                    mostrarApp();
+                    return;
+                }
+            }
+            mostrarLogin();
+        });
     </script>
 </body>
 </html>
