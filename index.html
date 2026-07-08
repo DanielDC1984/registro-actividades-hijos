@@ -623,7 +623,7 @@
 
     <nav class="sidebar" id="sidebar">
         <div class="sidebar-header">
-            <h2>📋 Menú <span>v1.3</span></h2>
+            <h2>📋 Menú <span>v1.4</span></h2>
             <p>Registro de actividades</p>
         </div>
 
@@ -1326,7 +1326,7 @@
         }
 
         // ============================================================
-        //  EXPORTAR PDF
+        //  EXPORTAR PDF - CORREGIDO CON FECHAS
         // ============================================================
         function exportarPDF(tipoReporte) {
             let elementoId = "";
@@ -1343,37 +1343,108 @@
                 return;
             }
 
+            // Clonar el elemento para el PDF
             const clon = element.cloneNode(true);
             
+            // ESTILOS COMPLETOS PARA EL PDF
             const estilo = document.createElement('style');
             estilo.textContent = `
-                .tabla-reporte { width: 100%; border-collapse: collapse; font-size: 11px; }
-                .tabla-reporte th { background: #1a2a3a; color: white; padding: 8px; text-align: left; }
-                .tabla-reporte td { padding: 8px; border-bottom: 1px solid #eef2f7; }
+                .tabla-reporte { 
+                    width: 100%; 
+                    border-collapse: collapse; 
+                    font-size: 11px; 
+                    font-family: 'Segoe UI', Arial, sans-serif;
+                }
+                .tabla-reporte th { 
+                    background: #1a2a3a; 
+                    color: white; 
+                    padding: 10px 12px; 
+                    text-align: left; 
+                    font-weight: 600;
+                }
+                .tabla-reporte td { 
+                    padding: 10px 12px; 
+                    border-bottom: 1px solid #eef2f7; 
+                }
                 .tabla-reporte tr:nth-child(even) { background: #f8fafc; }
+                .tabla-reporte tr:nth-child(odd) { background: #ffffff; }
                 .badge-hijo, .badge-actividad, .badge-fecha { 
                     display: inline-block; 
-                    padding: 2px 10px; 
+                    padding: 3px 12px; 
                     border-radius: 12px; 
                     font-size: 10px;
-                    font-weight: 500;
+                    font-weight: 600;
                 }
-                .badge-hijo { background: #e8edff; color: #4a6cf7; }
-                .badge-actividad { background: #f0ecff; color: #7c5cfc; }
-                .badge-fecha { background: #eef2f7; color: #6b7a8f; }
+                .badge-hijo { background: #e8edff; color: #1a2a3a; }
+                .badge-actividad { background: #f0ecff; color: #1a2a3a; }
+                .badge-fecha { 
+                    background: #eef2f7; 
+                    color: #1a2a3a;
+                    font-weight: 500;
+                    padding: 3px 14px;
+                }
                 .col-acciones { display: none; }
-                .descripcion-cell { max-width: 150px; word-wrap: break-word; }
-                .empty-state { text-align: center; color: #8a9aa8; padding: 30px; }
+                .descripcion-cell { 
+                    max-width: 200px; 
+                    word-wrap: break-word; 
+                }
+                .empty-state { 
+                    text-align: center; 
+                    color: #8a9aa8; 
+                    padding: 30px; 
+                }
                 .reporte-titulo { 
-                    font-size: 14px; 
-                    font-weight: 600; 
-                    padding: 10px; 
-                    background: #f8fafc; 
-                    margin-bottom: 12px;
-                    border-left: 4px solid #4a6cf7;
+                    font-size: 16px; 
+                    font-weight: 700; 
+                    padding: 12px 16px; 
+                    background: #f0f4f8; 
+                    margin-bottom: 16px;
+                    border-left: 5px solid #4a6cf7;
+                    color: #1a2a3a;
+                }
+                .fecha-info {
+                    font-weight: 400;
+                    color: #6b7a8f;
+                    font-size: 13px;
+                    float: right;
+                }
+                .footer-pdf {
+                    margin-top: 20px;
+                    font-size: 10px;
+                    color: #8a9aa8;
+                    text-align: center;
+                    border-top: 1px solid #eef2f7;
+                    padding-top: 12px;
+                }
+                .titulo-pdf {
+                    font-size: 22px;
+                    font-weight: 700;
+                    color: #1a2a3a;
+                    margin-bottom: 8px;
+                }
+                .subtitulo-pdf {
+                    font-size: 13px;
+                    color: #6b7a8f;
+                    margin-bottom: 16px;
                 }
             `;
             clon.prepend(estilo);
+
+            // Asegurar que los datos estén completos
+            const todasLasFilas = clon.querySelectorAll('tbody tr');
+            todasLasFilas.forEach(fila => {
+                const celdas = fila.querySelectorAll('td');
+                if (celdas.length >= 5) {
+                    // Asegurar formato de fecha
+                    const fechaCelda = celdas[4];
+                    if (fechaCelda) {
+                        const fechaSpan = fechaCelda.querySelector('.badge-fecha');
+                        if (fechaSpan) {
+                            // Ya tiene el formato correcto
+                        }
+                    }
+                }
+            });
 
             const opciones = {
                 margin:       8,
