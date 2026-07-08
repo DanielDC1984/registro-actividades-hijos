@@ -291,9 +291,6 @@
             overflow-x: auto;
         }
         
-        /* ============================================================
-           ESTILOS DE TABLA PARA REPORTES
-           ============================================================ */
         .tabla-reporte {
             width: 100%;
             border-collapse: collapse;
@@ -366,8 +363,26 @@
             padding: 30px;
             color: #8a9aa8;
         }
+        .reporte-titulo {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1a2a3a;
+            margin-bottom: 12px;
+            padding: 10px 14px;
+            background: #f8fafc;
+            border-radius: 12px;
+            border-left: 4px solid #4a6cf7;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .reporte-titulo .fecha-info {
+            font-size: 13px;
+            font-weight: 400;
+            color: #6b7a8f;
+        }
         
-        /* Responsive para tabla */
         @media (max-width: 768px) {
             .tabla-reporte {
                 font-size: 13px;
@@ -379,6 +394,12 @@
             }
             .tabla-reporte .descripcion-cell {
                 max-width: 100px;
+            }
+            .reporte-titulo {
+                font-size: 14px;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 4px;
             }
         }
         @media (max-width: 480px) {
@@ -814,6 +835,13 @@
             return `${partes[2]}/${partes[1]}/${partes[0]}`;
         }
 
+        function formatearFechaTexto(fecha) {
+            if (!fecha) return '';
+            const partes = fecha.split('-');
+            const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+            return `${partes[2]} de ${meses[parseInt(partes[1]) - 1]} de ${partes[0]}`;
+        }
+
         function getNombreHijo(id) {
             const h = data.hijos.find(h => h.id === id);
             return h ? h.nombre : 'Desconocido';
@@ -1055,13 +1083,15 @@
         }
 
         // ============================================================
-        //  REPORTES EN FORMATO TABLA
+        //  REPORTES EN FORMATO TABLA CON FECHA EN TÍTULO
         // ============================================================
         function renderReporteDiario() {
             const hoy = getFechaLocal();
             const lista = data.registros.filter(r => r.fecha === hoy);
             document.getElementById('diarioCount').textContent = lista.length;
-            document.getElementById('diarioLista').innerHTML = generarTabla(lista, '📅 Reporte Diario');
+            
+            const titulo = `📅 Reporte Diario - ${formatearFechaTexto(hoy)}`;
+            document.getElementById('diarioLista').innerHTML = generarTabla(lista, titulo);
         }
 
         function renderReporteRango() {
@@ -1079,7 +1109,9 @@
                 container.innerHTML = `<div class="empty-state"><span class="emoji">📭</span><p>No hay registros en este rango</p></div>`;
                 return;
             }
-            container.innerHTML = generarTabla(lista, `📆 Reporte por Rango (${formatearFechaMostrar(desde)} - ${formatearFechaMostrar(hasta)})`);
+            
+            const titulo = `📆 Reporte por Rango (${formatearFechaTexto(desde)} - ${formatearFechaTexto(hasta)})`;
+            container.innerHTML = generarTabla(lista, titulo);
         }
 
         function renderReporteHijo() {
@@ -1096,12 +1128,14 @@
                 container.innerHTML = `<div class="empty-state"><span class="emoji">📭</span><p>Este hijo no tiene actividades</p></div>`;
                 return;
             }
+            
             const nombreHijo = getNombreHijo(parseInt(hijoId));
-            container.innerHTML = generarTabla(lista, `👤 Reporte de ${nombreHijo}`);
+            const titulo = `👤 Reporte de ${nombreHijo}`;
+            container.innerHTML = generarTabla(lista, titulo);
         }
 
         // ============================================================
-        //  GENERAR TABLA HTML
+        //  GENERAR TABLA HTML CON TÍTULO
         // ============================================================
         function generarTabla(lista, titulo) {
             if (lista.length === 0) {
@@ -1109,6 +1143,10 @@
             }
 
             let html = `
+                <div class="reporte-titulo">
+                    <span>${titulo}</span>
+                    <span class="fecha-info">📊 ${lista.length} registros</span>
+                </div>
                 <div style="overflow-x:auto; -webkit-overflow-scrolling: touch;">
                     <table class="tabla-reporte">
                         <thead>
@@ -1145,9 +1183,6 @@
             html += `
                         </tbody>
                     </table>
-                </div>
-                <div style="margin-top:12px; font-size:13px; color:#6b7a8f; text-align:right;">
-                    Total: <strong>${lista.length}</strong> registros
                 </div>
             `;
 
@@ -1291,7 +1326,7 @@
         }
 
         // ============================================================
-        //  EXPORTAR PDF (AHORA CON TABLA COMPLETA)
+        //  EXPORTAR PDF
         // ============================================================
         function exportarPDF(tipoReporte) {
             let elementoId = "";
@@ -1308,10 +1343,8 @@
                 return;
             }
 
-            // Clonar el elemento para el PDF
             const clon = element.cloneNode(true);
             
-            // Asegurar que la tabla se vea bien en el PDF
             const estilo = document.createElement('style');
             estilo.textContent = `
                 .tabla-reporte { width: 100%; border-collapse: collapse; font-size: 11px; }
@@ -1331,6 +1364,14 @@
                 .col-acciones { display: none; }
                 .descripcion-cell { max-width: 150px; word-wrap: break-word; }
                 .empty-state { text-align: center; color: #8a9aa8; padding: 30px; }
+                .reporte-titulo { 
+                    font-size: 14px; 
+                    font-weight: 600; 
+                    padding: 10px; 
+                    background: #f8fafc; 
+                    margin-bottom: 12px;
+                    border-left: 4px solid #4a6cf7;
+                }
             `;
             clon.prepend(estilo);
 
