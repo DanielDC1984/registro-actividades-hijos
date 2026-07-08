@@ -4,7 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
     <title>Registro de Actividades - Hijos</title>
+    
+    <!-- Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- Librería para PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
     <style>
         * {
             margin: 0;
@@ -311,26 +317,6 @@
             background: #3a5cd7;
         }
 
-        .btn-backup {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 20px;
-            background: #0ca76b;
-            color: white;
-            border: none;
-            border-radius: 12px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .btn-backup:active {
-            transform: scale(0.95);
-            background: #0a8a59;
-        }
-
         .btn-secondary {
             display: inline-flex;
             align-items: center;
@@ -546,7 +532,17 @@
         }
 
         .sync-status .dot.offline {
+            background: #ef4444;
+        }
+
+        .sync-status .dot.syncing {
             background: #f59e0b;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
         }
 
         #pdfContent {
@@ -612,7 +608,7 @@
                 flex-direction: column;
             }
 
-            .btn-pdf, .btn-secondary, .btn-share, .btn-backup {
+            .btn-pdf, .btn-secondary, .btn-share {
                 width: 100%;
                 justify-content: center;
             }
@@ -713,18 +709,6 @@
             color: #8a9aa8;
             text-align: center;
         }
-
-        .code-block {
-            background: #1a2a3a;
-            color: #a8d5a2;
-            padding: 12px;
-            border-radius: 8px;
-            font-family: monospace;
-            font-size: 12px;
-            overflow-x: auto;
-            margin: 10px 0;
-            word-break: break-all;
-        }
     </style>
 </head>
 <body>
@@ -798,9 +782,9 @@
                 <span style="color: white; font-weight: 600;" id="totalRegistros">0</span>
             </div>
             <div class="sync-status" style="margin-top: 12px; background: rgba(255,255,255,0.05);">
-                <span class="dot online" id="statusDot"></span>
-                <span id="statusText" style="color: rgba(255,255,255,0.8);">📱 Datos guardados localmente</span>
-                <span style="margin-left: auto; color: rgba(255,255,255,0.4); font-size: 10px;">⬇️ Exportar/Compartir</span>
+                <span class="dot offline" id="statusDot"></span>
+                <span id="statusText" style="color: rgba(255,255,255,0.6);">Conectando...</span>
+                <button onclick="sincronizarAhora()" style="background: none; border: none; color: #4a6cf7; cursor: pointer; font-size: 12px; margin-left: auto;">↻ Sincronizar</button>
             </div>
         </div>
     </nav>
@@ -850,7 +834,6 @@
             <div class="view-actions">
                 <button class="btn-pdf" onclick="exportarPDF('diario')">📄 Exportar PDF</button>
                 <button class="btn-share" onclick="compartirReporte('diario')">📤 Compartir</button>
-                <button class="btn-backup" onclick="exportarDatos()">💾 Exportar Datos</button>
             </div>
             <div id="diarioLista" class="activity-list">
                 <div class="empty-state">
@@ -877,7 +860,6 @@
             <div class="view-actions" style="margin-top:12px;">
                 <button class="btn-pdf" onclick="exportarPDF('rango')">📄 Exportar PDF</button>
                 <button class="btn-share" onclick="compartirReporte('rango')">📤 Compartir</button>
-                <button class="btn-backup" onclick="exportarDatos()">💾 Exportar Datos</button>
             </div>
             <div id="rangoLista" class="activity-list" style="margin-top:16px;"></div>
         </div>
@@ -895,7 +877,6 @@
             <div class="view-actions" style="margin-top:12px;">
                 <button class="btn-pdf" onclick="exportarPDF('hijo')">📄 Exportar PDF</button>
                 <button class="btn-share" onclick="compartirReporte('hijo')">📤 Compartir</button>
-                <button class="btn-backup" onclick="exportarDatos()">💾 Exportar Datos</button>
             </div>
             <div id="hijoLista" class="activity-list" style="margin-top:16px;"></div>
         </div>
@@ -939,16 +920,30 @@
 
     <script>
         // ============================================================
-        //  DATA LOCAL (TODOS LOS DATOS EN EL NAVEGADOR)
+        // 🔥 CONFIGURACIÓN DE SUPABASE - TUS DATOS
+        // ============================================================
+        const SUPABASE_URL = "https://gomgfwqqvufxzkcsfqkf.supabase.co";
+        const SUPABASE_ANON_KEY = "sb_publishable_y5L1au_br_Fs7Qz31R5pdQ_CT1vX_";
+        
+        // ============================================================
+        //  INICIALIZAR SUPABASE
+        // ============================================================
+        const supabase = supabase_js.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        let syncEnabled = true;
+        let sincronizando = false;
+        const FAMILIA_ID = 'familia_default';
+        
+        // ============================================================
+        //  DATA LOCAL
         // ============================================================
         let data = {
             hijos: [],
             actividades: [],
             registros: []
         };
-
+        
         // ============================================================
-        //  FUNCIONES DE PERSISTENCIA
+        //  FUNCIONES PRINCIPALES
         // ============================================================
         function loadData() {
             const stored = localStorage.getItem('actividadesData');
@@ -978,631 +973,23 @@
                     { id: 2, hijoId: 2, actividadId: 2, descripcion: 'Dibujó un paisaje', fecha: hoy }
                 ];
             }
-            saveData();
+            saveDataLocal();
         }
-
-        function saveData() {
+        
+        function saveDataLocal() {
             localStorage.setItem('actividadesData', JSON.stringify(data));
             actualizarContadores();
         }
-
+        
         function nextId(arr) {
             if (arr.length === 0) return 1;
             return Math.max(...arr.map(item => item.id)) + 1;
         }
-
+        
         // ============================================================
         //  HELPERS
         // ============================================================
         function getHijo(id) { return data.hijos.find(h => h.id === id); }
         function getActividad(id) { return data.actividades.find(a => a.id === id); }
         function getNombreHijo(id) { const h = getHijo(id); return h ? h.nombre : 'Desconocido'; }
-        function getNombreActividad(id) { const a = getActividad(id); return a ? a.nombre : 'Desconocida'; }
-
-        function formatDate(dateStr) {
-            if (!dateStr) return '';
-            const parts = dateStr.split('-');
-            return `${parts[2]}/${parts[1]}/${parts[0]}`;
-        }
-
-        function formatDateSpanish(dateStr) {
-            if (!dateStr) return '';
-            const parts = dateStr.split('-');
-            const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-            return `${parts[2]} de ${meses[parseInt(parts[1]) - 1]} de ${parts[0]}`;
-        }
-
-        function showToast(msg, isError = false) {
-            const t = document.getElementById('toast');
-            t.textContent = msg;
-            t.style.background = isError ? '#ef4444' : '#1a2a3a';
-            t.classList.add('show');
-            clearTimeout(t._timeout);
-            t._timeout = setTimeout(() => t.classList.remove('show'), 2500);
-        }
-
-        function actualizarContadores() {
-            document.getElementById('hijosCount').textContent = data.hijos.length;
-            document.getElementById('actividadesCount').textContent = data.actividades.length;
-            document.getElementById('totalRegistros').textContent = data.registros.length;
-
-            const hoy = new Date().toISOString().split('T')[0];
-            const diarioCount = data.registros.filter(r => r.fecha === hoy).length;
-            const badge = document.querySelector('#view-diario .badge-count');
-            if (badge) badge.textContent = diarioCount;
-        }
-
-        // ============================================================
-        //  NAVEGACIÓN
-        // ============================================================
-        function showView(viewId) {
-            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-            document.querySelectorAll('.sidebar-item').forEach(item => {
-                item.classList.remove('active');
-            });
-
-            if (viewId) {
-                const target = document.getElementById('view-' + viewId);
-                if (target) {
-                    target.classList.add('active');
-                    document.querySelector(`.sidebar-item[data-view="${viewId}"]`)?.classList.add('active');
-                    const item = document.querySelector(`.sidebar-item[data-view="${viewId}"]`);
-                    if (item) {
-                        const name = item.querySelector('.name')?.textContent || 'Registro';
-                        document.querySelector('.topbar-title').innerHTML = name + ' <small>de actividades</small>';
-                    }
-                    if (viewId === 'diario') renderDiario();
-                    if (viewId === 'hijos') renderListaHijos();
-                    if (viewId === 'actividades') renderListaActividadesGestion();
-                    if (viewId === 'registrar') cargarSelects();
-                    if (viewId === 'hijo') cargarSelectHijoReporte();
-                }
-                closeSidebar();
-            }
-        }
-
-        document.querySelectorAll('.sidebar-item[data-view]').forEach(item => {
-            item.addEventListener('click', function() {
-                showView(this.dataset.view);
-            });
-        });
-
-        // ============================================================
-        //  SIDEBAR TOGGLE
-        // ============================================================
-        function toggleSidebar() {
-            document.getElementById('sidebar').classList.toggle('open');
-            document.getElementById('sidebarOverlay').classList.toggle('show');
-        }
-
-        function closeSidebar() {
-            document.getElementById('sidebar').classList.remove('open');
-            document.getElementById('sidebarOverlay').classList.remove('show');
-        }
-
-        document.getElementById('menuToggle').addEventListener('click', toggleSidebar);
-        document.getElementById('sidebarOverlay').addEventListener('click', closeSidebar);
-
-        // ============================================================
-        //  REGISTRAR ACTIVIDAD
-        // ============================================================
-        function cargarSelects() {
-            const selHijo = document.getElementById('selectHijo');
-            const selAct = document.getElementById('selectActividad');
-            const fecha = document.getElementById('fechaActividad');
-
-            if (!fecha.value) {
-                fecha.value = new Date().toISOString().split('T')[0];
-            }
-
-            selHijo.innerHTML = '<option value="">Seleccionar...</option>';
-            data.hijos.forEach(h => {
-                selHijo.innerHTML += `<option value="${h.id}">${h.nombre} (${h.edad} años)</option>`;
-            });
-
-            selAct.innerHTML = '<option value="">Seleccionar...</option>';
-            data.actividades.forEach(a => {
-                selAct.innerHTML += `<option value="${a.id}">${a.nombre}</option>`;
-            });
-        }
-
-        document.getElementById('formActividad').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const hijoId = parseInt(document.getElementById('selectHijo').value);
-            const actividadId = parseInt(document.getElementById('selectActividad').value);
-            const descripcion = document.getElementById('descActividad').value.trim();
-            const fecha = document.getElementById('fechaActividad').value;
-
-            if (!hijoId || !actividadId || !fecha) {
-                showToast('⚠️ Completa todos los campos obligatorios', true);
-                return;
-            }
-
-            data.registros.push({
-                id: nextId(data.registros),
-                hijoId,
-                actividadId,
-                descripcion: descripcion || 'Sin descripción',
-                fecha
-            });
-            saveData();
-            document.getElementById('registrarMensaje').textContent = '✅ Actividad registrada correctamente';
-            setTimeout(() => document.getElementById('registrarMensaje').textContent = '', 3000);
-            this.reset();
-            cargarSelects();
-            showToast('✅ Actividad guardada');
-        });
-
-        // ============================================================
-        //  REPORTE DIARIO
-        // ============================================================
-        function renderDiario() {
-            const hoy = new Date().toISOString().split('T')[0];
-            const lista = document.getElementById('diarioLista');
-            const filtrados = data.registros.filter(r => r.fecha === hoy);
-
-            if (filtrados.length === 0) {
-                lista.innerHTML = `<div class="empty-state"><span class="emoji">📭</span><p>No hay actividades registradas hoy</p></div>`;
-                return;
-            }
-
-            let html = '';
-            filtrados.sort((a, b) => a.id - b.id);
-            filtrados.forEach(r => {
-                html += `
-                            <div class="activity-item">
-                                <div class="act-title">${getNombreHijo(r.hijoId)} — ${getNombreActividad(r.actividadId)}</div>
-                                <div class="act-meta">
-                                    <span>📝 ${r.descripcion}</span>
-                                    <span>📅 ${formatDate(r.fecha)}</span>
-                                </div>
-                            </div>
-                        `;
-            });
-            lista.innerHTML = html;
-            actualizarContadores();
-        }
-
-        // ============================================================
-        //  REPORTE POR RANGO
-        // ============================================================
-        document.getElementById('btnFiltrarRango').addEventListener('click', function() {
-            const desde = document.getElementById('fechaDesde').value;
-            const hasta = document.getElementById('fechaHasta').value;
-            const lista = document.getElementById('rangoLista');
-
-            if (!desde || !hasta) {
-                showToast('⚠️ Selecciona ambas fechas', true);
-                return;
-            }
-
-            const filtrados = data.registros.filter(r => r.fecha >= desde && r.fecha <= hasta);
-            if (filtrados.length === 0) {
-                lista.innerHTML = `<div class="empty-state"><span class="emoji">📭</span><p>No hay actividades en este rango</p></div>`;
-                return;
-            }
-
-            let html = '';
-            filtrados.sort((a, b) => a.fecha.localeCompare(b.fecha));
-            filtrados.forEach(r => {
-                html += `
-                            <div class="activity-item">
-                                <div class="act-title">${getNombreHijo(r.hijoId)} — ${getNombreActividad(r.actividadId)}</div>
-                                <div class="act-meta">
-                                    <span>📝 ${r.descripcion}</span>
-                                    <span>📅 ${formatDate(r.fecha)}</span>
-                                </div>
-                            </div>
-                        `;
-            });
-            lista.innerHTML = html;
-        });
-
-        // ============================================================
-        //  REPORTE POR HIJO
-        // ============================================================
-        function cargarSelectHijoReporte() {
-            const sel = document.getElementById('selectHijoReporte');
-            sel.innerHTML = '<option value="">Todos</option>';
-            data.hijos.forEach(h => {
-                sel.innerHTML += `<option value="${h.id}">${h.nombre}</option>`;
-            });
-        }
-
-        document.getElementById('btnFiltrarHijo').addEventListener('click', function() {
-            const hijoId = parseInt(document.getElementById('selectHijoReporte').value);
-            const lista = document.getElementById('hijoLista');
-
-            let filtrados = data.registros;
-            if (hijoId) {
-                filtrados = filtrados.filter(r => r.hijoId === hijoId);
-            }
-
-            if (filtrados.length === 0) {
-                lista.innerHTML = `<div class="empty-state"><span class="emoji">📭</span><p>No hay actividades para este filtro</p></div>`;
-                return;
-            }
-
-            let html = '';
-            filtrados.sort((a, b) => a.fecha.localeCompare(b.fecha));
-            filtrados.forEach(r => {
-                html += `
-                            <div class="activity-item">
-                                <div class="act-title">${getNombreHijo(r.hijoId)} — ${getNombreActividad(r.actividadId)}</div>
-                                <div class="act-meta">
-                                    <span>📝 ${r.descripcion}</span>
-                                    <span>📅 ${formatDate(r.fecha)}</span>
-                                </div>
-                            </div>
-                        `;
-            });
-            lista.innerHTML = html;
-        });
-
-        // ============================================================
-        //  GESTIÓN HIJOS
-        // ============================================================
-        document.getElementById('formHijo').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const nombre = document.getElementById('nombreHijo').value.trim();
-            const edad = parseInt(document.getElementById('edadHijo').value);
-
-            if (!nombre) {
-                showToast('⚠️ Ingresa un nombre', true);
-                return;
-            }
-
-            data.hijos.push({
-                id: nextId(data.hijos),
-                nombre,
-                edad: edad || 0
-            });
-            saveData();
-            renderListaHijos();
-            this.reset();
-            showToast('👶 Hijo agregado');
-            cargarSelects();
-            cargarSelectHijoReporte();
-        });
-
-        function renderListaHijos() {
-            const cont = document.getElementById('listaHijos');
-            if (data.hijos.length === 0) {
-                cont.innerHTML = `<div class="empty-state"><span class="emoji">👶</span><p>No hay hijos registrados</p></div>`;
-                return;
-            }
-            let html = '';
-            data.hijos.forEach(h => {
-                const count = data.registros.filter(r => r.hijoId === h.id).length;
-                html += `
-                            <div class="child-card">
-                                <div class="child-info">
-                                    <div class="child-name">${h.nombre}</div>
-                                    <div class="child-age">${h.edad} años · ${count} actividades</div>
-                                </div>
-                                <button class="btn-delete" data-delhijo="${h.id}">Eliminar</button>
-                            </div>
-                        `;
-            });
-            cont.innerHTML = html;
-
-            cont.querySelectorAll('[data-delhijo]').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const id = parseInt(this.dataset.delhijo);
-                    if (confirm('¿Eliminar a este hijo y todas sus actividades?')) {
-                        data.hijos = data.hijos.filter(h => h.id !== id);
-                        data.registros = data.registros.filter(r => r.hijoId !== id);
-                        saveData();
-                        renderListaHijos();
-                        cargarSelects();
-                        cargarSelectHijoReporte();
-                        showToast('🗑️ Eliminado');
-                    }
-                });
-            });
-        }
-
-        // ============================================================
-        //  GESTIÓN ACTIVIDADES
-        // ============================================================
-        document.getElementById('formActividadGestion').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const nombre = document.getElementById('nombreActividad').value.trim();
-            if (!nombre) {
-                showToast('⚠️ Ingresa un nombre de actividad', true);
-                return;
-            }
-
-            data.actividades.push({
-                id: nextId(data.actividades),
-                nombre
-            });
-            saveData();
-            renderListaActividadesGestion();
-            this.reset();
-            showToast('🎯 Actividad agregada');
-            cargarSelects();
-        });
-
-        function renderListaActividadesGestion() {
-            const cont = document.getElementById('listaActividadesGestion');
-            if (data.actividades.length === 0) {
-                cont.innerHTML = `<div class="empty-state"><span class="emoji">🎯</span><p>No hay actividades registradas</p></div>`;
-                return;
-            }
-            let html = '';
-            data.actividades.forEach(a => {
-                const count = data.registros.filter(r => r.actividadId === a.id).length;
-                html += `
-                            <div class="child-card">
-                                <div class="child-info">
-                                    <div class="child-name">${a.nombre}</div>
-                                    <div class="child-age">${count} registros</div>
-                                </div>
-                                <button class="btn-delete" data-delact="${a.id}">Eliminar</button>
-                            </div>
-                        `;
-            });
-            cont.innerHTML = html;
-
-            cont.querySelectorAll('[data-delact]').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const id = parseInt(this.dataset.delact);
-                    if (confirm('¿Eliminar esta actividad y todos sus registros?')) {
-                        data.actividades = data.actividades.filter(a => a.id !== id);
-                        data.registros = data.registros.filter(r => r.actividadId !== id);
-                        saveData();
-                        renderListaActividadesGestion();
-                        cargarSelects();
-                        showToast('🗑️ Eliminado');
-                    }
-                });
-            });
-        }
-
-        // ============================================================
-        //  EXPORTAR DATOS (para compartir entre dispositivos)
-        // ============================================================
-        function exportarDatos() {
-            const datos = JSON.stringify(data, null, 2);
-            const blob = new Blob([datos], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `datos_actividades_${new Date().toISOString().split('T')[0]}.json`;
-            a.click();
-            URL.revokeObjectURL(url);
-            showToast('✅ Datos exportados correctamente');
-        }
-
-        // ============================================================
-        //  IMPORTAR DATOS (desde otro dispositivo)
-        // ============================================================
-        function importarDatos() {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = '.json';
-            input.onchange = function(e) {
-                const file = e.target.files[0];
-                const reader = new FileReader();
-                reader.onload = function(event) {
-                    try {
-                        const importedData = JSON.parse(event.target.result);
-                        if (importedData.hijos && importedData.actividades && importedData.registros) {
-                            data = importedData;
-                            saveData();
-                            showToast('✅ Datos importados correctamente');
-                            // Recargar todas las vistas
-                            renderListaHijos();
-                            renderListaActividadesGestion();
-                            cargarSelects();
-                            cargarSelectHijoReporte();
-                            renderDiario();
-                        } else {
-                            showToast('❌ Archivo inválido', true);
-                        }
-                    } catch (error) {
-                        showToast('❌ Error al leer el archivo', true);
-                    }
-                };
-                reader.readAsText(file);
-            };
-            input.click();
-        }
-
-        // ============================================================
-        //  COMPARTIR REPORTE
-        // ============================================================
-        function compartirReporte(tipo) {
-            let htmlContent = '';
-            const titulo = document.querySelector(`#view-${tipo} .view-title`)?.textContent || 'Reporte';
-
-            // Generar HTML del reporte
-            if (tipo === 'diario') {
-                const hoy = new Date().toISOString().split('T')[0];
-                const filtrados = data.registros.filter(r => r.fecha === hoy);
-                htmlContent = generarHTMLReporte(titulo, filtrados);
-            } else if (tipo === 'rango') {
-                const desde = document.getElementById('fechaDesde').value;
-                const hasta = document.getElementById('fechaHasta').value;
-                const filtrados = data.registros.filter(r => r.fecha >= desde && r.fecha <= hasta);
-                htmlContent = generarHTMLReporte(titulo, filtrados);
-            } else if (tipo === 'hijo') {
-                const hijoId = parseInt(document.getElementById('selectHijoReporte').value);
-                let filtrados = data.registros;
-                if (hijoId) {
-                    filtrados = filtrados.filter(r => r.hijoId === hijoId);
-                }
-                htmlContent = generarHTMLReporte(titulo, filtrados);
-            }
-
-            // Crear ventana para compartir
-            const ventana = window.open('', '_blank', 'width=800,height=600');
-            ventana.document.write(`
-                        <!DOCTYPE html>
-                        <html>
-                        <head><title>${titulo}</title>
-                        <style>
-                            body { font-family: 'Segoe UI', Arial, sans-serif; padding: 30px; max-width: 800px; margin: auto; }
-                            h1 { color: #1a2a3a; border-bottom: 3px solid #4a6cf7; padding-bottom: 10px; }
-                            .meta { color: #6b7a8f; font-size: 14px; margin-bottom: 20px; }
-                            table { width: 100%; border-collapse: collapse; margin-top: 16px; }
-                            th { background: #4a6cf7; color: white; padding: 10px 12px; text-align: left; font-size: 13px; }
-                            td { padding: 10px 12px; border-bottom: 1px solid #eef2f7; font-size: 13px; }
-                            tr:nth-child(even) { background: #f8fafc; }
-                            .total { margin-top: 16px; font-weight: 600; text-align: right; }
-                            .footer { margin-top: 30px; padding-top: 16px; border-top: 1px solid #eef2f7; font-size: 12px; color: #8a9aa8; text-align: center; }
-                            @media print { .no-print { display: none; } }
-                        </style>
-                        </head>
-                        <body>
-                            ${htmlContent}
-                            <button class="no-print" onclick="window.print()" style="background:#4a6cf7;color:white;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;margin-top:20px;">🖨️ Imprimir / Guardar PDF</button>
-                            <button class="no-print" onclick="window.close()" style="background:#eef2f7;color:#1a2a3a;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;margin-top:20px;margin-left:10px;">❌ Cerrar</button>
-                            <script>
-                                // Botón para compartir
-                                document.addEventListener('DOMContentLoaded', function() {
-                                    const shareBtn = document.createElement('button');
-                                    shareBtn.className = 'no-print';
-                                    shareBtn.textContent = '📤 Compartir';
-                                    shareBtn.style.cssText = 'background:#0ca76b;color:white;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;margin-top:20px;margin-left:10px;';
-                                    shareBtn.onclick = function() {
-                                        if (navigator.share) {
-                                            navigator.share({
-                                                title: '${titulo}',
-                                                text: document.body.innerText
-                                            });
-                                        } else {
-                                            alert('Comparte el contenido de esta ventana');
-                                        }
-                                    };
-                                    document.body.appendChild(shareBtn);
-                                });
-                            <\/script>
-                        </body>
-                        </html>
-                    `);
-            ventana.document.close();
-        }
-
-        function generarHTMLReporte(titulo, filtrados) {
-            let html = `<h1>📋 ${titulo}</h1>`;
-            html += `<div class="meta">📅 ${formatDateSpanish(new Date().toISOString().split('T')[0])}</div>`;
-
-            if (filtrados.length === 0) {
-                html += `<p>No hay actividades registradas</p>`;
-                return html;
-            }
-
-            html += `<table>
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>Hijo</th>
-                                <th>Actividad</th>
-                                <th>Descripción</th>
-                                <th>Fecha</th>
-                            </tr>
-                        </thead>
-                        <tbody>`;
-
-            filtrados.sort((a, b) => a.fecha.localeCompare(b.fecha) || a.id - b.id);
-            filtrados.forEach((r, index) => {
-                html += `
-                            <tr>
-                                <td>${index + 1}</td>
-                                <td>${getNombreHijo(r.hijoId)}</td>
-                                <td>${getNombreActividad(r.actividadId)}</td>
-                                <td>${r.descripcion}</td>
-                                <td>${formatDate(r.fecha)}</td>
-                            </tr>
-                        `;
-            });
-
-            html += `</tbody></table>`;
-            html += `<div class="total">Total: ${filtrados.length} actividades</div>`;
-            html += `<div class="footer">Reporte generado automáticamente · ${new Date().toLocaleString()}</div>`;
-
-            return html;
-        }
-
-        // ============================================================
-        //  EXPORTAR PDF
-        // ============================================================
-        function exportarPDF(tipo) {
-            const elemento = document.getElementById('pdfContent');
-            let htmlContent = '';
-            const titulo = document.querySelector(`#view-${tipo} .view-title`)?.textContent || 'Reporte';
-
-            if (tipo === 'diario') {
-                const hoy = new Date().toISOString().split('T')[0];
-                const filtrados = data.registros.filter(r => r.fecha === hoy);
-                htmlContent = generarHTMLReporte(titulo, filtrados);
-            } else if (tipo === 'rango') {
-                const desde = document.getElementById('fechaDesde').value;
-                const hasta = document.getElementById('fechaHasta').value;
-                const filtrados = data.registros.filter(r => r.fecha >= desde && r.fecha <= hasta);
-                htmlContent = generarHTMLReporte(titulo, filtrados);
-            } else if (tipo === 'hijo') {
-                const hijoId = parseInt(document.getElementById('selectHijoReporte').value);
-                let filtrados = data.registros;
-                if (hijoId) {
-                    filtrados = filtrados.filter(r => r.hijoId === hijoId);
-                }
-                htmlContent = generarHTMLReporte(titulo, filtrados);
-            }
-
-            elemento.innerHTML = htmlContent;
-            elemento.style.display = 'block';
-
-            const opt = {
-                margin: 10,
-                filename: `${titulo.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2, useCORS: true },
-                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            };
-
-            html2pdf()
-                .set(opt)
-                .from(elemento)
-                .save()
-                .then(() => {
-                    elemento.style.display = 'none';
-                    showToast('✅ PDF generado correctamente');
-                })
-                .catch(() => {
-                    elemento.style.display = 'none';
-                    showToast('❌ Error al generar PDF', true);
-                });
-        }
-
-        // ============================================================
-        //  INICIALIZACIÓN
-        // ============================================================
-        loadData();
-
-        // Mostrar vista de registro por defecto
-        showView('registrar');
-
-        // Configurar fecha actual en el formulario
-        document.getElementById('fechaActividad').value = new Date().toISOString().split('T')[0];
-
-        // ============================================================
-        //  AGREGAR BOTÓN DE IMPORTAR EN EL MENÚ
-        // ============================================================
-        // Añadir un botón de importar en la interfaz
-        const sidebarFooter = document.querySelector('.sidebar > div:last-child');
-        if (sidebarFooter) {
-            const importBtn = document.createElement('button');
-            importBtn.textContent = '📥 Importar Datos';
-            importBtn.style.cssText = 'width:100%;margin-top:8px;padding:8px;background:rgba(74,108,247,0.2);color:white;border:1px solid rgba(74,108,247,0.3);border-radius:8px;cursor:pointer;font-size:12px;';
-            importBtn.onclick = importarDatos;
-            sidebarFooter.appendChild(importBtn);
-        }
-
-        console.log('✅ Sistema cargado correctamente');
-        console.log('📊 Datos:', data);
-    </script>
-</body>
-</html>
+        function getNombreActividad(id) { const a = getActividad
