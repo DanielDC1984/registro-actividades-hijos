@@ -702,87 +702,298 @@
     <div class="toast" id="toast"></div>
     <div id="pdfContent"></div>
 
-    <script>
+  <script>
         // ============================================================
         // 🔥 CONFIGURACIÓN DE SUPABASE
         // ============================================================
         const SUPABASE_URL = "https://gomgfwqqvufxzkcsfqkf.supabase.co";
         const SUPABASE_ANON_KEY = "sb_publishable_y5L1au_br_Fs7Qz31R5pdQ_CT1vX_";
         
-        const supabase = supabase_js.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // Corrección de la inicialización del cliente CDN
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         const FAMILIA_ID = 'familia_default';
-        let syncEnabled = true;
         
         // ============================================================
-        //  DATA LOCAL
+        //  DATA LOCAL DE RESERVA
         // ============================================================
         let data = {
             hijos: [],
             actividades: [],
             registros: []
         };
-        
+
         // ============================================================
-        //  FUNCIONES PRINCIPALES
+        //  INICIALIZACIÓN Y NAVEGACIÓN
+        // ============================================================
+        document.addEventListener('DOMContentLoaded', () => {
+            initMenu();
+            initForms();
+            loadData();
+        });
+
+        function initMenu() {
+            const menuToggle = document.getElementById('menuToggle');
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            
+            menuToggle.addEventListener('click', () => {
+                sidebar.classList.toggle('open');
+                overlay.classList.toggle('show');
+            });
+
+            overlay.addEventListener('click', () => {
+                sidebar.classList.remove('open');
+                overlay.classList.remove('show');
+            });
+
+            document.querySelectorAll('.sidebar-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    const viewTarget = this.getAttribute('data-view');
+                    if (!viewTarget) return;
+
+                    document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+                    this.classList.add('active');
+
+                    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+                    document.getElementById(`view-${viewTarget}`).classList.add('active');
+
+                    if (window.innerWidth < 768) {
+                        sidebar.classList.remove('open');
+                        overlay.classList.remove('show');
+                    }
+                });
+            });
+        }
+
+        // ============================================================
+        //  MANEJO DE DATOS & SUPABASE
         // ============================================================
         function loadData() {
             const stored = localStorage.getItem('actividadesData');
             if (stored) {
-                try {
-                    data = JSON.parse(stored);
-                } catch(e) {}
+                try { data = JSON.parse(stored); } catch(e) {}
             }
             
-            if (data.hijos.length === 0) {
-                data.hijos = [
-                    { id: 1, nombre: 'Mateo', edad: 5 },
-                    { id: 2, nombre: 'Sofía', edad: 3 }
-                ];
-            }
-            if (data.actividades.length === 0) {
-                data.actividades = [
-                    { id: 1, nombre: 'Lectura' },
-                    { id: 2, nombre: 'Dibujo' },
-                    { id: 3, nombre: 'Deporte' },
-                    { id: 4, nombre: 'Música' }
-                ];
-            }
-            if (data.registros.length === 0) {
-                const hoy = new Date().toISOString().split('T')[0];
-                data.registros = [
-                    { id: 1, hijoId: 1, actividadId: 1, descripcion: 'Leyó 10 páginas', fecha: hoy },
-                    { id: 2, hijoId: 2, actividadId: 2, descripcion: 'Dibujó un paisaje', fecha: hoy }
-                ];
-            }
-            
-            saveDataLocal();
+            renderAll();
             cargarDesdeSupabase();
         }
-        
-        function saveDataLocal() {
+
+        async function cargarDesdeSupabase() {
+            updateStatus('syncing', 'Sincronizando...');
+            try {
+                const { data: dbData, error } = await supabaseClient
+                    .from('familias')
+                    .select('*')
+                    .eq('id', FAMILIA_ID)
+                    .single();
+
+                if (error) throw error;
+
+                if (dbData) {
+                    data.hijos = dbData.hijos || [];
+                    data.actividades = dbData.actividades || [];
+                    data.registros = dbData.registros || [];
+                    saveDataLocal(false);
+                    renderAll();
+                    updateStatus('online', 'Conectado');
+                }
+            } catch (err) {
+                console.error("Error cargando de Supabase:", err);
+                updateStatus('offline', 'Modo Offline');
+            }
+        }
+
+        async function guardarEnSupabase() {
+            updateStatus('syncing', 'Guardando...');
+            try {
+                const { error } = await supabaseClient
+                    .from('familias')
+                    .upsert({
+                        id: FAMILIA_ID,
+                        hijos: data.hijos,
+                        actividades: data.actividades,
+                        registros: data.registros,
+                        updated_at: new Date()
+                    });
+
+                if (error) throw error;
+                updateStatus('online', 'Conectado');
+                showToast('Guardado correctamente');
+            } catch (err) {
+                console.error("Error al guardar:", err);
+                updateStatus('offline', 'Error de red');
+                showToast('Error al guardar en la nube', true);
+            }
+        }
+
+        function saveDataLocal(sync = true) {
             localStorage.setItem('actividadesData', JSON.stringify(data));
             actualizarContadores();
+            if (sync) guardarEnSupabase();
         }
-        
-        function nextId(arr) {
-            if (arr.length === 0) return 1;
-            return Math.max(...arr.map(item => item.id)) + 1;
+
+        function sincronizarAhora() {
+            cargarDesdeSupabase();
         }
-        
+
         // ============================================================
-        //  HELPERS
+        //  HELPERS Y RENDERS
         // ============================================================
-        function getHijo(id) { return data.hijos.find(h => h.id === id); }
-        function getActividad(id) { return data.actividades.find(a => a.id === id); }
-        function getNombreHijo(id) { const h = getHijo(id); return h ? h.nombre : 'Desconocido'; }
-        function getNombreActividad(id) { const a = getActividad(id); return a ? a.nombre : 'Desconocida'; }
-        
-        function formatDate(dateStr) {
-            if (!dateStr) return '';
-            const parts = dateStr.split('-');
-            return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        function updateStatus(state, text) {
+            const dot = document.getElementById('statusDot');
+            const label = document.getElementById('statusText');
+            dot.className = `dot ${state}`;
+            label.textContent = text;
         }
-        
+
+        function actualizarContadores() {
+            document.getElementById('hijosCount').textContent = data.hijos.length;
+            document.getElementById('actividadesCount').textContent = data.actividades.length;
+            document.getElementById('totalRegistros').textContent = data.registros.length;
+        }
+
+        function renderAll() {
+            actualizarContadores();
+            populateSelects();
+            renderHijos();
+            renderActividadesGestion();
+            renderReporteDiario();
+        }
+
+        function populateSelects() {
+            const selectHijo = document.getElementById('selectHijo');
+            const selectAct = document.getElementById('selectActividad');
+            const selectHijoRep = document.getElementById('selectHijoReporte');
+
+            selectHijo.innerHTML = '<option value="">Seleccionar...</option>';
+            selectHijoRep.innerHTML = '<option value="">Todos</option>';
+            data.hijos.forEach(h => {
+                selectHijo.innerHTML += `<option value="${h.id}">${h.nombre}</option>`;
+                selectHijoRep.innerHTML += `<option value="${h.id}">${h.nombre}</option>`;
+            });
+
+            selectAct.innerHTML = '<option value="">Seleccionar...</option>';
+            data.actividades.forEach(a => {
+                selectAct.innerHTML += `<option value="${a.id}">${a.nombre}</option>`;
+            });
+
+            document.getElementById('fechaActividad').value = new Date().toISOString().split('T')[0];
+        }
+
+        function renderHijos() {
+            const container = document.getElementById('listaHijos');
+            if (data.hijos.length === 0) {
+                container.innerHTML = '<div class="empty-state"><p>No hay hijos registrados</p></div>';
+                return;
+            }
+            container.innerHTML = data.hijos.map(h => `
+                <div class="child-card">
+                    <div class="child-info">
+                        <div class="child-name">👤 ${h.nombre}</div>
+                        <div class="child-age">${h.edad ? h.edad + ' años' : 'Edad no especificada'}</div>
+                    </div>
+                    <button class="btn-delete" onclick="eliminarHijo(${h.id})">Eliminar</button>
+                </div>
+            `).join('');
+        }
+
+        function renderActividadesGestion() {
+            const container = document.getElementById('listaActividadesGestion');
+            if (data.actividades.length === 0) {
+                container.innerHTML = '<div class="empty-state"><p>No hay actividades creadas</p></div>';
+                return;
+            }
+            container.innerHTML = data.actividades.map(a => `
+                <div class="child-card">
+                    <div class="child-info">
+                        <div class="child-name">🎯 ${a.nombre}</div>
+                    </div>
+                    <button class="btn-delete" onclick="eliminarActividadGestion(${a.id})">Eliminar</button>
+                </div>
+            `).join('');
+        }
+
+        function renderReporteDiario() {
+            const hoy = new Date().toISOString().split('T')[0];
+            const lista = data.registros.filter(r => r.fecha === hoy);
+            document.getElementById('diarioCount').textContent = lista.length;
+            
+            const container = document.getElementById('diarioLista');
+            if (lista.length === 0) {
+                container.innerHTML = `<div class="empty-state"><span class="emoji">📭</span><p>No hay actividades registradas hoy</p></div>`;
+                return;
+            }
+
+            container.innerHTML = lista.map(r => {
+                const hijo = data.hijos.find(h => h.id == r.hijoId);
+                const act = data.actividades.find(a => a.id == r.actividadId);
+                return `
+                    <div class="activity-item">
+                        <div class="act-title">${act ? act.nombre : 'Actividad'} - ${hijo ? hijo.nombre : 'Niño'}</div>
+                        <div style="font-size:14px;margin-top:4px;">${r.descripcion || ''}</div>
+                        <div class="act-meta"><span>📅 ${r.fecha}</span></div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ============================================================
+        //  FORMULARIOS Y ACCIONES
+        // ============================================================
+        function initForms() {
+            document.getElementById('formActividad').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const nuevoRegistro = {
+                    id: Date.now(),
+                    hijoId: parseInt(document.getElementById('selectHijo').value),
+                    actividadId: parseInt(document.getElementById('selectActividad').value),
+                    descripcion: document.getElementById('descActividad').value,
+                    fecha: document.getElementById('fechaActividad').value
+                };
+                data.registros.push(nuevoRegistro);
+                saveDataLocal();
+                renderReporteDiario();
+                e.target.reset();
+                document.getElementById('fechaActividad').value = new Date().toISOString().split('T')[0];
+                showToast('¡Actividad registrada!');
+            });
+
+            document.getElementById('formHijo').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const nombre = document.getElementById('nombreHijo').value.trim();
+                const edad = document.getElementById('edadHijo').value;
+                if (!nombre) return;
+
+                data.hijos.push({ id: Date.now(), nombre, edad: edad ? parseInt(edad) : null });
+                saveDataLocal();
+                renderAll();
+                e.target.reset();
+            });
+
+            document.getElementById('formActividadGestion').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const nombre = document.getElementById('nombreActividad').value.trim();
+                if (!nombre) return;
+
+                data.actividades.push({ id: Date.now(), nombre });
+                saveDataLocal();
+                renderAll();
+                e.target.reset();
+            });
+        }
+
+        function eliminarHijo(id) {
+            data.hijos = data.hijos.filter(h => h.id !== id);
+            saveDataLocal();
+            renderAll();
+        }
+
+        function eliminarActividadGestion(id) {
+            data.actividades = data.actividades.filter(a => a.id !== id);
+            saveDataLocal();
+            renderAll();
+        }
+
         function showToast(msg, isError = false) {
             const t = document.getElementById('toast');
             t.textContent = msg;
@@ -791,7 +1002,6 @@
             clearTimeout(t._timeout);
             t._timeout = setTimeout(() => t.classList.remove('show'), 3000);
         }
-        
-        function actualizarContadores() {
-            document.getElementById('hijosCount').textContent = data.hijos.length;
-            document.getElementById
+    </script>
+</body>
+</html>
