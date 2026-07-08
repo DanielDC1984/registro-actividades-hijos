@@ -416,10 +416,9 @@
         let data = { hijos: [], actividades: [], registros: [] };
         let currentUser = null;
         let isRegisterMode = false;
-        let datosCargados = false;
 
         // ============================================================
-        // 📋 SISTEMA DE USUARIOS
+        // 📋 SISTEMA DE USUARIOS (LocalStorage)
         // ============================================================
         function getUsers() {
             const stored = localStorage.getItem('usuarios_registrados');
@@ -504,40 +503,67 @@
         }
 
         // ============================================================
-        // ADMIN - GESTIÓN DE USUARIOS
+        // 👑 ADMIN - CRUD DE USUARIOS
         // ============================================================
         function getPendingUsers() {
             const users = getUsers();
             return users.filter(u => u.role === 'user' && !u.approved);
         }
 
+        // CREATE - Aprobar usuario (C)
         function aprobarUsuario(username) {
             const users = getUsers();
             const user = users.find(u => u.username === username);
-            if (user) { user.approved = true; saveUsers(users); renderAdminPanel(); actualizarContadoresAdmin(); showToast(`✅ ${username} aprobado`); }
+            if (user) { 
+                user.approved = true; 
+                saveUsers(users); 
+                renderAdminPanel(); 
+                actualizarContadoresAdmin(); 
+                showToast(`✅ Usuario "${username}" aprobado`); 
+            }
         }
 
+        // UPDATE - Bloquear usuario (U)
         function bloquearUsuario(username) {
             const users = getUsers();
             const user = users.find(u => u.username === username);
-            if (user && user.username !== 'admin') { user.blocked = true; saveUsers(users); renderAdminPanel(); actualizarContadoresAdmin(); showToast(`🔒 ${username} bloqueado`); }
+            if (user && user.username !== 'admin') { 
+                user.blocked = true; 
+                saveUsers(users); 
+                renderAdminPanel(); 
+                actualizarContadoresAdmin(); 
+                showToast(`🔒 Usuario "${username}" bloqueado`); 
+            }
         }
 
+        // UPDATE - Desbloquear usuario (U)
         function desbloquearUsuario(username) {
             const users = getUsers();
             const user = users.find(u => u.username === username);
-            if (user) { user.blocked = false; saveUsers(users); renderAdminPanel(); actualizarContadoresAdmin(); showToast(`🔓 ${username} desbloqueado`); }
+            if (user) { 
+                user.blocked = false; 
+                saveUsers(users); 
+                renderAdminPanel(); 
+                actualizarContadoresAdmin(); 
+                showToast(`🔓 Usuario "${username}" desbloqueado`); 
+            }
         }
 
+        // DELETE - Eliminar usuario (D)
         function eliminarUsuario(username) {
-            if (username === 'admin') { showToast('❌ No puedes eliminar al admin', true); return; }
-            if (!confirm(`¿Eliminar a "${username}"?`)) return;
+            if (username === 'admin') { 
+                showToast('❌ No puedes eliminar al administrador', true); 
+                return; 
+            }
+            if (!confirm(`¿Eliminar permanentemente al usuario "${username}"?`)) return;
             let users = getUsers();
             users = users.filter(u => u.username !== username);
             saveUsers(users);
+            // Eliminar también sus datos almacenados
+            localStorage.removeItem(`actividadesData_${username}`);
             renderAdminPanel();
             actualizarContadoresAdmin();
-            showToast(`🗑️ ${username} eliminado`);
+            showToast(`🗑️ Usuario "${username}" eliminado`);
         }
 
         // ============================================================
@@ -620,26 +646,44 @@
         function renderAdminPanel() {
             const container = document.getElementById('adminUserList');
             const users = getUsers();
+            
             if (users.length === 0) {
-                container.innerHTML = `<div class="empty-state"><span class="emoji">👥</span><p>No hay usuarios</p></div>`;
+                container.innerHTML = `<div class="empty-state"><span class="emoji">👥</span><p>No hay usuarios registrados</p></div>`;
                 return;
             }
+            
             let html = '<h3>📋 Usuarios del Sistema</h3>';
             users.forEach(u => {
                 let statusClass = '', statusText = '';
-                if (u.role === 'admin') { statusClass = 'approved'; statusText = '👑 Admin'; }
-                else if (u.blocked) { statusClass = 'blocked'; statusText = '🔒 Bloqueado'; }
-                else if (u.approved) { statusClass = 'approved'; statusText = '✅ Aprobado'; }
-                else { statusClass = 'pending'; statusText = '⏳ Pendiente'; }
+                if (u.role === 'admin') { 
+                    statusClass = 'approved'; 
+                    statusText = '👑 Admin'; 
+                } else if (u.blocked) { 
+                    statusClass = 'blocked'; 
+                    statusText = '🔒 Bloqueado'; 
+                } else if (u.approved) { 
+                    statusClass = 'approved'; 
+                    statusText = '✅ Aprobado'; 
+                } else { 
+                    statusClass = 'pending'; 
+                    statusText = '⏳ Pendiente'; 
+                }
+                
                 let actionsHtml = '';
                 if (u.role !== 'admin') {
-                    if (!u.approved) actionsHtml += `<button class="btn-approve" onclick="aprobarUsuario('${u.username}')">✅</button>`;
-                    if (u.blocked) actionsHtml += `<button class="btn-unblock" onclick="desbloquearUsuario('${u.username}')">🔓</button>`;
-                    else if (u.approved) actionsHtml += `<button class="btn-block" onclick="bloquearUsuario('${u.username}')">🔒</button>`;
-                    actionsHtml += `<button class="btn-delete-user" onclick="eliminarUsuario('${u.username}')">🗑️</button>`;
+                    if (!u.approved) {
+                        actionsHtml += `<button class="btn-approve" onclick="aprobarUsuario('${u.username}')">✅ Aprobar</button>`;
+                    }
+                    if (u.blocked) {
+                        actionsHtml += `<button class="btn-unblock" onclick="desbloquearUsuario('${u.username}')">🔓 Desbloquear</button>`;
+                    } else if (u.approved) {
+                        actionsHtml += `<button class="btn-block" onclick="bloquearUsuario('${u.username}')">🔒 Bloquear</button>`;
+                    }
+                    actionsHtml += `<button class="btn-delete-user" onclick="eliminarUsuario('${u.username}')">🗑️ Eliminar</button>`;
                 } else {
-                    actionsHtml = `<span style="font-size:11px;color:#6b7a8f;">👑</span>`;
+                    actionsHtml = `<span style="font-size:11px;color:#6b7a8f;">👑 Administrador</span>`;
                 }
+                
                 html += `
                     <div class="user-item">
                         <div class="user-data">
@@ -650,6 +694,7 @@
                     </div>
                 `;
             });
+            
             container.innerHTML = html;
             actualizarContadoresAdmin();
         }
@@ -700,72 +745,74 @@
         }
 
         function getNombreHijo(id) {
-            if (!data.hijos) return 'Desconocido';
             const h = data.hijos.find(h => h.id === id);
             return h ? h.nombre : 'Desconocido';
         }
 
         function getNombreActividad(id) {
-            if (!data.actividades) return 'Desconocida';
             const a = data.actividades.find(a => a.id === id);
             return a ? a.nombre : 'Desconocida';
         }
 
         // ============================================================
-        // 📊 DATOS - CARGA FUERZA DESDE SUPABASE
+        // 📊 DATOS - SUPABASE + LOCALSTORAGE
         // ============================================================
         function getStorageKey() { return 'actividadesData_global'; }
 
         function loadData() {
-            // Intentar cargar desde LocalStorage primero
             const stored = localStorage.getItem(getStorageKey());
             if (stored) {
                 try { 
-                    const parsed = JSON.parse(stored);
-                    if (parsed.hijos && parsed.hijos.length > 0) {
-                        data = parsed;
-                        console.log('📦 Datos cargados desde LocalStorage:', data);
-                        return;
-                    }
+                    data = JSON.parse(stored); 
+                    console.log('📦 Datos cargados desde LocalStorage:', data);
                 } catch(e) { console.error('Error parseando LocalStorage:', e); }
             }
             
-            // Si no hay datos en LocalStorage, usar datos de ejemplo
-            data = {
-                hijos: [
+            // Migrar registros antiguos (sin hora)
+            if (data.registros) {
+                data.registros = data.registros.map(r => {
+                    if (r.fecha && !r.fechaHora) {
+                        return { ...r, fechaHora: r.fecha + 'T00:00' };
+                    }
+                    return r;
+                });
+            } else {
+                data.registros = [];
+            }
+            
+            if (!data.hijos || data.hijos.length === 0) {
+                data.hijos = [
                     { id: 1, nombre: 'Mateo', edad: 5 },
                     { id: 2, nombre: 'Sofía', edad: 3 }
-                ],
-                actividades: [
+                ];
+            }
+            if (!data.actividades || data.actividades.length === 0) {
+                data.actividades = [
                     { id: 1, nombre: 'Lectura' },
                     { id: 2, nombre: 'Dibujo' },
                     { id: 3, nombre: 'Deporte' },
                     { id: 4, nombre: 'Música' }
-                ],
-                registros: []
-            };
-            
-            // Agregar registros de ejemplo
-            const ahora = getFechaHoraLocal();
-            data.registros = [
-                { id: 1, hijoId: 1, actividadId: 1, descripcion: 'Leyó 10 páginas', fechaHora: ahora, usuario: 'admin' },
-                { id: 2, hijoId: 2, actividadId: 2, descripcion: 'Dibujó un paisaje', fechaHora: ahora, usuario: 'admin' }
-            ];
-            
-            console.log('📦 Datos de ejemplo cargados:', data);
+                ];
+            }
+            if (data.registros.length === 0) {
+                const ahora = getFechaHoraLocal();
+                data.registros = [
+                    { id: 1, hijoId: 1, actividadId: 1, descripcion: 'Leyó 10 páginas', fechaHora: ahora, usuario: 'admin' },
+                    { id: 2, hijoId: 2, actividadId: 2, descripcion: 'Dibujó un paisaje', fechaHora: ahora, usuario: 'admin' }
+                ];
+            }
             saveDataLocal();
         }
 
         function saveDataLocal() {
             localStorage.setItem(getStorageKey(), JSON.stringify(data));
             actualizarContadores();
+            guardarEnSupabase();
         }
 
         function cargarDatos() {
-            // Primero cargar datos locales
             loadData();
             renderAll();
-            // Luego intentar cargar desde Supabase (sobrescribe si hay datos)
             cargarDesdeSupabase();
         }
 
@@ -780,40 +827,15 @@
                     .select('*')
                     .eq('id', FAMILIA_ID)
                     .single();
-                    
-                if (error && error.code !== 'PGRST116') {
-                    console.error('Error de Supabase:', error);
-                    updateStatus('offline', 'Offline');
-                    return;
-                }
-                
+                if (error && error.code !== 'PGRST116') throw error;
                 if (dbData) {
-                    console.log('📦 Datos desde Supabase:', dbData);
-                    
-                    // Actualizar datos con los de Supabase
-                    if (dbData.hijos && dbData.hijos.length > 0) {
-                        data.hijos = dbData.hijos;
-                    }
-                    if (dbData.actividades && dbData.actividades.length > 0) {
-                        data.actividades = dbData.actividades;
-                    }
-                    if (dbData.registros) {
-                        // Migrar registros antiguos si es necesario
-                        data.registros = dbData.registros.map(r => {
-                            if (r.fecha && !r.fechaHora) {
-                                return { ...r, fechaHora: r.fecha + 'T00:00' };
-                            }
-                            return r;
-                        });
-                    }
-                    
+                    data.hijos = dbData.hijos || [];
+                    data.actividades = dbData.actividades || [];
+                    data.registros = dbData.registros || [];
                     saveDataLocal(false);
                     renderAll();
                     updateStatus('online', 'Conectado');
-                    showToast('✅ Datos sincronizados desde la nube');
                 } else {
-                    // No hay datos en Supabase, guardar los locales
-                    await guardarEnSupabase();
                     updateStatus('online', 'Conectado');
                 }
             } catch (err) {
@@ -841,10 +863,7 @@
             }
         }
 
-        function sincronizarAhora() { 
-            showToast('🔄 Sincronizando...');
-            cargarDesdeSupabase(); 
-        }
+        function sincronizarAhora() { cargarDesdeSupabase(); }
 
         function activarTiempoReal() {
             supabaseClient
@@ -856,17 +875,9 @@
                     filter: `id=eq.${FAMILIA_ID}` 
                 }, payload => {
                     if (payload.new) {
-                        console.log('🔄 Cambio en tiempo real:', payload.new);
-                        if (payload.new.hijos) data.hijos = payload.new.hijos;
-                        if (payload.new.actividades) data.actividades = payload.new.actividades;
-                        if (payload.new.registros) {
-                            data.registros = payload.new.registros.map(r => {
-                                if (r.fecha && !r.fechaHora) {
-                                    return { ...r, fechaHora: r.fecha + 'T00:00' };
-                                }
-                                return r;
-                            });
-                        }
+                        data.hijos = payload.new.hijos || [];
+                        data.actividades = payload.new.actividades || [];
+                        data.registros = payload.new.registros || [];
                         saveDataLocal(false);
                         renderAll();
                         showToast('🔄 Datos sincronizados en tiempo real');
@@ -926,7 +937,6 @@
         }
 
         function renderAll() {
-            console.log('🔄 Renderizando todo... Datos:', data);
             actualizarContadores();
             populateSelects();
             renderHijos();
@@ -942,32 +952,25 @@
             const editSelectHijo = document.getElementById('editSelectHijo');
             const editSelectAct = document.getElementById('editSelectActividad');
             
-            // LIMPIAR Y LLENAR HIJOS
             let hijosHtml = '<option value="">Seleccionar...</option>';
             if (data.hijos && data.hijos.length > 0) {
                 data.hijos.forEach(h => {
                     hijosHtml += `<option value="${h.id}">${h.nombre}${h.edad ? ' ('+h.edad+' años)' : ''}</option>`;
                 });
-            } else {
-                hijosHtml = '<option value="">No hay hijos registrados</option>';
             }
             selectHijo.innerHTML = hijosHtml;
             selectHijoRep.innerHTML = hijosHtml;
             editSelectHijo.innerHTML = hijosHtml;
             
-            // LIMPIAR Y LLENAR ACTIVIDADES
             let actHtml = '<option value="">Seleccionar...</option>';
             if (data.actividades && data.actividades.length > 0) {
                 data.actividades.forEach(a => {
                     actHtml += `<option value="${a.id}">${a.nombre}</option>`;
                 });
-            } else {
-                actHtml = '<option value="">No hay actividades registradas</option>';
             }
             selectAct.innerHTML = actHtml;
             editSelectAct.innerHTML = actHtml;
             
-            // FECHA Y HORA
             document.getElementById('fechaHoraActividad').value = getFechaHoraLocal();
         }
 
@@ -1101,13 +1104,12 @@
         }
 
         // ============================================================
-        //  CRUD
+        //  CRUD - REGISTROS
         // ============================================================
         function eliminarRegistro(id) {
             if (!confirm('¿Eliminar este registro?')) return;
             data.registros = data.registros.filter(r => r.id !== id);
             saveDataLocal();
-            guardarEnSupabase();
             renderAll();
             showToast('🗑️ Registro eliminado');
         }
@@ -1137,7 +1139,6 @@
             if (index === -1) { showToast('⚠️ Registro no encontrado', true); return; }
             data.registros[index] = { ...data.registros[index], hijoId, actividadId, descripcion: descripcion || 'Sin descripción', fechaHora };
             saveDataLocal();
-            guardarEnSupabase();
             renderAll();
             cerrarModalEditar();
             showToast('✅ Registro actualizado');
@@ -1167,7 +1168,6 @@
                 };
                 data.registros.push(nuevoRegistro);
                 saveDataLocal();
-                guardarEnSupabase();
                 renderAll();
                 e.target.reset();
                 document.getElementById('fechaHoraActividad').value = getFechaHoraLocal();
@@ -1181,7 +1181,6 @@
                 if (!nombre) { showToast('⚠️ Ingresa un nombre', true); return; }
                 data.hijos.push({ id: Date.now(), nombre, edad: edad ? parseInt(edad) : null });
                 saveDataLocal();
-                guardarEnSupabase();
                 renderAll();
                 e.target.reset();
                 showToast('✅ Hijo agregado');
@@ -1193,7 +1192,6 @@
                 if (!nombre) { showToast('⚠️ Ingresa un nombre', true); return; }
                 data.actividades.push({ id: Date.now(), nombre });
                 saveDataLocal();
-                guardarEnSupabase();
                 renderAll();
                 e.target.reset();
                 showToast('✅ Actividad creada');
@@ -1204,7 +1202,6 @@
             if (confirm('¿Eliminar este hijo?')) {
                 data.hijos = data.hijos.filter(h => h.id !== id);
                 saveDataLocal();
-                guardarEnSupabase();
                 renderAll();
                 showToast('🗑️ Hijo removido');
             }
@@ -1214,7 +1211,6 @@
             if (confirm('¿Eliminar esta actividad?')) {
                 data.actividades = data.actividades.filter(a => a.id !== id);
                 saveDataLocal();
-                guardarEnSupabase();
                 renderAll();
                 showToast('🗑️ Actividad removida');
             }
@@ -1348,7 +1344,6 @@
         //  INICIALIZACIÓN
         // ============================================================
         document.addEventListener('DOMContentLoaded', () => {
-            console.log('🚀 Iniciando aplicación...');
             initMenu();
             initForms();
             activarTiempoReal();
@@ -1359,7 +1354,6 @@
                 if (validUser) {
                     document.getElementById('userDisplayName').textContent = user.username;
                     mostrarApp();
-                    console.log('✅ Usuario autenticado:', user.username);
                     return;
                 }
             }
