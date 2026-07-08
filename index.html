@@ -832,6 +832,7 @@
         function formatearFechaMostrar(fecha) {
             if (!fecha) return '';
             const partes = fecha.split('-');
+            // Formato DD/MM/YYYY completo
             return `${partes[2]}/${partes[1]}/${partes[0]}`;
         }
 
@@ -1326,7 +1327,7 @@
         }
 
         // ============================================================
-        //  EXPORTAR PDF - CON COLUMNA DE FECHA
+        //  EXPORTAR PDF - CON FECHA COMPLETA
         // ============================================================
         function exportarPDF(tipoReporte) {
             let elementoId = "";
@@ -1346,7 +1347,7 @@
             // Clonar el elemento para el PDF
             const clon = element.cloneNode(true);
             
-            // ESTILOS COMPLETOS PARA EL PDF - INCLUYE LA COLUMNA DE FECHA
+            // ESTILOS COMPLETOS PARA EL PDF - CON FECHA COMPLETA
             const estilo = document.createElement('style');
             estilo.textContent = `
                 .tabla-reporte { 
@@ -1358,13 +1359,13 @@
                 .tabla-reporte th { 
                     background: #1a2a3a; 
                     color: white; 
-                    padding: 10px 12px; 
+                    padding: 10px 14px; 
                     text-align: left; 
                     font-weight: 600;
                     font-size: 11px;
                 }
                 .tabla-reporte td { 
-                    padding: 10px 12px; 
+                    padding: 10px 14px; 
                     border-bottom: 1px solid #eef2f7; 
                     font-size: 11px;
                 }
@@ -1372,10 +1373,11 @@
                 .tabla-reporte tr:nth-child(odd) { background: #ffffff; }
                 .badge-hijo, .badge-actividad, .badge-fecha { 
                     display: inline-block; 
-                    padding: 3px 12px; 
+                    padding: 3px 14px; 
                     border-radius: 12px; 
                     font-size: 10px;
                     font-weight: 600;
+                    white-space: nowrap;
                 }
                 .badge-hijo { background: #e8edff; color: #1a2a3a; }
                 .badge-actividad { background: #f0ecff; color: #1a2a3a; }
@@ -1383,7 +1385,9 @@
                     background: #eef2f7; 
                     color: #1a2a3a;
                     font-weight: 500;
-                    padding: 3px 14px;
+                    padding: 3px 16px;
+                    min-width: 80px;
+                    text-align: center;
                 }
                 .col-acciones { display: none; }
                 .descripcion-cell { 
@@ -1418,37 +1422,46 @@
                     border-top: 1px solid #eef2f7;
                     padding-top: 12px;
                 }
-                /* Asegurar que la columna de fecha sea visible */
+                /* Forzar que la columna de fecha sea visible y tenga espacio */
                 .tabla-reporte th:nth-child(5),
                 .tabla-reporte td:nth-child(5) {
                     display: table-cell;
+                    min-width: 90px;
+                    white-space: nowrap;
                 }
             `;
             clon.prepend(estilo);
 
-            // Verificar que todas las filas tengan la columna de fecha
+            // Verificar y corregir las fechas en cada fila
             const filas = clon.querySelectorAll('tbody tr');
             filas.forEach(fila => {
                 const celdas = fila.querySelectorAll('td');
-                if (celdas.length < 5) {
-                    // Si falta la columna de fecha, agregarla
-                    const fecha = celdas[3] ? celdas[3].textContent.trim() : 'Sin fecha';
-                    const nuevaCelda = document.createElement('td');
-                    nuevaCelda.innerHTML = `<span class="badge-fecha">${fecha}</span>`;
-                    // Insertar antes de la última celda (acciones)
-                    if (celdas.length >= 4) {
-                        fila.insertBefore(nuevaCelda, celdas[4]);
-                    } else {
-                        fila.appendChild(nuevaCelda);
+                if (celdas.length >= 5) {
+                    // Asegurar que la fecha esté completa (DD/MM/YYYY)
+                    const fechaCelda = celdas[4];
+                    const fechaSpan = fechaCelda.querySelector('.badge-fecha');
+                    if (fechaSpan) {
+                        let fechaTexto = fechaSpan.textContent.trim();
+                        // Si la fecha está incompleta (ej: "07/07/" o "08/07/")
+                        if (fechaTexto.match(/^\d{2}\/\d{2}\/$/)) {
+                            // Agregar el año actual
+                            const año = new Date().getFullYear();
+                            fechaSpan.textContent = fechaTexto + año;
+                        }
+                        // Si la fecha solo tiene día/mes (ej: "07/07")
+                        if (fechaTexto.match(/^\d{2}\/\d{2}$/)) {
+                            const año = new Date().getFullYear();
+                            fechaSpan.textContent = fechaTexto + '/' + año;
+                        }
                     }
                 }
             });
 
             const opciones = {
-                margin:       8,
+                margin:       10,
                 filename:     nombreArchivo,
                 image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true, width: 900 },
+                html2canvas:  { scale: 2, useCORS: true, width: 950 },
                 jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
             };
 
