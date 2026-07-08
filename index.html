@@ -9,7 +9,6 @@
     <style>
         *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}
         body{background:#f0f4f8;display:flex;min-height:100vh;overflow-x:hidden}
-        
         .login-container{display:flex;justify-content:center;align-items:center;min-height:100vh;width:100%;background:linear-gradient(135deg,#1a2a3a,#2a4a6a);padding:20px}
         .login-box{background:#fff;padding:40px 32px;border-radius:24px;max-width:400px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3)}
         .login-box .logo{text-align:center;font-size:48px;margin-bottom:8px}
@@ -29,10 +28,8 @@
         .login-box .loading-spinner{display:none;text-align:center;padding:8px}
         .login-box .loading-spinner .spinner{border:3px solid #eef2f7;border-top:3px solid #4a6cf7;border-radius:50%;width:30px;height:30px;animation:spin .8s linear infinite;margin:0 auto}
         @keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
-        
         .app-container{display:none;width:100%;min-height:100vh}
         .app-container.active{display:flex}
-        
         .sidebar{position:fixed;top:0;left:0;width:280px;height:100vh;background:linear-gradient(180deg,#1a2a3a,#0f1a26);padding:20px 0;z-index:1000;transform:translateX(-100%);transition:transform .3s;box-shadow:4px 0 20px rgba(0,0,0,.3);overflow-y:auto}
         .sidebar.open{transform:translateX(0)}
         .sidebar-header{padding:0 20px 20px;border-bottom:1px solid rgba(255,255,255,.1);margin-bottom:16px}
@@ -71,7 +68,6 @@
         .user-info .role-badge{display:inline-block;padding:2px 12px;border-radius:20px;font-size:10px;font-weight:600;margin-top:4px}
         .user-info .role-badge.admin{background:#7c5cfc;color:#fff}
         .user-info .role-badge.user{background:#4a6cf7;color:#fff}
-        
         .admin-panel{background:#fff;border-radius:14px;padding:16px;margin-top:12px;box-shadow:0 2px 8px rgba(0,0,0,.04)}
         .admin-panel h3{font-size:16px;font-weight:600;color:#1a2a3a;margin-bottom:12px;display:flex;align-items:center;gap:8px}
         .admin-panel .user-item{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:#f8fafc;border-radius:10px;margin-bottom:8px;flex-wrap:wrap;gap:8px}
@@ -91,7 +87,6 @@
         .admin-panel .user-item .actions .btn-unblock:hover{background:#0a8a59}
         .admin-panel .user-item .actions .btn-delete-user{background:#ef4444;color:#fff}
         .admin-panel .user-item .actions .btn-delete-user:hover{background:#dc2626}
-        
         .view{display:none;animation:fadeSlide .3s ease}
         .view.active{display:block}
         @keyframes fadeSlide{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
@@ -112,7 +107,6 @@
         .btn-delete-reg{background:#ef4444;border:none;padding:4px 12px;border-radius:12px;color:#fff;font-size:11px;font-weight:600;cursor:pointer;transition:all .2s}
         .btn-delete-reg:hover{background:#dc2626}
         .activity-list{margin-top:12px;overflow-x:auto}
-        
         .tabla-reporte{width:100%;border-collapse:collapse;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.06);min-width:500px}
         .tabla-reporte thead{background:#1a2a3a;color:#fff}
         .tabla-reporte thead th{padding:12px 14px;text-align:left;font-size:13px;font-weight:600;letter-spacing:.3px}
@@ -157,7 +151,6 @@
         .modal-content .modal-actions .btn-primary{flex:1}
         .modal-content .modal-actions .btn-secondary{flex:1;padding:14px;background:#eef2f7;color:#1a2a3a;border:none;border-radius:14px;font-size:16px;font-weight:600;cursor:pointer;transition:all .2s}
         .modal-content .modal-actions .btn-secondary:active{transform:scale(.97)}
-        
         @media(min-width:768px){
             .sidebar{transform:translateX(0)!important;position:sticky;top:0;height:100vh;flex-shrink:0}
             .sidebar-overlay{display:none!important}
@@ -423,6 +416,7 @@
         let data = { hijos: [], actividades: [], registros: [] };
         let currentUser = null;
         let isRegisterMode = false;
+        let datosCargados = false;
 
         // ============================================================
         // 📋 SISTEMA DE USUARIOS
@@ -706,73 +700,72 @@
         }
 
         function getNombreHijo(id) {
+            if (!data.hijos) return 'Desconocido';
             const h = data.hijos.find(h => h.id === id);
             return h ? h.nombre : 'Desconocido';
         }
 
         function getNombreActividad(id) {
+            if (!data.actividades) return 'Desconocida';
             const a = data.actividades.find(a => a.id === id);
             return a ? a.nombre : 'Desconocida';
         }
 
         // ============================================================
-        // 📊 DATOS - SUPABASE + LOCALSTORAGE
+        // 📊 DATOS - CARGA FUERZA DESDE SUPABASE
         // ============================================================
         function getStorageKey() { return 'actividadesData_global'; }
 
         function loadData() {
+            // Intentar cargar desde LocalStorage primero
             const stored = localStorage.getItem(getStorageKey());
             if (stored) {
-                try { data = JSON.parse(stored); } catch(e) { console.error('Error parseando data:', e); }
-            }
-            
-            // Migrar registros antiguos (sin hora)
-            let migrado = false;
-            if (data.registros) {
-                data.registros = data.registros.map(r => {
-                    if (r.fecha && !r.fechaHora) {
-                        migrado = true;
-                        return { ...r, fechaHora: r.fecha + 'T00:00' };
+                try { 
+                    const parsed = JSON.parse(stored);
+                    if (parsed.hijos && parsed.hijos.length > 0) {
+                        data = parsed;
+                        console.log('📦 Datos cargados desde LocalStorage:', data);
+                        return;
                     }
-                    return r;
-                });
-            } else {
-                data.registros = [];
+                } catch(e) { console.error('Error parseando LocalStorage:', e); }
             }
             
-            if (!data.hijos || data.hijos.length === 0) {
-                data.hijos = [
+            // Si no hay datos en LocalStorage, usar datos de ejemplo
+            data = {
+                hijos: [
                     { id: 1, nombre: 'Mateo', edad: 5 },
                     { id: 2, nombre: 'Sofía', edad: 3 }
-                ];
-            }
-            if (!data.actividades || data.actividades.length === 0) {
-                data.actividades = [
+                ],
+                actividades: [
                     { id: 1, nombre: 'Lectura' },
                     { id: 2, nombre: 'Dibujo' },
                     { id: 3, nombre: 'Deporte' },
                     { id: 4, nombre: 'Música' }
-                ];
-            }
-            if (!data.registros || data.registros.length === 0) {
-                const ahora = getFechaHoraLocal();
-                data.registros = [
-                    { id: 1, hijoId: 1, actividadId: 1, descripcion: 'Leyó 10 páginas', fechaHora: ahora, usuario: 'admin' },
-                    { id: 2, hijoId: 2, actividadId: 2, descripcion: 'Dibujó un paisaje', fechaHora: ahora, usuario: 'admin' }
-                ];
-            }
+                ],
+                registros: []
+            };
+            
+            // Agregar registros de ejemplo
+            const ahora = getFechaHoraLocal();
+            data.registros = [
+                { id: 1, hijoId: 1, actividadId: 1, descripcion: 'Leyó 10 páginas', fechaHora: ahora, usuario: 'admin' },
+                { id: 2, hijoId: 2, actividadId: 2, descripcion: 'Dibujó un paisaje', fechaHora: ahora, usuario: 'admin' }
+            ];
+            
+            console.log('📦 Datos de ejemplo cargados:', data);
             saveDataLocal();
         }
 
         function saveDataLocal() {
             localStorage.setItem(getStorageKey(), JSON.stringify(data));
             actualizarContadores();
-            guardarEnSupabase();
         }
 
         function cargarDatos() {
+            // Primero cargar datos locales
             loadData();
             renderAll();
+            // Luego intentar cargar desde Supabase (sobrescribe si hay datos)
             cargarDesdeSupabase();
         }
 
@@ -787,15 +780,40 @@
                     .select('*')
                     .eq('id', FAMILIA_ID)
                     .single();
-                if (error && error.code !== 'PGRST116') throw error;
+                    
+                if (error && error.code !== 'PGRST116') {
+                    console.error('Error de Supabase:', error);
+                    updateStatus('offline', 'Offline');
+                    return;
+                }
+                
                 if (dbData) {
-                    data.hijos = dbData.hijos || [];
-                    data.actividades = dbData.actividades || [];
-                    data.registros = dbData.registros || [];
+                    console.log('📦 Datos desde Supabase:', dbData);
+                    
+                    // Actualizar datos con los de Supabase
+                    if (dbData.hijos && dbData.hijos.length > 0) {
+                        data.hijos = dbData.hijos;
+                    }
+                    if (dbData.actividades && dbData.actividades.length > 0) {
+                        data.actividades = dbData.actividades;
+                    }
+                    if (dbData.registros) {
+                        // Migrar registros antiguos si es necesario
+                        data.registros = dbData.registros.map(r => {
+                            if (r.fecha && !r.fechaHora) {
+                                return { ...r, fechaHora: r.fecha + 'T00:00' };
+                            }
+                            return r;
+                        });
+                    }
+                    
                     saveDataLocal(false);
                     renderAll();
                     updateStatus('online', 'Conectado');
+                    showToast('✅ Datos sincronizados desde la nube');
                 } else {
+                    // No hay datos en Supabase, guardar los locales
+                    await guardarEnSupabase();
                     updateStatus('online', 'Conectado');
                 }
             } catch (err) {
@@ -823,7 +841,10 @@
             }
         }
 
-        function sincronizarAhora() { cargarDesdeSupabase(); }
+        function sincronizarAhora() { 
+            showToast('🔄 Sincronizando...');
+            cargarDesdeSupabase(); 
+        }
 
         function activarTiempoReal() {
             supabaseClient
@@ -835,12 +856,20 @@
                     filter: `id=eq.${FAMILIA_ID}` 
                 }, payload => {
                     if (payload.new) {
-                        data.hijos = payload.new.hijos || [];
-                        data.actividades = payload.new.actividades || [];
-                        data.registros = payload.new.registros || [];
+                        console.log('🔄 Cambio en tiempo real:', payload.new);
+                        if (payload.new.hijos) data.hijos = payload.new.hijos;
+                        if (payload.new.actividades) data.actividades = payload.new.actividades;
+                        if (payload.new.registros) {
+                            data.registros = payload.new.registros.map(r => {
+                                if (r.fecha && !r.fechaHora) {
+                                    return { ...r, fechaHora: r.fecha + 'T00:00' };
+                                }
+                                return r;
+                            });
+                        }
                         saveDataLocal(false);
                         renderAll();
-                        showToast('🔄 Datos sincronizados');
+                        showToast('🔄 Datos sincronizados en tiempo real');
                     }
                 })
                 .subscribe((status) => {
@@ -897,6 +926,7 @@
         }
 
         function renderAll() {
+            console.log('🔄 Renderizando todo... Datos:', data);
             actualizarContadores();
             populateSelects();
             renderHijos();
@@ -918,6 +948,8 @@
                 data.hijos.forEach(h => {
                     hijosHtml += `<option value="${h.id}">${h.nombre}${h.edad ? ' ('+h.edad+' años)' : ''}</option>`;
                 });
+            } else {
+                hijosHtml = '<option value="">No hay hijos registrados</option>';
             }
             selectHijo.innerHTML = hijosHtml;
             selectHijoRep.innerHTML = hijosHtml;
@@ -929,6 +961,8 @@
                 data.actividades.forEach(a => {
                     actHtml += `<option value="${a.id}">${a.nombre}</option>`;
                 });
+            } else {
+                actHtml = '<option value="">No hay actividades registradas</option>';
             }
             selectAct.innerHTML = actHtml;
             editSelectAct.innerHTML = actHtml;
@@ -940,7 +974,8 @@
         function renderHijos() {
             const container = document.getElementById('listaHijos');
             if (!data.hijos || data.hijos.length === 0) {
-                container.innerHTML = '<div class="empty-state"><p>No hay hijos</p></div>'; return;
+                container.innerHTML = '<div class="empty-state"><p>No hay hijos registrados</p></div>'; 
+                return;
             }
             container.innerHTML = data.hijos.map(h => `
                 <div class="child-card">
@@ -956,7 +991,8 @@
         function renderActividadesGestion() {
             const container = document.getElementById('listaActividadesGestion');
             if (!data.actividades || data.actividades.length === 0) {
-                container.innerHTML = '<div class="empty-state"><p>No hay actividades</p></div>'; return;
+                container.innerHTML = '<div class="empty-state"><p>No hay actividades registradas</p></div>'; 
+                return;
             }
             container.innerHTML = data.actividades.map(a => `
                 <div class="child-card">
@@ -992,7 +1028,7 @@
                 return f >= desde && f <= hasta;
             }) : [];
             if (lista.length === 0) {
-                container.innerHTML = `<div class="empty-state"><span class="emoji">📭</span><p>No hay registros</p></div>`;
+                container.innerHTML = `<div class="empty-state"><span class="emoji">📭</span><p>No hay registros en este rango</p></div>`;
                 return;
             }
             container.innerHTML = generarTabla(lista, `📆 Reporte por Rango (${formatearFechaTexto(desde)} - ${formatearFechaTexto(hasta)})`);
@@ -1021,7 +1057,7 @@
 
         function generarTabla(lista, titulo, mostrarUsuario = false) {
             if (!lista || lista.length === 0) {
-                return `<div class="empty-state"><span class="emoji">📭</span><p>No hay actividades</p></div>`;
+                return `<div class="empty-state"><span class="emoji">📭</span><p>No hay actividades registradas</p></div>`;
             }
             let html = `
                 <div class="reporte-titulo">
@@ -1071,6 +1107,7 @@
             if (!confirm('¿Eliminar este registro?')) return;
             data.registros = data.registros.filter(r => r.id !== id);
             saveDataLocal();
+            guardarEnSupabase();
             renderAll();
             showToast('🗑️ Registro eliminado');
         }
@@ -1100,6 +1137,7 @@
             if (index === -1) { showToast('⚠️ Registro no encontrado', true); return; }
             data.registros[index] = { ...data.registros[index], hijoId, actividadId, descripcion: descripcion || 'Sin descripción', fechaHora };
             saveDataLocal();
+            guardarEnSupabase();
             renderAll();
             cerrarModalEditar();
             showToast('✅ Registro actualizado');
@@ -1129,6 +1167,7 @@
                 };
                 data.registros.push(nuevoRegistro);
                 saveDataLocal();
+                guardarEnSupabase();
                 renderAll();
                 e.target.reset();
                 document.getElementById('fechaHoraActividad').value = getFechaHoraLocal();
@@ -1142,6 +1181,7 @@
                 if (!nombre) { showToast('⚠️ Ingresa un nombre', true); return; }
                 data.hijos.push({ id: Date.now(), nombre, edad: edad ? parseInt(edad) : null });
                 saveDataLocal();
+                guardarEnSupabase();
                 renderAll();
                 e.target.reset();
                 showToast('✅ Hijo agregado');
@@ -1153,6 +1193,7 @@
                 if (!nombre) { showToast('⚠️ Ingresa un nombre', true); return; }
                 data.actividades.push({ id: Date.now(), nombre });
                 saveDataLocal();
+                guardarEnSupabase();
                 renderAll();
                 e.target.reset();
                 showToast('✅ Actividad creada');
@@ -1163,6 +1204,7 @@
             if (confirm('¿Eliminar este hijo?')) {
                 data.hijos = data.hijos.filter(h => h.id !== id);
                 saveDataLocal();
+                guardarEnSupabase();
                 renderAll();
                 showToast('🗑️ Hijo removido');
             }
@@ -1172,13 +1214,14 @@
             if (confirm('¿Eliminar esta actividad?')) {
                 data.actividades = data.actividades.filter(a => a.id !== id);
                 saveDataLocal();
+                guardarEnSupabase();
                 renderAll();
                 showToast('🗑️ Actividad removida');
             }
         }
 
         // ============================================================
-        //  EXPORTAR PDF CON FECHA Y HORA
+        //  EXPORTAR PDF
         // ============================================================
         function exportarPDF(tipoReporte) {
             let lista = [], titulo = '';
@@ -1305,6 +1348,7 @@
         //  INICIALIZACIÓN
         // ============================================================
         document.addEventListener('DOMContentLoaded', () => {
+            console.log('🚀 Iniciando aplicación...');
             initMenu();
             initForms();
             activarTiempoReal();
@@ -1315,6 +1359,7 @@
                 if (validUser) {
                     document.getElementById('userDisplayName').textContent = user.username;
                     mostrarApp();
+                    console.log('✅ Usuario autenticado:', user.username);
                     return;
                 }
             }
