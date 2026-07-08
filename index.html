@@ -7,7 +7,6 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
-        /* ============ ESTILOS COMPLETOS ============ */
         * {
             margin: 0;
             padding: 0;
@@ -603,13 +602,24 @@
         
         let data = { hijos: [], actividades: [], registros: [] };
 
-        // Inicializador de Elementos Dom
+        // ============================================================
+        // 🕒 FUNCIÓN PARA OBTENER FECHA LOCAL CORRECTA (BOLIVIA UTC-4)
+        // ============================================================
+        function getFechaLocal() {
+            const ahora = new Date();
+            const anio = ahora.getFullYear();
+            const mes = String(ahora.getMonth() + 1).padStart(2, '0');
+            const dia = String(ahora.getDate()).padStart(2, '0');
+            return `${anio}-${mes}-${dia}`;
+        }
+
+        // ============================================================
+        //  INICIALIZACIÓN
+        // ============================================================
         document.addEventListener('DOMContentLoaded', () => {
             initMenu();
             initForms();
             loadData();
-            
-            // Activar la escucha en tiempo real para cambios en Supabase
             activarTiempoReal();
 
             document.getElementById('btnFiltrarRango').addEventListener('click', renderReporteRango);
@@ -617,7 +627,7 @@
         });
 
         // ============================================================
-        //  NUEVA FUNCIÓN: TIEMPO REAL (REALTIME VÍA WEBSOCKETS)
+        //  TIEMPO REAL (REALTIME VÍA WEBSOCKETS)
         // ============================================================
         function activarTiempoReal() {
             supabaseClient
@@ -628,25 +638,25 @@
                     table: 'familias', 
                     filter: `id=eq.${FAMILIA_ID}` 
                 }, payload => {
-                    console.log('¡Cambio detectado en la nube en tiempo real!', payload.new);
+                    console.log('🔄 Cambio detectado en tiempo real:', payload.new);
                     if (payload.new) {
                         data.hijos = payload.new.hijos || [];
                         data.actividades = payload.new.actividades || [];
                         data.registros = payload.new.registros || [];
-                        saveDataLocal(false); // Guardar localmente SIN volver a subir a la nube loop
+                        saveDataLocal(false);
                         renderAll();
                         showToast('🔄 Datos sincronizados en tiempo real');
                     }
                 })
                 .subscribe((status) => {
                     if (status === 'SUBSCRIBED') {
-                        console.log('Escuchando cambios de forma automática...');
+                        console.log('✅ Escuchando cambios automáticos...');
                     }
                 });
         }
 
         // ============================================================
-        //  NAVEGACIÓN INTERFAZ MÓVIL Y ESCRITORIO
+        //  NAVEGACIÓN
         // ============================================================
         function initMenu() {
             const menuToggle = document.getElementById('menuToggle');
@@ -683,7 +693,7 @@
         }
 
         // ============================================================
-        //  MANEJO DE DATOS LOCALES & EN LA NUBE (SUPABASE)
+        //  DATOS LOCALES Y SUPABASE
         // ============================================================
         function loadData() {
             const stored = localStorage.getItem('actividadesData');
@@ -711,18 +721,18 @@
                     data.registros = dbData.registros || [];
                     saveDataLocal(false); 
                     renderAll();
-                    updateStatus('online', 'Conectado');
+                    updateStatus('online', '✅ Conectado');
                 } else {
-                    updateStatus('online', 'Conectado (Vacío)');
+                    updateStatus('online', '✅ Conectado (vacío)');
                 }
             } catch (err) {
-                console.error("Error cargando de Supabase:", err);
-                updateStatus('offline', 'Modo Offline');
+                console.error("Error cargando:", err);
+                updateStatus('offline', '⚠️ Modo Offline');
             }
         }
 
         async function guardarEnSupabase() {
-            updateStatus('syncing', 'Guardando...');
+            updateStatus('syncing', '⏳ Guardando...');
             try {
                 const { error } = await supabaseClient
                     .from('familias')
@@ -731,16 +741,15 @@
                         hijos: data.hijos,
                         actividades: data.actividades,
                         registros: data.registros,
-                           // ✔️ FORMA CORRECTA: Mantiene el día local del dispositivo
-                        updated_at: new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString()
+                        updated_at: new Date().toISOString()
                     });
 
                 if (error) throw error;
-                updateStatus('online', 'Conectado');
+                updateStatus('online', '✅ Conectado');
             } catch (err) {
                 console.error("Error al guardar:", err);
-                updateStatus('offline', 'Error de red');
-                showToast('Guardado local (Sin conexión a la nube)', true);
+                updateStatus('offline', '⚠️ Sin conexión');
+                showToast('⚠️ Guardado local (sin nube)', true);
             }
         }
 
@@ -754,9 +763,6 @@
             cargarDesdeSupabase();
         }
 
-        // ============================================================
-        //  RENDERIZADO DINÁMICO DE INTERFAZ
-        // ============================================================
         function updateStatus(state, text) {
             const dot = document.getElementById('statusDot');
             const label = document.getElementById('statusText');
@@ -766,6 +772,9 @@
             }
         }
 
+        // ============================================================
+        //  RENDERIZADO
+        // ============================================================
         function actualizarContadores() {
             document.getElementById('hijosCount').textContent = data.hijos.length;
             document.getElementById('actividadesCount').textContent = data.actividades.length;
@@ -797,13 +806,8 @@
                 selectAct.innerHTML += `<option value="${a.id}">${a.nombre}</option>`;
             });
 
-            // ✔️ Forma ultra-compatible para fijar la fecha de hoy localmente sin desfase
-            const ahora = new Date();
-            const anio = ahora.getFullYear();
-            const mes = String(ahora.getMonth() + 1).padStart(2, '0'); // Los meses van de 0 a 11
-            const dia = String(ahora.getDate()).padStart(2, '0');
-            const fechaHoyBolivia = `${anio}-${mes}-${dia}`;
-            document.getElementById('fecha').value = fechaHoyBolivia;
+            // ✅ FECHA LOCAL CORRECTA (BOLIVIA)
+            document.getElementById('fechaActividad').value = getFechaLocal();
         }
 
         function renderHijos() {
@@ -840,7 +844,8 @@
         }
 
         function renderReporteDiario() {
-            const hoy = new Date().toISOString().split('T')[0];
+            // ✅ USAR FECHA LOCAL
+            const hoy = getFechaLocal();
             const lista = data.registros.filter(r => r.fecha === hoy);
             document.getElementById('diarioCount').textContent = lista.length;
             
@@ -902,7 +907,7 @@
         }
 
         // ============================================================
-        //  PROCESAMIENTO DE FORMULARIOS
+        //  FORMULARIOS
         // ============================================================
         function initForms() {
             document.getElementById('formActividad').addEventListener('submit', (e) => {
@@ -918,8 +923,8 @@
                 saveDataLocal();
                 renderReporteDiario();
                 e.target.reset();
-                document.getElementById('fechaActividad').value = new Date().toISOString().split('T')[0];
-                showToast('¡Actividad registrada con éxito!');
+                document.getElementById('fechaActividad').value = getFechaLocal();
+                showToast('✅ Actividad registrada');
             });
 
             document.getElementById('formHijo').addEventListener('submit', (e) => {
@@ -932,7 +937,7 @@
                 saveDataLocal();
                 renderAll();
                 e.target.reset();
-                showToast('Hijo agregado');
+                showToast('✅ Hijo agregado');
             });
 
             document.getElementById('formActividadGestion').addEventListener('submit', (e) => {
@@ -944,33 +949,33 @@
                 saveDataLocal();
                 renderAll();
                 e.target.reset();
-                showToast('Nueva actividad creada');
+                showToast('✅ Actividad creada');
             });
         }
 
         // ============================================================
-        //  ELIMINACIÓN DE REGISTROS
+        //  ELIMINAR
         // ============================================================
         function eliminarHijo(id) {
-            if(confirm("¿Estás seguro de eliminar este niño? Se perderán sus asociaciones estructurales.")) {
+            if(confirm("¿Eliminar este hijo?")) {
                 data.hijos = data.hijos.filter(h => h.id !== id);
                 saveDataLocal();
                 renderAll();
-                showToast('Hijo removido');
+                showToast('🗑️ Hijo removido');
             }
         }
 
         function eliminarActividadGestion(id) {
-            if(confirm("¿Estás seguro de eliminar esta actividad estructural?")) {
+            if(confirm("¿Eliminar esta actividad?")) {
                 data.actividades = data.actividades.filter(a => a.id !== id);
                 saveDataLocal();
                 renderAll();
-                showToast('Actividad removida');
+                showToast('🗑️ Actividad removida');
             }
         }
 
         // ============================================================
-        //  EXPORTACIÓN A FORMATO PDF Y ALERTAS (TOAST)
+        //  EXPORTAR PDF
         // ============================================================
         function exportarPDF(tipoReporte) {
             let elementoObjetivo = "";
@@ -983,7 +988,7 @@
             const element = document.getElementById(elementoObjetivo);
             
             if(!element || element.getElementsByClassName('empty-state').length > 0) {
-                showToast("No hay datos cargados para exportar en este reporte", true);
+                showToast("No hay datos para exportar", true);
                 return;
             }
 
@@ -995,9 +1000,9 @@
                 jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
             };
 
-            showToast("Generando PDF...");
+            showToast("⏳ Generando PDF...");
             html2pdf().set(opciones).from(element).save().then(() => {
-                showToast("¡PDF descargado con éxito!");
+                showToast("✅ PDF descargado");
             });
         }
 
