@@ -1135,7 +1135,7 @@
         }
 
         // ============================================================
-        //  GENERAR TABLA HTML CON TÍTULO
+        //  GENERAR TABLA HTML CON TÍTULO Y COLUMNA DE FECHA
         // ============================================================
         function generarTabla(lista, titulo) {
             if (lista.length === 0) {
@@ -1326,7 +1326,7 @@
         }
 
         // ============================================================
-        //  EXPORTAR PDF - CORREGIDO CON FECHAS
+        //  EXPORTAR PDF - CON COLUMNA DE FECHA
         // ============================================================
         function exportarPDF(tipoReporte) {
             let elementoId = "";
@@ -1346,7 +1346,7 @@
             // Clonar el elemento para el PDF
             const clon = element.cloneNode(true);
             
-            // ESTILOS COMPLETOS PARA EL PDF
+            // ESTILOS COMPLETOS PARA EL PDF - INCLUYE LA COLUMNA DE FECHA
             const estilo = document.createElement('style');
             estilo.textContent = `
                 .tabla-reporte { 
@@ -1361,10 +1361,12 @@
                     padding: 10px 12px; 
                     text-align: left; 
                     font-weight: 600;
+                    font-size: 11px;
                 }
                 .tabla-reporte td { 
                     padding: 10px 12px; 
                     border-bottom: 1px solid #eef2f7; 
+                    font-size: 11px;
                 }
                 .tabla-reporte tr:nth-child(even) { background: #f8fafc; }
                 .tabla-reporte tr:nth-child(odd) { background: #ffffff; }
@@ -1416,32 +1418,28 @@
                     border-top: 1px solid #eef2f7;
                     padding-top: 12px;
                 }
-                .titulo-pdf {
-                    font-size: 22px;
-                    font-weight: 700;
-                    color: #1a2a3a;
-                    margin-bottom: 8px;
-                }
-                .subtitulo-pdf {
-                    font-size: 13px;
-                    color: #6b7a8f;
-                    margin-bottom: 16px;
+                /* Asegurar que la columna de fecha sea visible */
+                .tabla-reporte th:nth-child(5),
+                .tabla-reporte td:nth-child(5) {
+                    display: table-cell;
                 }
             `;
             clon.prepend(estilo);
 
-            // Asegurar que los datos estén completos
-            const todasLasFilas = clon.querySelectorAll('tbody tr');
-            todasLasFilas.forEach(fila => {
+            // Verificar que todas las filas tengan la columna de fecha
+            const filas = clon.querySelectorAll('tbody tr');
+            filas.forEach(fila => {
                 const celdas = fila.querySelectorAll('td');
-                if (celdas.length >= 5) {
-                    // Asegurar formato de fecha
-                    const fechaCelda = celdas[4];
-                    if (fechaCelda) {
-                        const fechaSpan = fechaCelda.querySelector('.badge-fecha');
-                        if (fechaSpan) {
-                            // Ya tiene el formato correcto
-                        }
+                if (celdas.length < 5) {
+                    // Si falta la columna de fecha, agregarla
+                    const fecha = celdas[3] ? celdas[3].textContent.trim() : 'Sin fecha';
+                    const nuevaCelda = document.createElement('td');
+                    nuevaCelda.innerHTML = `<span class="badge-fecha">${fecha}</span>`;
+                    // Insertar antes de la última celda (acciones)
+                    if (celdas.length >= 4) {
+                        fila.insertBefore(nuevaCelda, celdas[4]);
+                    } else {
+                        fila.appendChild(nuevaCelda);
                     }
                 }
             });
@@ -1450,13 +1448,16 @@
                 margin:       8,
                 filename:     nombreArchivo,
                 image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true, width: 800 },
+                html2canvas:  { scale: 2, useCORS: true, width: 900 },
                 jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
             };
 
             showToast("⏳ Generando PDF...");
             html2pdf().set(opciones).from(clon).save().then(() => {
                 showToast("✅ PDF descargado");
+            }).catch((err) => {
+                console.error(err);
+                showToast("❌ Error al generar PDF", true);
             });
         }
 
