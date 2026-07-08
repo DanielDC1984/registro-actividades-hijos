@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>Registro de Actividades - Familia</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+    <!-- ========== LOGIN ========== -->
+    <div class="login-container" id="loginContainer">
+        <div class="login-box">
+            <div class="logo">📋</div>
+            <h1>Registro de Actividades</h1>
+            <p class="subtitle" id="loginSubtitle">Inicia sesión para gestionar las actividades</p>
+            <div class="error-msg" id="loginError"></div>
+            <div class="success-msg" id="loginSuccess"></div>
+            <div class="info-msg" id="loginInfo"></div>
+            <form id="loginForm">
+                <div id="loginFields">
+                    <div class="form-group">
+                        <label>👤 Usuario</label>
+                        <input type="text" id="loginUsername" placeholder="Ej: juan123" required>
+                    </div>
+                    <div class="form-group">
+                        <label>🔒 Contraseña</label>
+                        <input type="password" id="loginPassword" placeholder="Mínimo 6 caracteres" required minlength="6">
+                    </div>
+                </div>
+                <div class="loading-spinner" id="loginSpinner">
+                    <div class="spinner"></div>
+                    <p style="margin-top:8px;color:#8a9aa8;font-size:13px;">Cargando...</p>
+                </div>
+                <button type="submit" class="btn-login" id="loginBtn">🚀 Iniciar Sesión</button>
+            </form>
+            <div class="toggle-link"><a id="toggleAuthLink">📝 Registrarme</a></div>
+        </div>
+    </div>
+
+    <!-- ========== APP ========== -->
+    <div class="app-container" id="appContainer">
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+        <!-- MODAL EDITAR -->
+        <div class="modal-overlay" id="modalEditar">
+            <div class="modal-content">
+                <div class="modal-title">✏️ Editar Registro</div>
+                <form id="formEditar">
+                    <div class="form-group">
+                        <label>👤 Hijo</label>
+                        <select id="editSelectHijo" required><option value="">Seleccionar...</option></select>
+                    </div>
+                    <div class="form-group">
+                        <label>🎯 Actividad</label>
+                        <select id="editSelectActividad" required><option value="">Seleccionar...</option></select>
+                    </div>
+                    <div class="form-group">
+                        <label>📝 Descripción</label>
+                        <textarea id="editDescripcion" placeholder="Detalles..." rows="2"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>📅 Fecha y Hora</label>
+                        <input type="datetime-local" id="editFechaHora" required>
+                    </div>
+                    <input type="hidden" id="editRegistroId">
+                    <div class="modal-actions">
+                        <button type="button" class="btn-secondary" onclick="View.cerrarModalEditar()">Cancelar</button>
+                        <button type="submit" class="btn-primary">💾 Guardar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <nav class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2>📋 Menú <span>v2.0</span></h2>
+                <p>Registro de actividades</p>
+            </div>
+            <div class="sidebar-group">
+                <div class="sidebar-item active" data-view="registrar">
+                    <div class="icon primary">📝</div>
+                    <div class="info"><div class="name">Registrar Actividad</div><div class="desc">Acceso directo</div></div>
+                </div>
+            </div>
+            <div class="sidebar-group">
+                <div class="sidebar-group-label">📊 Reportes</div>
+                <div class="sidebar-item" data-view="diario">
+                    <div class="icon green">📅</div>
+                    <div class="info"><div class="name">Reporte Diario</div><div class="desc">Actividades de hoy</div></div>
+                </div>
+                <div class="sidebar-item" data-view="rango">
+                    <div class="icon purple">📆</div>
+                    <div class="info"><div class="name">Reporte por Rango</div><div class="desc">Filtra por fechas</div></div>
+                </div>
+                <div class="sidebar-item" data-view="hijo">
+                    <div class="icon orange">👤</div>
+                    <div class="info"><div class="name">Reporte por Hijo</div><div class="desc">Actividades por niño</div></div>
+                </div>
+                <div class="sidebar-item" data-view="completo">
+                    <div class="icon purple">📊</div>
+                    <div class="info"><div class="name">Reporte Completo</div><div class="desc">Todos los registros</div></div>
+                </div>
+            </div>
+            <div class="sidebar-group" id="adminPanelGroup" style="display:none;">
+                <div class="sidebar-group-label">👑 Administración</div>
+                <div class="sidebar-item" data-view="admin">
+                    <div class="icon purple">👥</div>
+                    <div class="info"><div class="name">Gestionar Usuarios</div><div class="desc">Aprobar, bloquear, eliminar</div></div>
+                    <span class="badge" id="pendingCount">0</span>
+                </div>
+                <div class="sidebar-item" data-view="hijos">
+                    <div class="icon blue">👨‍👦</div>
+                    <div class="info"><div class="name">Hijos</div><div class="desc">Administrar niños</div></div>
+                    <span class="badge" id="hijosCount">0</span>
+                </div>
+                <div class="sidebar-item" data-view="actividades">
+                    <div class="icon red">🎯</div>
+                    <div class="info"><div class="name">Actividades</div><div class="desc">Gestionar actividades</div></div>
+                    <span class="badge" id="actividadesCount">0</span>
+                </div>
+            </div>
+            <div style="padding:16px 20px;margin-top:20px;border-top:1px solid rgba(255,255,255,.05);">
+                <div style="display:flex;justify-content:space-between;color:rgba(255,255,255,.4);font-size:12px;">
+                    <span>Total registros</span>
+                    <span style="color:#fff;font-weight:600;" id="totalRegistros">0</span>
+                </div>
+                <div class="sync-status" style="margin-top:12px;">
+                    <span class="dot online" id="statusDot"></span>
+                    <span id="statusText" style="color:rgba(255,255,255,.6);">Conectado</span>
+                </div>
+            </div>
+            <div class="user-info">
+                <div>👤 <span class="username" id="userDisplayName">usuario</span></div>
+                <div><span class="role-badge user" id="userRoleBadge">Usuario</span></div>
+                <button onclick="AppController.cerrarSesion()" style="margin-top:8px;background:#ef4444;color:#fff;border:none;padding:6px 16px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;width:100%;">🚪 Cerrar Sesión</button>
+            </div>
+        </nav>
+
+        <div class="main-content">
+            <div class="topbar">
+                <button class="menu-toggle" id="menuToggle" aria-label="Abrir menú">☰</button>
+                <div class="topbar-title" id="pageTitle">Registro <small>de actividades</small></div>
+                <div class="topbar-actions">
+                    <button onclick="AppController.sincronizarAhora()" title="Sincronizar">🔄</button>
+                </div>
+            </div>
+
+            <div class="view active" id="view-registrar">
+                <div class="view-title">📝 Registrar Actividad</div>
+                <form id="formActividad">
+                    <div class="form-group">
+                        <label>👤 Hijo</label>
+                        <select id="selectHijo" required><option value="">Seleccionar...</option></select>
+                    </div>
+                    <div class="form-group">
+                        <label>🎯 Actividad</label>
+                        <select id="selectActividad" required><option value="">Seleccionar...</option></select>
+                    </div>
+                    <div class="form-group">
+                        <label>📝 Descripción</label>
+                        <textarea id="descActividad" placeholder="Detalles..." rows="2"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>📅 Fecha y Hora</label>
+                        <input type="datetime-local" id="fechaHoraActividad" required>
+                    </div>
+                    <button type="submit" class="btn-primary">✅ Guardar</button>
+                </form>
+            </div>
+
+            <div class="view" id="view-admin">
+                <div class="view-title">👑 Gestionar Usuarios <span class="badge-count" id="adminPendingCount">0</span></div>
+                <p style="color:#6b7a8f;margin-bottom:16px;font-size:14px;">Administra los usuarios del sistema.</p>
+                <div id="adminUserList" class="admin-panel">
+                    <div class="empty-state"><span class="emoji">👥</span><p>No hay usuarios registrados</p></div>
+                </div>
+            </div>
+
+            <div class="view" id="view-diario">
+                <div class="view-title">📅 Reporte Diario <span class="badge-count" id="diarioCount">0</span></div>
+                <div class="view-actions"><button class="btn-pdf" onclick="AppController.exportarPDF('diario')">📄 PDF</button></div>
+                <div id="diarioLista" class="activity-list"></div>
+            </div>
+
+            <div class="view" id="view-rango">
+                <div class="view-title">📆 Reporte por Rango</div>
+                <div class="form-row">
+                    <div class="form-group"><label>Desde</label><input type="date" id="fechaDesde"></div>
+                    <div class="form-group"><label>Hasta</label><input type="date" id="fechaHasta"></div>
+                </div>
+                <button class="btn-primary" id="btnFiltrarRango" style="margin-bottom:15px;">🔍 Filtrar</button>
+                <div class="view-actions"><button class="btn-pdf" onclick="AppController.exportarPDF('rango')">📄 PDF</button></div>
+                <div id="rangoLista" class="activity-list"></div>
+            </div>
+
+            <div class="view" id="view-hijo">
+                <div class="view-title">👤 Reporte por Hijo</div>
+                <div class="form-group">
+                    <label>Seleccionar Hijo</label>
+                    <select id="selectHijoReporte"><option value="">Seleccionar...</option></select>
+                </div>
+                <button class="btn-primary" id="btnFiltrarHijo" style="margin-bottom:15px;">🔍 Filtrar</button>
+                <div class="view-actions"><button class="btn-pdf" onclick="AppController.exportarPDF('hijo')">📄 PDF</button></div>
+                <div id="hijoLista" class="activity-list"></div>
+            </div>
+
+            <div class="view" id="view-completo">
+                <div class="view-title">📊 Reporte Completo <span class="badge-count" id="completoCount">0</span></div>
+                <p style="color:#6b7a8f;margin-bottom:12px;font-size:14px;">Todos los registros de todos los usuarios.</p>
+                <div class="view-actions"><button class="btn-pdf" onclick="AppController.exportarPDF('completo')">📄 PDF Completo</button></div>
+                <div id="completoLista" class="activity-list"></div>
+            </div>
+
+            <div class="view" id="view-hijos">
+                <div class="view-title">👨‍👦 Hijos</div>
+                <form id="formHijo">
+                    <div class="form-row">
+                        <div class="form-group"><label>Nombre</label><input type="text" id="nombreHijo" placeholder="Ej: Mateo" required></div>
+                        <div class="form-group"><label>Edad</label><input type="number" id="edadHijo" placeholder="5" min="0" max="18"></div>
+                    </div>
+                    <button type="submit" class="btn-primary">➕ Agregar</button>
+                </form>
+                <div id="listaHijos" style="margin-top:16px;"></div>
+            </div>
+
+            <div class="view" id="view-actividades">
+                <div class="view-title">🎯 Actividades</div>
+                <form id="formActividadGestion">
+                    <div class="form-group"><label>Nombre</label><input type="text" id="nombreActividad" placeholder="Ej: Lectura..." required></div>
+                    <button type="submit" class="btn-primary">➕ Agregar</button>
+                </form>
+                <div id="listaActividadesGestion" style="margin-top:16px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <!-- Librerías externas -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <!-- App: Modelo -> Vista -> Controlador -->
+    <script src="js/config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/store.js"></script>
+    <script src="js/view.js"></script>
+    <script src="js/controller.js"></script>
+</body>
+</html>
