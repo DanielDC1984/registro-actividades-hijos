@@ -286,42 +286,112 @@
             transition: all 0.2s;
         }
         .btn-delete-reg:hover { background: #dc2626; }
-        .activity-list { margin-top: 12px; }
-        .activity-item {
+        .activity-list {
+            margin-top: 12px;
+            overflow-x: auto;
+        }
+        
+        /* ============================================================
+           ESTILOS DE TABLA PARA REPORTES
+           ============================================================ */
+        .tabla-reporte {
+            width: 100%;
+            border-collapse: collapse;
             background: white;
-            padding: 14px 16px;
             border-radius: 14px;
-            margin-bottom: 8px;
-            border-left: 4px solid #4a6cf7;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
+            overflow: hidden;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+            min-width: 500px;
         }
-        .activity-item .act-content { flex: 1; }
-        .activity-item .act-title { font-weight: 600; color: #1a2a3a; }
-        .activity-item .act-meta {
-            font-size: 12px;
-            color: #8a9aa8;
-            margin-top: 4px;
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
+        .tabla-reporte thead {
+            background: #1a2a3a;
+            color: white;
         }
-        .activity-item .act-meta span {
+        .tabla-reporte thead th {
+            padding: 12px 14px;
+            text-align: left;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+        }
+        .tabla-reporte tbody tr {
+            border-bottom: 1px solid #eef2f7;
+            transition: background 0.15s;
+        }
+        .tabla-reporte tbody tr:hover {
+            background: #f8fafc;
+        }
+        .tabla-reporte tbody td {
+            padding: 12px 14px;
+            font-size: 14px;
+            color: #1a2a3a;
+            vertical-align: middle;
+        }
+        .tabla-reporte .col-acciones {
+            white-space: nowrap;
+            text-align: center;
+        }
+        .tabla-reporte .col-acciones button {
+            margin: 0 2px;
+        }
+        .tabla-reporte .badge-fecha {
             background: #eef2f7;
-            padding: 2px 10px;
-            border-radius: 12px;
+            padding: 2px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            white-space: nowrap;
         }
-        .activity-item .act-actions {
-            display: flex;
-            gap: 6px;
-            margin-top: 8px;
+        .tabla-reporte .badge-hijo {
+            background: #e8edff;
+            color: #4a6cf7;
+            padding: 2px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
         }
-        @media (min-width: 768px) {
-            .activity-item .act-actions { margin-top: 0; }
+        .tabla-reporte .badge-actividad {
+            background: #f0ecff;
+            color: #7c5cfc;
+            padding: 2px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
         }
+        .tabla-reporte .descripcion-cell {
+            max-width: 200px;
+            word-wrap: break-word;
+        }
+        .tabla-reporte .sin-datos {
+            text-align: center;
+            padding: 30px;
+            color: #8a9aa8;
+        }
+        
+        /* Responsive para tabla */
+        @media (max-width: 768px) {
+            .tabla-reporte {
+                font-size: 13px;
+                min-width: 400px;
+            }
+            .tabla-reporte thead th,
+            .tabla-reporte tbody td {
+                padding: 8px 10px;
+            }
+            .tabla-reporte .descripcion-cell {
+                max-width: 100px;
+            }
+        }
+        @media (max-width: 480px) {
+            .tabla-reporte {
+                font-size: 12px;
+                min-width: 320px;
+            }
+            .tabla-reporte thead th,
+            .tabla-reporte tbody td {
+                padding: 6px 8px;
+            }
+        }
+
         .child-card {
             background: white;
             padding: 16px;
@@ -463,6 +533,7 @@
             transition: all 0.2s;
         }
         .modal-content .modal-actions .btn-secondary:active { transform: scale(0.97); }
+        
         @media (min-width: 768px) {
             .sidebar {
                 transform: translateX(0) !important;
@@ -488,8 +559,6 @@
             .main-content { padding: 12px; }
             .view-actions { flex-direction: column; }
             .btn-pdf { width: 100%; justify-content: center; }
-            .activity-item { flex-direction: column; align-items: stretch; }
-            .activity-item .act-actions { justify-content: flex-end; }
         }
     </style>
 </head>
@@ -533,7 +602,7 @@
 
     <nav class="sidebar" id="sidebar">
         <div class="sidebar-header">
-            <h2>📋 Menú <span>v1.2</span></h2>
+            <h2>📋 Menú <span>v1.3</span></h2>
             <p>Registro de actividades</p>
         </div>
 
@@ -729,7 +798,7 @@
         let data = { hijos: [], actividades: [], registros: [] };
 
         // ============================================================
-        // 🕒 FUNCIÓN PARA OBTENER FECHA LOCAL CORRECTA (BOLIVIA UTC-4)
+        // 🕒 FUNCIONES DE FECHA
         // ============================================================
         function getFechaLocal() {
             const ahora = new Date();
@@ -739,13 +808,20 @@
             return `${anio}-${mes}-${dia}`;
         }
 
-        // ============================================================
-        // 📅 FUNCIÓN PARA FORMATEAR FECHA PARA MOSTRAR (DD/MM/YYYY)
-        // ============================================================
         function formatearFechaMostrar(fecha) {
             if (!fecha) return '';
             const partes = fecha.split('-');
             return `${partes[2]}/${partes[1]}/${partes[0]}`;
+        }
+
+        function getNombreHijo(id) {
+            const h = data.hijos.find(h => h.id === id);
+            return h ? h.nombre : 'Desconocido';
+        }
+
+        function getNombreActividad(id) {
+            const a = data.actividades.find(a => a.id === id);
+            return a ? a.nombre : 'Desconocida';
         }
 
         // ============================================================
@@ -775,7 +851,6 @@
                     table: 'familias', 
                     filter: `id=eq.${FAMILIA_ID}` 
                 }, payload => {
-                    console.log('🔄 Cambio detectado en tiempo real:', payload.new);
                     if (payload.new) {
                         data.hijos = payload.new.hijos || [];
                         data.actividades = payload.new.actividades || [];
@@ -830,7 +905,7 @@
         }
 
         // ============================================================
-        //  DATOS LOCALES Y SUPABASE
+        //  DATOS
         // ============================================================
         function loadData() {
             const stored = localStorage.getItem('actividadesData');
@@ -943,7 +1018,6 @@
             selectAct.innerHTML = '<option value="">Seleccionar...</option>' + actHtml;
             editSelectAct.innerHTML = '<option value="">Seleccionar...</option>' + actHtml;
 
-            // ✅ FECHA LOCAL CORRECTA
             document.getElementById('fechaActividad').value = getFechaLocal();
         }
 
@@ -981,13 +1055,13 @@
         }
 
         // ============================================================
-        //  RENDERIZADO DE REPORTES CON BOTONES
+        //  REPORTES EN FORMATO TABLA
         // ============================================================
         function renderReporteDiario() {
             const hoy = getFechaLocal();
             const lista = data.registros.filter(r => r.fecha === hoy);
             document.getElementById('diarioCount').textContent = lista.length;
-            document.getElementById('diarioLista').innerHTML = htmlListaItems(lista);
+            document.getElementById('diarioLista').innerHTML = generarTabla(lista, '📅 Reporte Diario');
         }
 
         function renderReporteRango() {
@@ -996,16 +1070,16 @@
             const container = document.getElementById('rangoLista');
 
             if(!desde || !hasta) {
-                container.innerHTML = `<div class="empty-state"><p>Selecciona ambas fechas</p></div>`;
+                container.innerHTML = `<div class="empty-state"><p>📅 Selecciona ambas fechas</p></div>`;
                 return;
             }
 
             const lista = data.registros.filter(r => r.fecha >= desde && r.fecha <= hasta);
             if (lista.length === 0) {
-                container.innerHTML = `<div class="empty-state"><p>No hay registros en este rango</p></div>`;
+                container.innerHTML = `<div class="empty-state"><span class="emoji">📭</span><p>No hay registros en este rango</p></div>`;
                 return;
             }
-            container.innerHTML = htmlListaItems(lista);
+            container.innerHTML = generarTabla(lista, `📆 Reporte por Rango (${formatearFechaMostrar(desde)} - ${formatearFechaMostrar(hasta)})`);
         }
 
         function renderReporteHijo() {
@@ -1013,47 +1087,75 @@
             const container = document.getElementById('hijoLista');
 
             if(!hijoId) {
-                container.innerHTML = `<div class="empty-state"><p>Selecciona un hijo</p></div>`;
+                container.innerHTML = `<div class="empty-state"><p>👤 Selecciona un hijo</p></div>`;
                 return;
             }
 
             const lista = data.registros.filter(r => r.hijoId == hijoId);
             if (lista.length === 0) {
-                container.innerHTML = `<div class="empty-state"><p>Este hijo no tiene actividades</p></div>`;
+                container.innerHTML = `<div class="empty-state"><span class="emoji">📭</span><p>Este hijo no tiene actividades</p></div>`;
                 return;
             }
-            container.innerHTML = htmlListaItems(lista);
+            const nombreHijo = getNombreHijo(parseInt(hijoId));
+            container.innerHTML = generarTabla(lista, `👤 Reporte de ${nombreHijo}`);
         }
 
         // ============================================================
-        //  HTML DE LISTA CON BOTONES Y FECHA CORRECTA
+        //  GENERAR TABLA HTML
         // ============================================================
-        function htmlListaItems(lista) {
+        function generarTabla(lista, titulo) {
             if (lista.length === 0) {
                 return `<div class="empty-state"><span class="emoji">📭</span><p>No hay actividades</p></div>`;
             }
 
-            return lista.map(r => {
+            let html = `
+                <div style="overflow-x:auto; -webkit-overflow-scrolling: touch;">
+                    <table class="tabla-reporte">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>👤 Hijo</th>
+                                <th>🎯 Actividad</th>
+                                <th>📝 Descripción</th>
+                                <th>📅 Fecha</th>
+                                <th class="col-acciones">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            lista.forEach((r, index) => {
                 const hijo = data.hijos.find(h => h.id == r.hijoId);
                 const act = data.actividades.find(a => a.id == r.actividadId);
-                return `
-                    <div class="activity-item">
-                        <div class="act-content">
-                            <div class="act-title">${act ? act.nombre : 'Actividad'} - ${hijo ? hijo.nombre : 'Niño'}</div>
-                            <div style="font-size:14px; margin-top:4px; color:#2a3a4a;">${r.descripcion || 'Sin descripción'}</div>
-                            <div class="act-meta"><span>📅 ${formatearFechaMostrar(r.fecha)}</span></div>
-                        </div>
-                        <div class="act-actions">
-                            <button class="btn-edit" onclick="abrirModalEditar(${r.id})">✏️ Editar</button>
+                html += `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td><span class="badge-hijo">${hijo ? hijo.nombre : 'Desconocido'}</span></td>
+                        <td><span class="badge-actividad">${act ? act.nombre : 'Desconocida'}</span></td>
+                        <td class="descripcion-cell">${r.descripcion || 'Sin descripción'}</td>
+                        <td><span class="badge-fecha">${formatearFechaMostrar(r.fecha)}</span></td>
+                        <td class="col-acciones">
+                            <button class="btn-edit" onclick="abrirModalEditar(${r.id})">✏️</button>
                             <button class="btn-delete-reg" onclick="eliminarRegistro(${r.id})">🗑️</button>
-                        </div>
-                    </div>
+                        </td>
+                    </tr>
                 `;
-            }).join('');
+            });
+
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+                <div style="margin-top:12px; font-size:13px; color:#6b7a8f; text-align:right;">
+                    Total: <strong>${lista.length}</strong> registros
+                </div>
+            `;
+
+            return html;
         }
 
         // ============================================================
-        //  🗑️ ELIMINAR REGISTRO
+        //  ELIMINAR REGISTRO
         // ============================================================
         function eliminarRegistro(id) {
             if (!confirm('¿Eliminar este registro permanentemente?')) return;
@@ -1064,7 +1166,7 @@
         }
 
         // ============================================================
-        //  ✏️ EDITAR REGISTRO (MODAL)
+        //  EDITAR REGISTRO
         // ============================================================
         function abrirModalEditar(id) {
             const registro = data.registros.find(r => r.id === id);
@@ -1086,9 +1188,6 @@
             document.getElementById('modalEditar').classList.remove('active');
         }
 
-        // ============================================================
-        //  💾 GUARDAR EDICIÓN
-        // ============================================================
         function guardarEdicion(e) {
             e.preventDefault();
 
@@ -1124,7 +1223,7 @@
         }
 
         // ============================================================
-        //  FORMULARIOS (CREAR)
+        //  FORMULARIOS
         // ============================================================
         function initForms() {
             document.getElementById('formActividad').addEventListener('submit', (e) => {
@@ -1171,7 +1270,7 @@
         }
 
         // ============================================================
-        //  ELIMINAR HIJO / ACTIVIDAD (Gestión)
+        //  ELIMINAR HIJO / ACTIVIDAD
         // ============================================================
         function eliminarHijo(id) {
             if(confirm("¿Eliminar este hijo?")) {
@@ -1192,33 +1291,59 @@
         }
 
         // ============================================================
-        //  EXPORTAR PDF
+        //  EXPORTAR PDF (AHORA CON TABLA COMPLETA)
         // ============================================================
         function exportarPDF(tipoReporte) {
-            let elementoObjetivo = "";
+            let elementoId = "";
             let nombreArchivo = `Reporte_${tipoReporte}.pdf`;
 
-            if(tipoReporte === 'diario') elementoObjetivo = 'diarioLista';
-            if(tipoReporte === 'rango') elementoObjetivo = 'rangoLista';
-            if(tipoReporte === 'hijo') elementoObjetivo = 'hijoLista';
+            if(tipoReporte === 'diario') elementoId = 'diarioLista';
+            if(tipoReporte === 'rango') elementoId = 'rangoLista';
+            if(tipoReporte === 'hijo') elementoId = 'hijoLista';
 
-            const element = document.getElementById(elementoObjetivo);
+            const element = document.getElementById(elementoId);
             
             if(!element || element.getElementsByClassName('empty-state').length > 0) {
                 showToast("No hay datos para exportar", true);
                 return;
             }
 
+            // Clonar el elemento para el PDF
+            const clon = element.cloneNode(true);
+            
+            // Asegurar que la tabla se vea bien en el PDF
+            const estilo = document.createElement('style');
+            estilo.textContent = `
+                .tabla-reporte { width: 100%; border-collapse: collapse; font-size: 11px; }
+                .tabla-reporte th { background: #1a2a3a; color: white; padding: 8px; text-align: left; }
+                .tabla-reporte td { padding: 8px; border-bottom: 1px solid #eef2f7; }
+                .tabla-reporte tr:nth-child(even) { background: #f8fafc; }
+                .badge-hijo, .badge-actividad, .badge-fecha { 
+                    display: inline-block; 
+                    padding: 2px 10px; 
+                    border-radius: 12px; 
+                    font-size: 10px;
+                    font-weight: 500;
+                }
+                .badge-hijo { background: #e8edff; color: #4a6cf7; }
+                .badge-actividad { background: #f0ecff; color: #7c5cfc; }
+                .badge-fecha { background: #eef2f7; color: #6b7a8f; }
+                .col-acciones { display: none; }
+                .descripcion-cell { max-width: 150px; word-wrap: break-word; }
+                .empty-state { text-align: center; color: #8a9aa8; padding: 30px; }
+            `;
+            clon.prepend(estilo);
+
             const opciones = {
-                margin:       10,
+                margin:       8,
                 filename:     nombreArchivo,
                 image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                html2canvas:  { scale: 2, useCORS: true, width: 800 },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
             };
 
             showToast("⏳ Generando PDF...");
-            html2pdf().set(opciones).from(element).save().then(() => {
+            html2pdf().set(opciones).from(clon).save().then(() => {
                 showToast("✅ PDF descargado");
             });
         }
