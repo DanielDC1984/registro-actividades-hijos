@@ -262,6 +262,30 @@
             transition: all 0.2s;
         }
         .btn-primary:active { transform: scale(0.97); background: #3a5cd7; }
+        .btn-edit {
+            background: #f59e0b;
+            border: none;
+            padding: 4px 12px;
+            border-radius: 12px;
+            color: white;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-edit:hover { background: #d97706; }
+        .btn-delete {
+            background: #ef4444;
+            border: none;
+            padding: 4px 12px;
+            border-radius: 12px;
+            color: white;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-delete:hover { background: #dc2626; }
         .activity-list { margin-top: 12px; }
         .activity-item {
             background: white;
@@ -270,7 +294,12 @@
             margin-bottom: 8px;
             border-left: 4px solid #4a6cf7;
             box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
         }
+        .activity-item .act-content { flex: 1; }
         .activity-item .act-title { font-weight: 600; color: #1a2a3a; }
         .activity-item .act-meta {
             font-size: 12px;
@@ -284,6 +313,14 @@
             background: #eef2f7;
             padding: 2px 10px;
             border-radius: 12px;
+        }
+        .activity-item .act-actions {
+            display: flex;
+            gap: 6px;
+            margin-top: 8px;
+        }
+        @media (min-width: 768px) {
+            .activity-item .act-actions { margin-top: 0; }
         }
         .child-card {
             background: white;
@@ -373,6 +410,60 @@
             background-position: right 14px center;
             padding-right: 40px;
         }
+        /* Modal para editar */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 3000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal-content {
+            background: white;
+            padding: 24px;
+            border-radius: 20px;
+            max-width: 480px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            animation: modalSlide 0.3s ease;
+        }
+        @keyframes modalSlide {
+            from { transform: translateY(30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .modal-content .modal-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1a2a3a;
+            margin-bottom: 16px;
+        }
+        .modal-content .modal-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 16px;
+        }
+        .modal-content .modal-actions .btn-primary { flex: 1; }
+        .modal-content .modal-actions .btn-secondary {
+            flex: 1;
+            padding: 14px;
+            background: #eef2f7;
+            color: #1a2a3a;
+            border: none;
+            border-radius: 14px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .modal-content .modal-actions .btn-secondary:active { transform: scale(0.97); }
         @media (min-width: 768px) {
             .sidebar {
                 transform: translateX(0) !important;
@@ -398,6 +489,8 @@
             .main-content { padding: 12px; }
             .view-actions { flex-direction: column; }
             .btn-pdf { width: 100%; justify-content: center; }
+            .activity-item { flex-direction: column; align-items: stretch; }
+            .activity-item .act-actions { justify-content: flex-end; }
         }
     </style>
 </head>
@@ -405,9 +498,43 @@
 
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
+    <!-- MODAL PARA EDITAR -->
+    <div class="modal-overlay" id="modalEditar">
+        <div class="modal-content">
+            <div class="modal-title">✏️ Editar Registro</div>
+            <form id="formEditar">
+                <div class="form-group">
+                    <label>👤 Hijo</label>
+                    <select id="editSelectHijo" required>
+                        <option value="">Seleccionar...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>🎯 Actividad</label>
+                    <select id="editSelectActividad" required>
+                        <option value="">Seleccionar...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>📝 Descripción</label>
+                    <textarea id="editDescripcion" placeholder="Detalles de la actividad..." rows="2"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>📅 Fecha</label>
+                    <input type="date" id="editFecha" required>
+                </div>
+                <input type="hidden" id="editRegistroId">
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" onclick="cerrarModalEditar()">Cancelar</button>
+                    <button type="submit" class="btn-primary">💾 Guardar Cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <nav class="sidebar" id="sidebar">
         <div class="sidebar-header">
-            <h2>📋 Menú <span>v1.1</span></h2>
+            <h2>📋 Menú <span>v1.2</span></h2>
             <p>Registro de actividades</p>
         </div>
 
@@ -603,7 +730,7 @@
         let data = { hijos: [], actividades: [], registros: [] };
 
         // ============================================================
-        // 🕒 FUNCIÓN PARA OBTENER FECHA LOCAL CORRECTA (BOLIVIA UTC-4)
+        // 🕒 FUNCIÓN PARA OBTENER FECHA LOCAL CORRECTA
         // ============================================================
         function getFechaLocal() {
             const ahora = new Date();
@@ -624,6 +751,9 @@
 
             document.getElementById('btnFiltrarRango').addEventListener('click', renderReporteRango);
             document.getElementById('btnFiltrarHijo').addEventListener('click', renderReporteHijo);
+
+            // Modal de edición
+            document.getElementById('formEditar').addEventListener('submit', guardarEdicion);
         });
 
         // ============================================================
@@ -793,20 +923,19 @@
             const selectHijo = document.getElementById('selectHijo');
             const selectAct = document.getElementById('selectActividad');
             const selectHijoRep = document.getElementById('selectHijoReporte');
+            const editSelectHijo = document.getElementById('editSelectHijo');
+            const editSelectAct = document.getElementById('editSelectActividad');
 
-            selectHijo.innerHTML = '<option value="">Seleccionar...</option>';
-            selectHijoRep.innerHTML = '<option value="">Seleccionar...</option>';
-            data.hijos.forEach(h => {
-                selectHijo.innerHTML += `<option value="${h.id}">${h.nombre}</option>`;
-                selectHijoRep.innerHTML += `<option value="${h.id}">${h.nombre}</option>`;
-            });
+            const hijosHtml = data.hijos.map(h => `<option value="${h.id}">${h.nombre}</option>`).join('');
+            const actHtml = data.actividades.map(a => `<option value="${a.id}">${a.nombre}</option>`).join('');
 
-            selectAct.innerHTML = '<option value="">Seleccionar...</option>';
-            data.actividades.forEach(a => {
-                selectAct.innerHTML += `<option value="${a.id}">${a.nombre}</option>`;
-            });
+            selectHijo.innerHTML = '<option value="">Seleccionar...</option>' + hijosHtml;
+            selectHijoRep.innerHTML = '<option value="">Seleccionar...</option>' + hijosHtml;
+            editSelectHijo.innerHTML = '<option value="">Seleccionar...</option>' + hijosHtml;
 
-            // ✅ FECHA LOCAL CORRECTA (BOLIVIA)
+            selectAct.innerHTML = '<option value="">Seleccionar...</option>' + actHtml;
+            editSelectAct.innerHTML = '<option value="">Seleccionar...</option>' + actHtml;
+
             document.getElementById('fechaActividad').value = getFechaLocal();
         }
 
@@ -843,18 +972,14 @@
             `).join('');
         }
 
+        // ============================================================
+        //  RENDERIZADO DE REPORTES CON BOTONES DE EDICIÓN Y ELIMINACIÓN
+        // ============================================================
         function renderReporteDiario() {
-            // ✅ USAR FECHA LOCAL
             const hoy = getFechaLocal();
             const lista = data.registros.filter(r => r.fecha === hoy);
             document.getElementById('diarioCount').textContent = lista.length;
-            
-            const container = document.getElementById('diarioLista');
-            if (lista.length === 0) {
-                container.innerHTML = `<div class="empty-state"><span class="emoji">📭</span><p>No hay actividades registradas hoy</p></div>`;
-                return;
-            }
-            container.innerHTML = htmlListaItems(lista);
+            document.getElementById('diarioLista').innerHTML = htmlListaItems(lista);
         }
 
         function renderReporteRango() {
@@ -863,13 +988,13 @@
             const container = document.getElementById('rangoLista');
 
             if(!desde || !hasta) {
-                showToast("Por favor selecciona ambas fechas", true);
+                container.innerHTML = `<div class="empty-state"><p>Selecciona ambas fechas</p></div>`;
                 return;
             }
 
             const lista = data.registros.filter(r => r.fecha >= desde && r.fecha <= hasta);
             if (lista.length === 0) {
-                container.innerHTML = `<div class="empty-state"><p>No hay registros en este rango de fechas</p></div>`;
+                container.innerHTML = `<div class="empty-state"><p>No hay registros en este rango</p></div>`;
                 return;
             }
             container.innerHTML = htmlListaItems(lista);
@@ -880,34 +1005,120 @@
             const container = document.getElementById('hijoLista');
 
             if(!hijoId) {
-                showToast("Selecciona un hijo para filtrar", true);
+                container.innerHTML = `<div class="empty-state"><p>Selecciona un hijo</p></div>`;
                 return;
             }
 
             const lista = data.registros.filter(r => r.hijoId == hijoId);
             if (lista.length === 0) {
-                container.innerHTML = `<div class="empty-state"><p>Este hijo no cuenta con actividades registradas</p></div>`;
+                container.innerHTML = `<div class="empty-state"><p>Este hijo no tiene actividades</p></div>`;
                 return;
             }
             container.innerHTML = htmlListaItems(lista);
         }
 
+        // ============================================================
+        //  HTML DE LISTA CON BOTONES DE EDICIÓN Y ELIMINACIÓN
+        // ============================================================
         function htmlListaItems(lista) {
+            if (lista.length === 0) {
+                return `<div class="empty-state"><span class="emoji">📭</span><p>No hay actividades</p></div>`;
+            }
+
             return lista.map(r => {
                 const hijo = data.hijos.find(h => h.id == r.hijoId);
                 const act = data.actividades.find(a => a.id == r.actividadId);
                 return `
                     <div class="activity-item">
-                        <div class="act-title">${act ? act.nombre : 'Actividad'} - ${hijo ? hijo.nombre : 'Niño'}</div>
-                        <div style="font-size:14px; margin-top:4px; color:#2a3a4a;">${r.descripcion || 'Sin descripción adicional.'}</div>
-                        <div class="act-meta"><span>📅 ${r.fecha.split('-').reverse().join('/')}</span></div>
+                        <div class="act-content">
+                            <div class="act-title">${act ? act.nombre : 'Actividad'} - ${hijo ? hijo.nombre : 'Niño'}</div>
+                            <div style="font-size:14px; margin-top:4px; color:#2a3a4a;">${r.descripcion || 'Sin descripción'}</div>
+                            <div class="act-meta"><span>📅 ${r.fecha.split('-').reverse().join('/')}</span></div>
+                        </div>
+                        <div class="act-actions">
+                            <button class="btn-edit" onclick="abrirModalEditar(${r.id})">✏️ Editar</button>
+                            <button class="btn-delete" onclick="eliminarRegistro(${r.id})">🗑️</button>
+                        </div>
                     </div>
                 `;
             }).join('');
         }
 
         // ============================================================
-        //  FORMULARIOS
+        //  🗑️ ELIMINAR REGISTRO
+        // ============================================================
+        function eliminarRegistro(id) {
+            if (!confirm('¿Eliminar este registro permanentemente?')) return;
+            data.registros = data.registros.filter(r => r.id !== id);
+            saveDataLocal();
+            renderAll();
+            showToast('🗑️ Registro eliminado');
+        }
+
+        // ============================================================
+        //  ✏️ EDITAR REGISTRO (MODAL)
+        // ============================================================
+        function abrirModalEditar(id) {
+            const registro = data.registros.find(r => r.id === id);
+            if (!registro) {
+                showToast('⚠️ Registro no encontrado', true);
+                return;
+            }
+
+            // Llenar el modal con los datos del registro
+            document.getElementById('editRegistroId').value = id;
+            document.getElementById('editSelectHijo').value = registro.hijoId;
+            document.getElementById('editSelectActividad').value = registro.actividadId;
+            document.getElementById('editDescripcion').value = registro.descripcion || '';
+            document.getElementById('editFecha').value = registro.fecha || getFechaLocal();
+
+            // Mostrar modal
+            document.getElementById('modalEditar').classList.add('active');
+        }
+
+        function cerrarModalEditar() {
+            document.getElementById('modalEditar').classList.remove('active');
+        }
+
+        // ============================================================
+        //  💾 GUARDAR EDICIÓN
+        // ============================================================
+        function guardarEdicion(e) {
+            e.preventDefault();
+
+            const id = parseInt(document.getElementById('editRegistroId').value);
+            const hijoId = parseInt(document.getElementById('editSelectHijo').value);
+            const actividadId = parseInt(document.getElementById('editSelectActividad').value);
+            const descripcion = document.getElementById('editDescripcion').value.trim();
+            const fecha = document.getElementById('editFecha').value;
+
+            if (!hijoId || !actividadId || !fecha) {
+                showToast('⚠️ Completa todos los campos', true);
+                return;
+            }
+
+            const index = data.registros.findIndex(r => r.id === id);
+            if (index === -1) {
+                showToast('⚠️ Registro no encontrado', true);
+                return;
+            }
+
+            data.registros[index] = {
+                ...data.registros[index],
+                hijoId,
+                actividadId,
+                descripcion: descripcion || 'Sin descripción',
+                fecha
+            };
+
+            saveDataLocal();
+            renderAll();
+            cerrarModalEditar();
+            showToast('✅ Registro actualizado');
+        }
+
+        // ============================================================
+        //  FORMULARIOS (CREAR)
         // ============================================================
         function initForms() {
             document.getElementById('formActividad').addEventListener('submit', (e) => {
@@ -921,7 +1132,7 @@
                 };
                 data.registros.push(nuevoRegistro);
                 saveDataLocal();
-                renderReporteDiario();
+                renderAll();
                 e.target.reset();
                 document.getElementById('fechaActividad').value = getFechaLocal();
                 showToast('✅ Actividad registrada');
@@ -954,7 +1165,7 @@
         }
 
         // ============================================================
-        //  ELIMINAR
+        //  ELIMINAR HIJO / ACTIVIDAD (Gestión)
         // ============================================================
         function eliminarHijo(id) {
             if(confirm("¿Eliminar este hijo?")) {
