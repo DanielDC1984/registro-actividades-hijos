@@ -10,6 +10,7 @@ const AppController = {
         if (!res.ok) {
             if (res.reason === "blocked") View.mostrarError("❌ Tu cuenta ha sido bloqueada");
             else if (res.reason === "pending") View.mostrarInfo("⏳ Cuenta pendiente de aprobación");
+            else if (res.reason === "network") View.mostrarError(`❌ Error de conexión: ${res.error}`);
             else View.mostrarError("❌ Usuario o contraseña incorrectos");
             return;
         }
@@ -20,7 +21,11 @@ const AppController = {
 
     async registrarUsuario(username, password) {
         const res = await Auth.register(username, password);
-        if (!res.ok) { View.mostrarError("❌ El usuario ya existe"); return; }
+        if (!res.ok) {
+            if (res.reason === "network") View.mostrarError(`❌ Error de conexión: ${res.error}`);
+            else View.mostrarError("❌ El usuario ya existe");
+            return;
+        }
         View.mostrarExito("✅ Registro exitoso. Espera aprobación.");
         setTimeout(() => {
             document.getElementById("loginSuccess").style.display = "none";
