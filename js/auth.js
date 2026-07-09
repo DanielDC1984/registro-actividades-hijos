@@ -1,45 +1,59 @@
 // ============================================================
-// 📋 MODELO: USUARIOS Y AUTENTICACIÓN
+// 📋 MODELO: USUARIOS Y AUTENTICACIÓN (sincronizado con Supabase)
 // ============================================================
 const Auth = {
-    USERS_KEY: "usuarios_registrados",
-    CURRENT_KEY: "usuario_actual",
+    TABLE: "usuarios",
+    CACHE_KEY: "usuarios_cache", // respaldo local para modo offline
+    CURRENT_KEY: "usuario_actual", // sesión activa: sigue siendo local a este dispositivo
+    users: [],
 
-    getUsers() {
-        const stored = localStorage.getItem(this.USERS_KEY);
-        if (stored) {
-            try { return JSON.parse(stored); } catch (e) { /* datos corruptos, se recrean abajo */ }
+    // Trae la lista completa desde Supabase (con respaldo local si falla la red)
+    async load() {
+        try {
+            const { data, error } = await supabaseClient.from(this.TABLE).select("*");
+            if (error) throw error;
+            this.users = data || [];
+            if (this.users.length === 0) {
+                // Primera vez: sembrar usuario admin por defecto
+                const admin = { username: "admin", password: "123321", role: "admin", approved: true, blocked: false };
+                await this._upsertRemote(admin);
+                this.users = [admin];
+            }
+            localStorage.setItem(this.CACHE_KEY, JSON.stringify(this.users));
+        } catch (err) {
+            console.error("Error cargando usuarios de Supabase:", err);
+            const cached = localStorage.getItem(this.CACHE_KEY);
+            this.users = cached ? JSON.parse(cached) : [{ username: "admin", password: "123321", role: "admin", approved: true, blocked: false }];
         }
-        const defaultUsers = [{ username: "admin", password: "123321", role: "admin", approved: true, blocked: false }];
-        this.saveUsers(defaultUsers);
-        return defaultUsers;
+        return this.users;
     },
 
-    saveUsers(users) {
-        localStorage.setItem(this.USERS_KEY, JSON.stringify(users));
+    // Getters síncronos: usan la lista ya cargada en memoria (llamar load() antes)
+    getUsers() { return this.users; },
+    getPendingUsers() { return this.users.filter(u => u.role === "user" && !u.approved); },
+
+    async _upsertRemote(user) {
+        const { error } = await supabaseClient.from(this.TABLE).upsert({ ...user, updated_at: new Date().toISOString() });
+        if (error) throw error;
     },
+    async _deleteRemote(username) {
+        const { error } = await supabaseClient.from(this.TABLE).delete().eq("username", username);
+        if (error) throw error;
+    },
+    _cache() { localStorage.setItem(this.CACHE_KEY, JSON.stringify(this.users)); },
 
     getCurrentUser() {
         const stored = localStorage.getItem(this.CURRENT_KEY);
         if (!stored) return null;
         try { return JSON.parse(stored); } catch (e) { return null; }
     },
-
-    setCurrentUser(user) {
-        localStorage.setItem(this.CURRENT_KEY, JSON.stringify(user));
-    },
-
-    clearCurrentUser() {
-        localStorage.removeItem(this.CURRENT_KEY);
-    },
-
-    getPendingUsers() {
-        return this.getUsers().filter(u => u.role === "user" && !u.approved);
-    },
+    setCurrentUser(user) { localStorage.setItem(this.CURRENT_KEY, JSON.stringify(user)); },
+    clearCurrentUser() { localStorage.removeItem(this.CURRENT_KEY); },
 
     // Devuelve { ok: true, user } o { ok: false, reason: 'invalid'|'blocked'|'pending' }
-    login(username, password) {
-        const user = this.getUsers().find(u => u.username === username && u.password === password);
+    async login(username, password) {
+        await this.load(); // refresca antes de validar, por si se registró desde otro dispositivo
+        const user = this.users.find(u => u.username === username && u.password === password);
         if (!user) return { ok: false, reason: "invalid" };
         if (user.blocked) return { ok: false, reason: "blocked" };
         if (!user.approved) return { ok: false, reason: "pending" };
@@ -48,52 +62,60 @@ const Auth = {
     },
 
     // Devuelve { ok: true } o { ok: false, reason: 'exists' }
-    register(username, password) {
-        const users = this.getUsers();
-        if (users.find(u => u.username === username)) return { ok: false, reason: "exists" };
-        users.push({ username, password, role: "user", approved: false, blocked: false });
-        this.saveUsers(users);
+    async register(username, password) {
+        await this.load();
+        if (this.users.find(u => u.username === username)) return { ok: false, reason: "exists" };
+        const nuevo = { username, password, role: "user", approved: false, blocked: false };
+        await this._upsertRemote(nuevo);
+        this.users.push(nuevo);
+        this._cache();
         return { ok: true };
     },
 
-    approve(username) {
-        const users = this.getUsers();
-        const user = users.find(u => u.username === username);
+    async approve(username) {
+        const user = this.users.find(u => u.username === username);
         if (!user) return false;
         user.approved = true;
-        this.saveUsers(users);
+        await this._upsertRemote(user);
+        this._cache();
         return true;
     },
 
-    block(username) {
-        const users = this.getUsers();
-        const user = users.find(u => u.username === username);
+    async block(username) {
+        const user = this.users.find(u => u.username === username);
         if (!user || user.username === "admin") return false;
         user.blocked = true;
-        this.saveUsers(users);
+        await this._upsertRemote(user);
+        this._cache();
         return true;
     },
 
-    unblock(username) {
-        const users = this.getUsers();
-        const user = users.find(u => u.username === username);
+    async unblock(username) {
+        const user = this.users.find(u => u.username === username);
         if (!user) return false;
         user.blocked = false;
-        this.saveUsers(users);
+        await this._upsertRemote(user);
+        this._cache();
         return true;
     },
 
     // Devuelve { ok: true } o { ok: false, reason: 'is_admin' }
-    remove(username) {
+    async remove(username) {
         if (username === "admin") return { ok: false, reason: "is_admin" };
-        let users = this.getUsers();
-        users = users.filter(u => u.username !== username);
-        this.saveUsers(users);
-        localStorage.removeItem(`actividadesData_${username}`); // limpieza de datos legacy por usuario
+        await this._deleteRemote(username);
+        this.users = this.users.filter(u => u.username !== username);
+        this._cache();
         return { ok: true };
     },
 
-    logout() {
-        this.clearCurrentUser();
+    logout() { this.clearCurrentUser(); },
+
+    // Escucha cambios de otros dispositivos (nuevos registros, aprobaciones, etc.)
+    subscribeRealtime(onChange) {
+        supabaseClient
+            .channel("cambios-usuarios")
+            .on("postgres_changes", { event: "*", schema: "public", table: this.TABLE },
+                () => { this.load().then(onChange); })
+            .subscribe();
     },
 };
