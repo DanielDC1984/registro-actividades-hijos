@@ -251,26 +251,30 @@ const AppController = {
         contenedor.appendChild(fechaEl);
 
         const headers = ["#", "Hijo", "Actividad", "Descripción", "Fecha / Hora", "Reportado por"];
+        // Anchos fijos por columna (%) para que la tabla nunca se desborde del margen,
+        // sin importar qué tan larga sea la descripción.
+        const anchos = ["4%", "13%", "13%", "34%", "18%", "18%"];
 
         let rows = "";
         lista.forEach((r, i) => {
             const fh = formatearFechaHoraMostrar(r.fechaHora || r.fecha || "");
             rows += `<tr style="border-bottom:1px solid #eef2f7;">
-                <td style="padding:8px 12px;">${i + 1}</td>
-                <td style="padding:8px 12px;">${Store.getNombreHijo(r.hijoId)}</td>
-                <td style="padding:8px 12px;">${Store.getNombreActividad(r.actividadId)}</td>
-                <td style="padding:8px 12px;">${r.descripcion || "Sin descripción"}</td>
-                <td style="padding:8px 12px;line-height:1.4;">
+                <td style="padding:8px 10px;word-wrap:break-word;overflow-wrap:break-word;">${i + 1}</td>
+                <td style="padding:8px 10px;word-wrap:break-word;overflow-wrap:break-word;">${Store.getNombreHijo(r.hijoId)}</td>
+                <td style="padding:8px 10px;word-wrap:break-word;overflow-wrap:break-word;">${Store.getNombreActividad(r.actividadId)}</td>
+                <td style="padding:8px 10px;word-wrap:break-word;overflow-wrap:break-word;white-space:normal;">${r.descripcion || "Sin descripción"}</td>
+                <td style="padding:8px 10px;line-height:1.4;word-wrap:break-word;">
                     ${fh.fecha}<br><span style="font-size:10px;color:#6b7a8f;">🕐 ${fh.hora || "--:--"}</span>
                 </td>
-                <td style="padding:8px 12px;">${r.usuario || "admin"}</td>
+                <td style="padding:8px 10px;word-wrap:break-word;overflow-wrap:break-word;">${r.usuario || "admin"}</td>
             </tr>`;
         });
 
         const tabla = document.createElement("table");
-        tabla.style.cssText = "width:100%;border-collapse:collapse;font-size:12px;";
+        tabla.style.cssText = "width:100%;border-collapse:collapse;font-size:11px;table-layout:fixed;";
         tabla.innerHTML = `
-            <thead><tr>${headers.map(h => `<th style="background:#1a2a3a;color:#fff;padding:8px 12px;text-align:left;">${h}</th>`).join("")}</tr></thead>
+            <colgroup>${anchos.map(a => `<col style="width:${a};">`).join("")}</colgroup>
+            <thead><tr>${headers.map((h, i) => `<th style="background:#1a2a3a;color:#fff;padding:8px 10px;text-align:left;word-wrap:break-word;">${h}</th>`).join("")}</tr></thead>
             <tbody>${rows}</tbody>`;
         contenedor.appendChild(tabla);
 
