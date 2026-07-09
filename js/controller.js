@@ -245,8 +245,7 @@ const AppController = {
         fechaEl.style.cssText = "color:#6b7a8f;font-size:13px;margin-bottom:16px;";
         contenedor.appendChild(fechaEl);
 
-        const headers = ["#", "Hijo", "Actividad", "Descripción", "Fecha", "Hora"];
-        if (tipoReporte === "completo") headers.push("Usuario");
+        const headers = ["#", "Hijo", "Actividad", "Descripción", "Fecha / Hora", "Reportado por"];
 
         let rows = "";
         lista.forEach((r, i) => {
@@ -256,9 +255,10 @@ const AppController = {
                 <td style="padding:8px 12px;">${Store.getNombreHijo(r.hijoId)}</td>
                 <td style="padding:8px 12px;">${Store.getNombreActividad(r.actividadId)}</td>
                 <td style="padding:8px 12px;">${r.descripcion || "Sin descripción"}</td>
-                <td style="padding:8px 12px;">${fh.fecha}</td>
-                <td style="padding:8px 12px;">${fh.hora || "--:--"}</td>
-                ${tipoReporte === "completo" ? `<td style="padding:8px 12px;">${r.usuario || "admin"}</td>` : ""}
+                <td style="padding:8px 12px;line-height:1.4;">
+                    ${fh.fecha}<br><span style="font-size:10px;color:#6b7a8f;">🕐 ${fh.hora || "--:--"}</span>
+                </td>
+                <td style="padding:8px 12px;">${r.usuario || "admin"}</td>
             </tr>`;
         });
 
