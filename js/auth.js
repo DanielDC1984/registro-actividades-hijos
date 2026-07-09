@@ -50,26 +50,36 @@ const Auth = {
     setCurrentUser(user) { localStorage.setItem(this.CURRENT_KEY, JSON.stringify(user)); },
     clearCurrentUser() { localStorage.removeItem(this.CURRENT_KEY); },
 
-    // Devuelve { ok: true, user } o { ok: false, reason: 'invalid'|'blocked'|'pending' }
+    // Devuelve { ok: true, user } o { ok: false, reason: 'invalid'|'blocked'|'pending'|'network', error? }
     async login(username, password) {
-        await this.load(); // refresca antes de validar, por si se registró desde otro dispositivo
-        const user = this.users.find(u => u.username === username && u.password === password);
-        if (!user) return { ok: false, reason: "invalid" };
-        if (user.blocked) return { ok: false, reason: "blocked" };
-        if (!user.approved) return { ok: false, reason: "pending" };
-        this.setCurrentUser(user);
-        return { ok: true, user };
+        try {
+            await this.load(); // refresca antes de validar, por si se registró desde otro dispositivo
+            const user = this.users.find(u => u.username === username && u.password === password);
+            if (!user) return { ok: false, reason: "invalid" };
+            if (user.blocked) return { ok: false, reason: "blocked" };
+            if (!user.approved) return { ok: false, reason: "pending" };
+            this.setCurrentUser(user);
+            return { ok: true, user };
+        } catch (err) {
+            console.error("Error iniciando sesión:", err);
+            return { ok: false, reason: "network", error: err.message || String(err) };
+        }
     },
 
-    // Devuelve { ok: true } o { ok: false, reason: 'exists' }
+    // Devuelve { ok: true } o { ok: false, reason: 'exists' | 'network', error? }
     async register(username, password) {
-        await this.load();
-        if (this.users.find(u => u.username === username)) return { ok: false, reason: "exists" };
-        const nuevo = { username, password, role: "user", approved: false, blocked: false };
-        await this._upsertRemote(nuevo);
-        this.users.push(nuevo);
-        this._cache();
-        return { ok: true };
+        try {
+            await this.load();
+            if (this.users.find(u => u.username === username)) return { ok: false, reason: "exists" };
+            const nuevo = { username, password, role: "user", approved: false, blocked: false };
+            await this._upsertRemote(nuevo);
+            this.users.push(nuevo);
+            this._cache();
+            return { ok: true };
+        } catch (err) {
+            console.error("Error registrando usuario:", err);
+            return { ok: false, reason: "network", error: err.message || String(err) };
+        }
     },
 
     async approve(username) {
