@@ -5,8 +5,8 @@ const AppController = {
     isRegisterMode: false,
 
     // ---------- Autenticación ----------
-    iniciarSesion(username, password) {
-        const res = Auth.login(username, password);
+    async iniciarSesion(username, password) {
+        const res = await Auth.login(username, password);
         if (!res.ok) {
             if (res.reason === "blocked") View.mostrarError("❌ Tu cuenta ha sido bloqueada");
             else if (res.reason === "pending") View.mostrarInfo("⏳ Cuenta pendiente de aprobación");
@@ -18,8 +18,8 @@ const AppController = {
         showToast("✅ Sesión iniciada");
     },
 
-    registrarUsuario(username, password) {
-        const res = Auth.register(username, password);
+    async registrarUsuario(username, password) {
+        const res = await Auth.register(username, password);
         if (!res.ok) { View.mostrarError("❌ El usuario ya existe"); return; }
         View.mostrarExito("✅ Registro exitoso. Espera aprobación.");
         setTimeout(() => {
@@ -40,19 +40,19 @@ const AppController = {
     },
 
     // ---------- Admin: usuarios ----------
-    aprobarUsuario(username) {
-        if (Auth.approve(username)) { this._refrescarAdmin(); showToast(`✅ Usuario "${username}" aprobado`); }
+    async aprobarUsuario(username) {
+        if (await Auth.approve(username)) { this._refrescarAdmin(); showToast(`✅ Usuario "${username}" aprobado`); }
     },
-    bloquearUsuario(username) {
-        if (Auth.block(username)) { this._refrescarAdmin(); showToast(`🔒 Usuario "${username}" bloqueado`); }
+    async bloquearUsuario(username) {
+        if (await Auth.block(username)) { this._refrescarAdmin(); showToast(`🔒 Usuario "${username}" bloqueado`); }
     },
-    desbloquearUsuario(username) {
-        if (Auth.unblock(username)) { this._refrescarAdmin(); showToast(`🔓 Usuario "${username}" desbloqueado`); }
+    async desbloquearUsuario(username) {
+        if (await Auth.unblock(username)) { this._refrescarAdmin(); showToast(`🔓 Usuario "${username}" desbloqueado`); }
     },
-    eliminarUsuario(username) {
+    async eliminarUsuario(username) {
         if (username === "admin") { showToast("❌ No puedes eliminar al administrador", true); return; }
         if (!confirm(`¿Eliminar permanentemente al usuario "${username}"?`)) return;
-        const res = Auth.remove(username);
+        const res = await Auth.remove(username);
         if (res.ok) { this._refrescarAdmin(); showToast(`🗑️ Usuario "${username}" eliminado`); }
     },
     _refrescarAdmin() {
@@ -291,16 +291,20 @@ const AppController = {
     },
 
     // ---------- Arranque ----------
-    init() {
+    async init() {
         this.initMenu();
         this.initForms();
         Store.subscribeRealtime(() => { View.renderAll(); showToast("🔄 Datos sincronizados en tiempo real"); });
+        Auth.subscribeRealtime(() => {
+            const user = Auth.getCurrentUser();
+            if (user && user.role === "admin") this._refrescarAdmin();
+        });
 
+        await Auth.load();
         const user = Auth.getCurrentUser();
         if (user) {
-            const users = Auth.getUsers();
-            const validUser = users.find(u => u.username === user.username && u.approved && !u.blocked);
-            if (validUser) { View.setUserDisplayName(user.username); this.mostrarApp(); return; }
+            const valido = Auth.getUsers().find(u => u.username === user.username && u.approved && !u.blocked);
+            if (valido) { View.setUserDisplayName(user.username); this.mostrarApp(); return; }
         }
         View.mostrarLogin();
     },
