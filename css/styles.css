@@ -142,6 +142,63 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .modal-content .modal-actions .btn-primary{flex:1}
 .modal-content .modal-actions .btn-secondary{flex:1;padding:14px;background:#eef2f7;color:#1a2a3a;border:none;border-radius:14px;font-size:16px;font-weight:600;cursor:pointer;transition:all .2s}
 .modal-content .modal-actions .btn-secondary:active{transform:scale(.97)}
+.badge-puntos{background:#dbeafe;color:#2563eb;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700}
+.badge-medalla{background:#fef3c7;color:#d97706;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;display:inline-block;margin:2px 2px 2px 0}
+
+/* Ranking Tabs */
+.ranking-tabs{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;margin-bottom:12px}
+.btn-tab{padding:8px 16px;background:#fff;border:1px solid #e2e8f0;border-radius:20px;font-size:13px;font-weight:600;color:#64748b;cursor:pointer;transition:all .2s;white-space:nowrap}
+.btn-tab.active{background:#4a6cf7;color:#fff;border-color:#4a6cf7;box-shadow:0 4px 12px rgba(74,108,247,.25)}
+
+/* Podium */
+.podium-container{display:flex;justify-content:center;margin-bottom:24px}
+.podium{display:flex;align-items:flex-end;justify-content:center;gap:12px;width:100%;max-width:460px;min-height:180px;padding:10px}
+.podium-place{display:flex;flex-direction:column;align-items:center;flex:1;max-width:130px;transition:transform .2s}
+.podium-place:hover{transform:translateY(-4px)}
+.podium-place .avatar{font-size:32px;margin-bottom:6px;filter:drop-shadow(0 4px 8px rgba(0,0,0,0.1))}
+.podium-place .name{font-weight:700;font-size:14px;color:#1e293b;text-align:center;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.podium-place .points{font-size:13px;font-weight:700;color:#4a6cf7;margin-bottom:6px}
+.podium-place .bar{width:100%;border-radius:16px 16px 0 0;display:flex;justify-content:center;align-items:center;color:#fff;font-weight:800;font-size:18px;box-shadow:0 4px 15px rgba(0,0,0,.08)}
+.place-1 .bar{height:110px;background:linear-gradient(180deg,#f59e0b,#d97706)}
+.place-2 .bar{height:85px;background:linear-gradient(180deg,#94a3b8,#64748b)}
+.place-3 .bar{height:65px;background:linear-gradient(180deg,#b45309,#78350f)}
+
+/* Ranking Rows */
+.ranking-rows{display:flex;flex-direction:column;gap:12px;margin-top:10px}
+.ranking-row-item{background:#f8fafc;padding:14px;border-radius:16px;border:1px solid #e2e8f0}
+.ranking-row-item .row-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.ranking-row-item .row-left{display:flex;align-items:center;gap:8px}
+.ranking-row-item .row-pos{font-size:16px;font-weight:800;min-width:26px;color:#475569}
+.ranking-row-item .row-name{font-weight:700;font-size:15px;color:#1e293b}
+.ranking-row-item .row-acts{font-size:12px;color:#64748b}
+.ranking-row-item .row-pts{font-weight:800;font-size:15px;color:#4a6cf7}
+.progress-bar-bg{width:100%;height:10px;background:#e2e8f0;border-radius:20px;overflow:hidden}
+.progress-bar-fill{height:100%;background:linear-gradient(90deg,#4a6cf7,#7c5cfc);border-radius:20px;transition:width .5s ease}
+.row-badges{margin-top:8px;display:flex;flex-wrap:wrap;gap:4px}
+
+/* Config Puntos */
+.puntos-grid{display:flex;flex-direction:column;gap:10px}
+.punto-item{display:flex;justify-content:space-between;align-items:center;background:#f8fafc;padding:12px;border-radius:12px;border:1px solid #e2e8f0;flex-wrap:wrap;gap:8px}
+.punto-item .act-name{font-weight:600;font-size:15px;color:#1e293b}
+.punto-input-group{display:flex;align-items:center;gap:8px}
+.punto-input-group input{width:80px;padding:6px 10px;border-radius:10px;border:1px solid #cbd5e1;font-weight:700;font-size:14px;text-align:center}
+
+/* Recompensas */
+.saldo-card{background:linear-gradient(135deg,#1e293b,#0f172a);color:#fff;padding:16px;border-radius:18px;box-shadow:0 4px 15px rgba(0,0,0,.1)}
+.saldo-card h4{font-size:14px;color:#cbd5e1;margin-bottom:8px}
+.saldo-grid{display:flex;flex-wrap:wrap;gap:12px}
+.saldo-item{background:rgba(255,255,255,.08);padding:8px 14px;border-radius:12px;font-size:13px;display:flex;align-items:center;gap:8px}
+.saldo-item .hijo-n{font-weight:600}
+.saldo-item .hijo-p{color:#38bdf8}
+.recompensas-grid-container{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
+.recompensa-card{background:#fff;padding:18px;border-radius:18px;border:1px solid #e2e8f0;display:flex;flex-direction:column;align-items:center;text-align:center;box-shadow:0 2px 10px rgba(0,0,0,.04);transition:transform .2s}
+.recompensa-card:hover{transform:translateY(-3px)}
+.recompensa-card .rec-icon{font-size:42px;margin-bottom:8px}
+.recompensa-card .rec-title{font-weight:700;font-size:15px;color:#1e293b;margin-bottom:6px}
+.recompensa-card .rec-cost{font-size:13px;font-weight:800;color:#4a6cf7;background:#eff6ff;padding:4px 12px;border-radius:20px;margin-bottom:12px}
+.recompensa-card .rec-action{width:100%}
+.select-canje-hijo{width:100%;padding:8px 10px;border-radius:10px;border:1px solid #cbd5e1;font-size:12px;margin-bottom:4px}
+
 @media(min-width:768px){
     .sidebar{transform:translateX(0)!important;position:sticky;top:0;height:100vh;flex-shrink:0}
     .sidebar-overlay{display:none!important}
@@ -159,3 +216,4 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     .admin-panel .user-item .actions{justify-content:flex-end}
     .tabla-reporte .fecha-hora-cell .hora{font-size:10px}
 }
+
