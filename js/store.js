@@ -27,7 +27,7 @@ const Store = {
         // Asegurar campo puntos en actividades
         this.data.actividades = this.data.actividades.map(a => ({
             ...a,
-            puntos: typeof a.puntos === "number" ? a.puntos : 0
+            puntos: typeof a.puntos === "number" ? a.puntos : (parseInt(a.puntos, 10) || 0)
         }));
 
         if (this.data.hijos.length === 0) {
@@ -73,36 +73,84 @@ const Store = {
 
     // ---------- Supabase ----------
     async loadFromSupabase() {
-        const { data: dbData, error } = await supabaseClient
-            .from("familias")
-            .select("*")
-            .eq("id", FAMILIA_ID)
-            .single();
-        if (error && error.code !== "PGRST116") throw error; // PGRST116 = no rows yet
-        if (dbData) {
-            this.data.hijos = dbData.hijos || [];
-            this.data.actividades = (dbData.actividades || []).map(a => ({
-                ...a,
-                puntos: typeof a.puntos === "number" ? a.puntos : 0
-            }));
-            this.data.registros = dbData.registros || [];
-            this.data.recompensas = dbData.recompensas || [];
-            this.data.canjes = dbData.canjes || [];
-            this.saveLocal();
+        try {
+            const { data: dbData, error } = await supabaseClient
+                .from("familias")
+                .select("*")
+                .eq("id", FAMILIA_ID)
+                .single();
+            if (error && error.code !== "PGRST116") {
+                console.warn("Aviso al consultar Supabase:", error.message);
+                return;
+            }
+            if (dbData) {
+                if (dbData.hijos && dbData.hijos.length > 0) this.data.hijos = dbData.hijos;
+                if (dbData.actividades && dbData.actividades.length > 0) {
+                    this.data.actividades = dbData.actividades.map(a => ({
+                        ...a,
+                        puntos: typeof a.puntos === "number" ? a.puntos : (parseInt(a.puntos, 10) || 0)
+                    }));
+                }
+                if (dbData.registros && dbData.registros.length > 0) this.data.registros = dbData.registros;
+
+                // Cargar recompensas y canjes de columnas dedicadas o de fallback
+                let recs = dbData.recompensas;
+                let cjs = dbData.canjes;
+                if ((!recs || recs.length === 0) && dbData.actividades && dbData.actividades[0] && dbData.actividades[0]._extraRecompensas) {
+                    recs = dbData.actividades[0]._extraRecompensas;
+                }
+                if ((!cjs || cjs.length === 0) && dbData.actividades && dbData.actividades[0] && dbData.actividades[0]._extraCanjes) {
+                    cjs = dbData.actividades[0]._extraCanjes;
+                }
+                if (recs) this.data.recompensas = recs;
+                if (cjs) this.data.canjes = cjs;
+
+                this.saveLocal();
+            }
+        } catch (e) {
+            console.error("Error al cargar de Supabase:", e);
         }
     },
 
     async saveToSupabase() {
-        const { error } = await supabaseClient.from("familias").upsert({
+        // Intento 1: Intentar guardado con columnas dedicadas
+        const payloadFull = {
             id: FAMILIA_ID,
             hijos: this.data.hijos,
             actividades: this.data.actividades,
             registros: this.data.registros,
-            recompensas: this.data.recompensas,
-            canjes: this.data.canjes,
+            recompensas: this.data.recompensas || [],
+            canjes: this.data.canjes || [],
             updated_at: new Date().toISOString(),
-        });
-        if (error) console.error("Error guardando en Supabase:", error);
+        };
+
+        const { error } = await supabaseClient.from("familias").upsert(payloadFull);
+        if (error) {
+            console.warn("Supabase upsert completo rechazado. Usando guardado de respaldo compatible:", error.message);
+            // Fallback: Incrustar recompensas y canjes dentro de actividades para compatibilidad con tablas estándar
+            const actividadesBackup = this.data.actividades.map((a, idx) => {
+                if (idx === 0) {
+                    return {
+                        ...a,
+                        _extraRecompensas: this.data.recompensas || [],
+                        _extraCanjes: this.data.canjes || []
+                    };
+                }
+                return a;
+            });
+            const payloadBase = {
+                id: FAMILIA_ID,
+                hijos: this.data.hijos,
+                actividades: actividadesBackup,
+                registros: this.data.registros,
+                updated_at: new Date().toISOString(),
+            };
+            const { error: err2 } = await supabaseClient.from("familias").upsert(payloadBase);
+            if (err2) console.error("Error al guardar respaldo en Supabase:", err2.message);
+            else console.log("✅ Guardado de respaldo en Supabase exitoso");
+        } else {
+            console.log("✅ Guardado en Supabase exitoso");
+        }
     },
 
     subscribeRealtime(onRemoteChange) {
@@ -111,11 +159,14 @@ const Store = {
             .on("postgres_changes", { event: "UPDATE", schema: "public", table: "familias", filter: `id=eq.${FAMILIA_ID}` },
                 payload => {
                     if (!payload.new) return;
-                    this.data.hijos = payload.new.hijos || [];
-                    this.data.actividades = (payload.new.actividades || []).map(a => ({ ...a, puntos: a.puntos || 0 }));
-                    this.data.registros = payload.new.registros || [];
-                    this.data.recompensas = payload.new.recompensas || [];
-                    this.data.canjes = payload.new.canjes || [];
+                    if (payload.new.hijos) this.data.hijos = payload.new.hijos;
+                    if (payload.new.actividades) {
+                        this.data.actividades = payload.new.actividades.map(a => ({
+                            ...a,
+                            puntos: typeof a.puntos === "number" ? a.puntos : (parseInt(a.puntos, 10) || 0)
+                        }));
+                    }
+                    if (payload.new.registros) this.data.registros = payload.new.registros;
                     this.saveLocal();
                     onRemoteChange();
                 })
@@ -133,7 +184,7 @@ const Store = {
     },
     getPuntosActividad(id) {
         const a = this.data.actividades.find(a => a.id == id);
-        return a && typeof a.puntos === "number" ? a.puntos : 0;
+        return a && typeof a.puntos === "number" ? a.puntos : (a ? parseInt(a.puntos, 10) || 0 : 0);
     },
 
     // ---------- Puntos y Ranking ----------
