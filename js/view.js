@@ -17,15 +17,9 @@ const View = {
         document.getElementById("userDisplayName").textContent = username;
     },
 
-    mostrarError(msg) {
-        this._setMensaje("loginError", msg);
-    },
-    mostrarExito(msg) {
-        this._setMensaje("loginSuccess", msg);
-    },
-    mostrarInfo(msg) {
-        this._setMensaje("loginInfo", msg);
-    },
+    mostrarError(msg) { this._setMensaje("loginError", msg); },
+    mostrarExito(msg) { this._setMensaje("loginSuccess", msg); },
+    mostrarInfo(msg) { this._setMensaje("loginInfo", msg); },
     ocultarMensajesLogin() {
         ["loginError", "loginSuccess", "loginInfo"].forEach(id => document.getElementById(id).style.display = "none");
     },
@@ -70,8 +64,16 @@ const View = {
         adminPanel.style.display = esAdmin ? "block" : "none";
         roleBadge.textContent = esAdmin ? "Administrador" : "Usuario";
         roleBadge.className = esAdmin ? "role-badge admin" : "role-badge user";
+
+        const adminFormRec = document.getElementById("adminFormRecompensa");
+        if (adminFormRec) adminFormRec.style.display = esAdmin ? "block" : "none";
+
+        const adminCanjes = document.getElementById("adminCanjesPendientes");
+        if (adminCanjes) adminCanjes.style.display = esAdmin ? "block" : "none";
+
         document.querySelectorAll('[data-view="hijos"]').forEach(el => el.style.display = esAdmin ? "flex" : "none");
         document.querySelectorAll('[data-view="actividades"]').forEach(el => el.style.display = esAdmin ? "flex" : "none");
+        document.querySelectorAll('[data-view="puntos-config"]').forEach(el => el.style.display = esAdmin ? "flex" : "none");
     },
 
     actualizarContadoresAdmin(pendientes) {
@@ -130,23 +132,34 @@ const View = {
             hijosHtml += `<option value="${h.id}">${h.nombre}${h.edad ? " (" + h.edad + " años)" : ""}</option>`;
         });
         let actHtml = '<option value="">Seleccionar...</option>';
-        data.actividades.forEach(a => { actHtml += `<option value="${a.id}">${a.nombre}</option>`; });
+        data.actividades.forEach(a => {
+            const pts = a.puntos || 0;
+            actHtml += `<option value="${a.id}">${a.nombre} (⭐ ${pts} pts)</option>`;
+        });
 
-        ["selectHijo", "selectHijoReporte", "editSelectHijo"].forEach(id => document.getElementById(id).innerHTML = hijosHtml);
-        ["selectActividad", "editSelectActividad"].forEach(id => document.getElementById(id).innerHTML = actHtml);
+        ["selectHijo", "selectHijoReporte", "editSelectHijo"].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.innerHTML = hijosHtml;
+        });
+        ["selectActividad", "editSelectActividad"].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.innerHTML = actHtml;
+        });
 
-        document.getElementById("fechaHoraActividad").value = getFechaHoraLocal();
+        const fEl = document.getElementById("fechaHoraActividad");
+        if (fEl && !fEl.value) fEl.value = getFechaHoraLocal();
     },
 
-    // ---------- Hijos / Actividades (gestión) ----------
+    // ---------- Hijos / Actividades ----------
     renderHijos(hijos) {
         const container = document.getElementById("listaHijos");
+        if (!container) return;
         if (hijos.length === 0) { container.innerHTML = '<div class="empty-state"><p>No hay hijos registrados</p></div>'; return; }
         container.innerHTML = hijos.map(h => `
             <div class="child-card">
                 <div class="child-info">
                     <div class="child-name">👤 ${h.nombre}</div>
-                    <div class="child-age">${h.edad ? h.edad + " años" : "Sin edad"}</div>
+                    <div class="child-age">${h.edad ? h.edad + " años" : "Sin edad"} · Puntos totales: <strong>${Store.getPuntosGanadosHijo(h.id)} pts</strong></div>
                 </div>
                 <button class="btn-delete" onclick="AppController.eliminarHijo(${h.id})">Eliminar</button>
             </div>`).join("");
@@ -154,17 +167,246 @@ const View = {
 
     renderActividadesGestion(actividades) {
         const container = document.getElementById("listaActividadesGestion");
+        if (!container) return;
         if (actividades.length === 0) { container.innerHTML = '<div class="empty-state"><p>No hay actividades registradas</p></div>'; return; }
         container.innerHTML = actividades.map(a => `
             <div class="child-card">
-                <div class="child-info"><div class="child-name">🎯 ${a.nombre}</div></div>
+                <div class="child-info">
+                    <div class="child-name">🎯 ${a.nombre}</div>
+                    <div class="child-age">Valor actual: <strong>⭐ ${a.puntos || 0} pts</strong></div>
+                </div>
                 <button class="btn-delete" onclick="AppController.eliminarActividadGestion(${a.id})">Eliminar</button>
             </div>`).join("");
+    },
+
+    // ---------- Configuración de Puntos (Admin) ----------
+    renderPuntosConfig() {
+        const container = document.getElementById("puntosConfigLista");
+        if (!container) return;
+        const actividades = Store.data.actividades;
+
+        if (actividades.length === 0) {
+            container.innerHTML = '<div class="empty-state"><p>No hay actividades registradas para configurar puntos</p></div>';
+            return;
+        }
+
+        let html = `
+            <div class="admin-panel">
+                <h3>⚙️ Puntos por Tipo de Actividad</h3>
+                <p style="color:#6b7a8f;font-size:13px;margin-bottom:14px;">Define los puntos que ganarán los niños al realizar cada tarea:</p>
+                <div class="puntos-grid">`;
+
+        actividades.forEach(a => {
+            const pts = a.puntos || 0;
+            html += `
+                <div class="punto-item">
+                    <div class="punto-info">
+                        <span class="act-name">🎯 ${a.nombre}</span>
+                    </div>
+                    <div class="punto-input-group">
+                        <input type="number" id="inputPuntos_${a.id}" value="${pts}" min="0" max="1000">
+                        <button class="btn-primary" style="width:auto;padding:6px 14px;font-size:13px;" onclick="AppController.guardarPuntosActividad(${a.id}, document.getElementById('inputPuntos_${a.id}').value)">💾 Guardar</button>
+                    </div>
+                </div>`;
+        });
+        html += `</div></div>`;
+        container.innerHTML = html;
+    },
+
+    // ---------- Ranking ----------
+    renderRanking(filtro = "general", desde = null, hasta = null) {
+        const containerPodio = document.getElementById("rankingPodio");
+        const containerLista = document.getElementById("rankingLista");
+        const containerChart = document.getElementById("rankingChart");
+        if (!containerPodio || !containerLista) return;
+
+        const ranking = Store.getRanking(filtro, desde, hasta);
+
+        if (ranking.length === 0) {
+            containerPodio.innerHTML = "";
+            containerLista.innerHTML = `<div class="empty-state"><span class="emoji">🏆</span><p>No hay hijos registrados para mostrar ranking</p></div>`;
+            if (containerChart) containerChart.innerHTML = "";
+            return;
+        }
+
+        // Render Podio (Top 3)
+        let podioHtml = "";
+        if (ranking.length > 0) {
+            const primero = ranking[0];
+            const segundo = ranking[1];
+            const tercero = ranking[2];
+
+            podioHtml = `<div class="podium">`;
+
+            // 2do Lugar
+            if (segundo) {
+                podioHtml += `
+                    <div class="podium-place place-2">
+                        <div class="avatar">🥈</div>
+                        <div class="name">${segundo.nombre}</div>
+                        <div class="points">${segundo.puntos} pts</div>
+                        <div class="bar">2°</div>
+                    </div>`;
+            }
+
+            // 1er Lugar
+            podioHtml += `
+                <div class="podium-place place-1">
+                    <div class="avatar">👑 🥇</div>
+                    <div class="name">${primero.nombre}</div>
+                    <div class="points">${primero.puntos} pts</div>
+                    <div class="bar">1°</div>
+                </div>`;
+
+            // 3er Lugar
+            if (tercero) {
+                podioHtml += `
+                    <div class="podium-place place-3">
+                        <div class="avatar">🥉</div>
+                        <div class="name">${tercero.nombre}</div>
+                        <div class="points">${tercero.puntos} pts</div>
+                        <div class="bar">3°</div>
+                    </div>`;
+            }
+
+            podioHtml += `</div>`;
+        }
+        containerPodio.innerHTML = podioHtml;
+
+        // Render Lista Completa de Puntuaciones
+        const maxPuntos = ranking[0] && ranking[0].puntos > 0 ? ranking[0].puntos : 1;
+        let listHtml = `
+            <div class="admin-panel">
+                <h3>📊 Tabla Completa de Posiciones</h3>
+                <div class="ranking-rows">`;
+
+        ranking.forEach((item, index) => {
+            const pct = Math.round((item.puntos / maxPuntos) * 100);
+            const medallasHtml = item.insignias.map(ins => `<span class="badge-medalla" title="${ins.nombre}: ${ins.desc}">${ins.icono} ${ins.nombre}</span>`).join(" ");
+
+            let posEmoji = `#${index + 1}`;
+            if (index === 0) posEmoji = "🥇";
+            else if (index === 1) posEmoji = "🥈";
+            else if (index === 2) posEmoji = "🥉";
+
+            listHtml += `
+                <div class="ranking-row-item">
+                    <div class="row-header">
+                        <div class="row-left">
+                            <span class="row-pos">${posEmoji}</span>
+                            <span class="row-name">👤 ${item.nombre}</span>
+                            <span class="row-acts">(${item.totalActividades} actividades)</span>
+                        </div>
+                        <div class="row-right">
+                            <span class="row-pts">⭐ ${item.puntos} pts</span>
+                        </div>
+                    </div>
+                    <div class="progress-bar-bg">
+                        <div class="progress-bar-fill" style="width:${pct}%;"></div>
+                    </div>
+                    ${item.insignias.length > 0 ? `<div class="row-badges">${medallasHtml}</div>` : ""}
+                </div>`;
+        });
+        listHtml += `</div></div>`;
+        containerLista.innerHTML = listHtml;
+    },
+
+    // ---------- Recompensas ----------
+    renderRecompensas() {
+        const user = Auth.getCurrentUser();
+        const statusBox = document.getElementById("recompensasHijoStatus");
+        const listaBox = document.getElementById("listaRecompensas");
+        const pendientesBox = document.getElementById("listaCanjesPendientes");
+        if (!listaBox) return;
+
+        const hijos = Store.data.hijos;
+        const recompensas = Store.data.recompensas || [];
+        const canjes = Store.data.canjes || [];
+
+        // Status bar con saldo de hijos
+        if (hijos.length > 0) {
+            let statusHtml = `<div class="saldo-card"><h4>💰 Saldo de Puntos Disponibles para Canjear:</h4><div class="saldo-grid">`;
+            hijos.forEach(h => {
+                const disp = Store.getPuntosDisponiblesHijo(h.id);
+                const totalG = Store.getPuntosGanadosHijo(h.id);
+                statusHtml += `
+                    <div class="saldo-item">
+                        <span class="hijo-n">👤 ${h.nombre}:</span>
+                        <span class="hijo-p">⭐ <strong>${disp} pts</strong> <small>(Ganados: ${totalG})</small></span>
+                    </div>`;
+            });
+            statusHtml += `</div></div>`;
+            statusBox.innerHTML = statusHtml;
+        } else {
+            statusBox.innerHTML = "";
+        }
+
+        // Si es Admin, renderizar canjes pendientes
+        if (user && user.role === "admin" && pendientesBox) {
+            const pendientes = canjes.filter(c => c.estado === "pendiente");
+            if (pendientes.length === 0) {
+                pendientesBox.innerHTML = `<p style="color:#6b7a8f;font-size:13px;">No hay solicitudes de canje pendientes.</p>`;
+            } else {
+                let pth = "";
+                pendientes.forEach(c => {
+                    pth += `
+                        <div class="user-item">
+                            <div class="user-data">
+                                <span class="name">👤 ${Store.getNombreHijo(c.hijoId)}</span>
+                                <span>solicita <strong>${c.nombreRecompensa}</strong> (⭐ ${c.puntos} pts)</span>
+                                <small style="color:#6b7a8f;">Por ${c.usuario}</small>
+                            </div>
+                            <div class="actions">
+                                <button class="btn-approve" onclick="AppController.responderCanje(${c.id}, 'aprobado')">✅ Aprobar</button>
+                                <button class="btn-delete-user" onclick="AppController.responderCanje(${c.id}, 'rechazado')">❌ Rechazar</button>
+                            </div>
+                        </div>`;
+                });
+                pendientesBox.innerHTML = pth;
+            }
+        }
+
+        // Renderizar catálogo de recompensas
+        if (recompensas.length === 0) {
+            listaBox.innerHTML = `<div class="empty-state"><span class="emoji">🎁</span><p>No hay recompensas disponibles aún</p></div>`;
+            return;
+        }
+
+        let html = `<div class="recompensas-grid-container">`;
+        recompensas.forEach(rec => {
+            const esAdmin = user && user.role === "admin";
+            let selectHijoOptions = `<option value="">Seleccionar hijo para canjear...</option>`;
+            hijos.forEach(h => {
+                const disp = Store.getPuntosDisponiblesHijo(h.id);
+                const alcanzo = disp >= rec.puntos;
+                selectHijoOptions += `<option value="${h.id}" ${!alcanzo ? "disabled" : ""}>👤 ${h.nombre} (${disp} pts) ${!alcanzo ? "- Faltan pts" : ""}</option>`;
+            });
+
+            html += `
+                <div class="recompensa-card">
+                    <div class="rec-icon">${rec.icono || "🎁"}</div>
+                    <div class="rec-title">${rec.nombre}</div>
+                    <div class="rec-cost">⭐ ${rec.puntos} Puntos</div>
+                    <div class="rec-action">
+                        <select id="selectCanjeHijo_${rec.id}" class="select-canje-hijo">
+                            ${selectHijoOptions}
+                        </select>
+                        <button class="btn-primary" style="margin-top:8px;padding:8px;" onclick="AppController.solicitarCanje(${rec.id}, document.getElementById('selectCanjeHijo_${rec.id}').value)">🎁 Solicitar Canje</button>
+                        ${esAdmin ? `<button class="btn-delete-reg" style="margin-top:6px;width:100%;" onclick="AppController.eliminarRecompensa(${rec.id})">🗑️ Eliminar Premio</button>` : ""}
+                    </div>
+                </div>`;
+        });
+        html += `</div>`;
+        listaBox.innerHTML = html;
     },
 
     // ---------- Reportes ----------
     generarTabla(lista, titulo, mostrarUsuario = false) {
         if (lista.length === 0) return `<div class="empty-state"><span class="emoji">📭</span><p>No hay actividades registradas</p></div>`;
+        
+        const user = Auth.getCurrentUser();
+        const isAdmin = user && user.role === "admin";
+
         let html = `
             <div class="reporte-titulo">
                 <span>${titulo}</span>
@@ -173,19 +415,25 @@ const View = {
             <div style="overflow-x:auto;">
                 <table class="tabla-reporte">
                     <thead><tr>
-                        <th>#</th><th>👤 Hijo</th><th>🎯 Actividad</th>
+                        <th>#</th><th>👤 Hijo</th><th>🎯 Actividad</th><th>⭐ Puntos</th>
                         <th>📝 Descripción</th><th>📅 Fecha / Hora</th>
                         ${mostrarUsuario ? "<th>👤 Usuario</th>" : ""}
                         <th class="col-acciones">Acciones</th>
                     </tr></thead>
                     <tbody>`;
+
         lista.forEach((r, i) => {
             const fh = formatearFechaHoraMostrar(r.fechaHora || r.fecha || "");
+            const pts = Store.getPuntosActividad(r.actividadId);
+            const isOwner = user && r.usuario === user.username;
+            const canModify = isAdmin || isOwner;
+
             html += `
                 <tr>
                     <td>${i + 1}</td>
                     <td><span class="badge-hijo">${Store.getNombreHijo(r.hijoId)}</span></td>
                     <td><span class="badge-actividad">${Store.getNombreActividad(r.actividadId)}</span></td>
+                    <td><span class="badge-puntos">+${pts} pts</span></td>
                     <td class="descripcion-cell">${r.descripcion || "Sin descripción"}</td>
                     <td class="fecha-hora-cell">
                         <span class="fecha">${fh.fecha}</span>
@@ -193,8 +441,12 @@ const View = {
                     </td>
                     ${mostrarUsuario ? `<td class="usuario-cell">${r.usuario || "admin"}</td>` : ""}
                     <td class="col-acciones">
-                        <button class="btn-edit" onclick="AppController.abrirModalEditar(${r.id})">✏️</button>
-                        <button class="btn-delete-reg" onclick="AppController.eliminarRegistro(${r.id})">🗑️</button>
+                        ${canModify ? `
+                            <button class="btn-edit" onclick="AppController.abrirModalEditar(${r.id})" title="Editar">✏️</button>
+                            <button class="btn-delete-reg" onclick="AppController.eliminarRegistro(${r.id})" title="Eliminar">🗑️</button>
+                        ` : `
+                            <span style="font-size:11px;color:#94a3b8;font-style:italic;" title="Solo el creador o admin pueden modificar">🔒 Protegido</span>
+                        `}
                     </td>
                 </tr>`;
         });
@@ -239,6 +491,9 @@ const View = {
         this.renderActividadesGestion(Store.data.actividades);
         this.renderReporteDiario();
         this.renderReporteCompleto();
+        this.renderPuntosConfig();
+        this.renderRanking(AppController.rankingFiltroActual);
+        this.renderRecompensas();
     },
 
     // ---------- Modal edición ----------

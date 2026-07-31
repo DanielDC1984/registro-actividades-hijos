@@ -3,6 +3,7 @@
 // ============================================================
 const AppController = {
     isRegisterMode: false,
+    rankingFiltroActual: "general",
 
     // ---------- Autenticación ----------
     async iniciarSesion(username, password) {
@@ -101,11 +102,78 @@ const AppController = {
                 item.classList.add("active");
                 document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
                 document.getElementById(`view-${viewTarget}`).classList.add("active");
+
                 if (viewTarget === "admin") this._refrescarAdmin();
                 if (viewTarget === "completo") View.renderReporteCompleto();
+                if (viewTarget === "ranking") View.renderRanking(this.rankingFiltroActual);
+                if (viewTarget === "recompensas") View.renderRecompensas();
+                if (viewTarget === "puntos-config") View.renderPuntosConfig();
+
                 if (window.innerWidth < 768) { sidebar.classList.remove("open"); overlay.classList.remove("show"); }
             });
         });
+    },
+
+    // ---------- Ranking Filtros ----------
+    setRankingFiltro(filtro) {
+        this.rankingFiltroActual = filtro;
+        document.querySelectorAll(".ranking-tabs .btn-tab").forEach(btn => btn.classList.remove("active"));
+        const activeBtn = Array.from(document.querySelectorAll(".ranking-tabs .btn-tab")).find(b => b.textContent.toLowerCase().includes(filtro));
+        if (activeBtn) activeBtn.classList.add("active");
+
+        const rangoBox = document.getElementById("rankingRangoInputs");
+        if (filtro === "rango") {
+            rangoBox.style.display = "flex";
+        } else {
+            rangoBox.style.display = "none";
+            View.renderRanking(filtro);
+        }
+    },
+
+    filtrarRankingRango() {
+        const desde = document.getElementById("rankingFechaDesde").value;
+        const hasta = document.getElementById("rankingFechaHasta").value;
+        if (!desde || !hasta) { showToast("⚠️ Selecciona ambas fechas para el ranking", true); return; }
+        View.renderRanking("rango", desde, hasta);
+    },
+
+    // ---------- Puntos Admin ----------
+    guardarPuntosActividad(actividadId, puntos) {
+        const user = Auth.getCurrentUser();
+        if (!user || user.role !== "admin") { showToast("❌ Acción solo permitida para el Administrador", true); return; }
+        if (Store.updatePuntosActividad(actividadId, puntos)) {
+            View.renderAll();
+            showToast("✅ Puntos guardados correctamente");
+        }
+    },
+
+    // ---------- Recompensas ----------
+    solicitarCanje(recompensaId, hijoId) {
+        const user = Auth.getCurrentUser();
+        if (!user) return;
+        if (!hijoId) { showToast("⚠️ Selecciona un hijo para solicitar el canje", true); return; }
+
+        const res = Store.solicitarCanje(parseInt(hijoId, 10), parseInt(recompensaId, 10), user.username);
+        if (!res.ok) {
+            showToast(`❌ ${res.msg}`, true);
+        } else {
+            View.renderRecompensas();
+            showToast("🎉 ¡Solicitud de canje enviada a aprobación!");
+            if (typeof confetti === "function") confetti({ particleCount: 80, spread: 60, origin: { y: 0.7 } });
+        }
+    },
+
+    responderCanje(canjeId, estado) {
+        const user = Auth.getCurrentUser();
+        if (!user || user.role !== "admin") { showToast("❌ Solo el admin puede responder canjes", true); return; }
+        if (Store.responderCanje(canjeId, estado)) {
+            View.renderRecompensas();
+            View.renderRanking(this.rankingFiltroActual);
+            showToast(estado === "aprobado" ? "✅ Canje aprobado con éxito" : "❌ Canje rechazado");
+            if (estado === "aprobado" && typeof confetti === "function") {
+                confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+            }
+        }
     },
 
     // ---------- Formularios ----------
@@ -123,7 +191,10 @@ const AppController = {
             View.renderAll();
             e.target.reset();
             document.getElementById("fechaHoraActividad").value = getFechaHoraLocal();
-            showToast("✅ Actividad registrada");
+
+            const pts = Store.getPuntosActividad(actividadId);
+            showToast(`✅ Actividad registrada (+${pts} pts)`);
+            if (typeof confetti === "function") confetti({ particleCount: 60, spread: 50, origin: { y: 0.7 } });
         });
 
         document.getElementById("formHijo").addEventListener("submit", e => {
@@ -141,15 +212,39 @@ const AppController = {
             e.preventDefault();
             const nombre = document.getElementById("nombreActividad").value.trim();
             if (!nombre) { showToast("⚠️ Ingresa un nombre", true); return; }
-            Store.addActividad(nombre);
+            Store.addActividad(nombre, 0);
             View.renderAll();
             e.target.reset();
             showToast("✅ Actividad creada");
         });
 
+        const formRec = document.getElementById("formNuevaRecompensa");
+        if (formRec) {
+            formRec.addEventListener("submit", e => {
+                e.preventDefault();
+                const nombre = document.getElementById("recompensaNombre").value.trim();
+                const puntos = document.getElementById("recompensaPuntos").value;
+                if (!nombre || !puntos) { showToast("⚠️ Completa los campos", true); return; }
+                Store.addRecompensa(nombre, puntos);
+                View.renderRecompensas();
+                e.target.reset();
+                showToast("✅ Recompensa agregada");
+            });
+        }
+
         document.getElementById("formEditar").addEventListener("submit", e => {
             e.preventDefault();
             const id = parseInt(document.getElementById("editRegistroId").value, 10);
+            const registro = Store.data.registros.find(r => r.id === id);
+            const user = Auth.getCurrentUser();
+            const isAdmin = user && user.role === "admin";
+            const isOwner = user && registro && registro.usuario === user.username;
+
+            if (!isAdmin && !isOwner) {
+                showToast("❌ Solo puedes editar tus propios registros", true);
+                return;
+            }
+
             const hijoId = parseInt(document.getElementById("editSelectHijo").value, 10);
             const actividadId = parseInt(document.getElementById("editSelectActividad").value, 10);
             const descripcion = document.getElementById("editDescripcion").value.trim();
@@ -187,21 +282,50 @@ const AppController = {
         View.renderAll();
         showToast("🗑️ Hijo removido");
     },
+
     eliminarActividadGestion(id) {
         if (!confirm("¿Eliminar esta actividad?")) return;
         Store.deleteActividad(id);
         View.renderAll();
         showToast("🗑️ Actividad removida");
     },
+
+    eliminarRecompensa(id) {
+        if (!confirm("¿Eliminar esta recompensa?")) return;
+        Store.deleteRecompensa(id);
+        View.renderRecompensas();
+        showToast("🗑️ Recompensa eliminada");
+    },
+
     eliminarRegistro(id) {
+        const registro = Store.data.registros.find(r => r.id === id);
+        if (!registro) { showToast("⚠️ Registro no encontrado", true); return; }
+        const user = Auth.getCurrentUser();
+        const isAdmin = user && user.role === "admin";
+        const isOwner = user && registro.usuario === user.username;
+
+        if (!isAdmin && !isOwner) {
+            showToast("❌ Solo puedes eliminar tus propios registros", true);
+            return;
+        }
+
         if (!confirm("¿Eliminar este registro?")) return;
         Store.deleteRegistro(id);
         View.renderAll();
         showToast("🗑️ Registro eliminado");
     },
+
     abrirModalEditar(id) {
         const registro = Store.data.registros.find(r => r.id === id);
         if (!registro) { showToast("⚠️ Registro no encontrado", true); return; }
+        const user = Auth.getCurrentUser();
+        const isAdmin = user && user.role === "admin";
+        const isOwner = user && registro.usuario === user.username;
+
+        if (!isAdmin && !isOwner) {
+            showToast("❌ Solo puedes editar tus propios registros", true);
+            return;
+        }
         View.abrirModalEditar(registro);
     },
 
@@ -250,23 +374,23 @@ const AppController = {
         fechaEl.style.cssText = "color:#6b7a8f;font-size:13px;margin-bottom:16px;";
         contenedor.appendChild(fechaEl);
 
-        const headers = ["#", "Hijo", "Actividad", "Descripción", "Fecha / Hora", "Reportado por"];
-        // Anchos fijos por columna (%) para que la tabla nunca se desborde del margen,
-        // sin importar qué tan larga sea la descripción.
-        const anchos = ["4%", "13%", "13%", "34%", "18%", "18%"];
+        const headers = ["#", "Hijo", "Actividad", "Puntos", "Descripción", "Fecha / Hora", "Reportado por"];
+        const anchos = ["4%", "12%", "12%", "10%", "30%", "16%", "16%"];
 
         let rows = "";
         lista.forEach((r, i) => {
             const fh = formatearFechaHoraMostrar(r.fechaHora || r.fecha || "");
+            const pts = Store.getPuntosActividad(r.actividadId);
             rows += `<tr style="border-bottom:1px solid #eef2f7;">
-                <td style="padding:8px 10px;word-wrap:break-word;overflow-wrap:break-word;">${i + 1}</td>
-                <td style="padding:8px 10px;word-wrap:break-word;overflow-wrap:break-word;">${Store.getNombreHijo(r.hijoId)}</td>
-                <td style="padding:8px 10px;word-wrap:break-word;overflow-wrap:break-word;">${Store.getNombreActividad(r.actividadId)}</td>
-                <td style="padding:8px 10px;word-wrap:break-word;overflow-wrap:break-word;white-space:normal;">${r.descripcion || "Sin descripción"}</td>
-                <td style="padding:8px 10px;line-height:1.4;word-wrap:break-word;">
+                <td style="padding:8px 10px;">${i + 1}</td>
+                <td style="padding:8px 10px;">${Store.getNombreHijo(r.hijoId)}</td>
+                <td style="padding:8px 10px;">${Store.getNombreActividad(r.actividadId)}</td>
+                <td style="padding:8px 10px;font-weight:bold;color:#4a6cf7;">+${pts} pts</td>
+                <td style="padding:8px 10px;">${r.descripcion || "Sin descripción"}</td>
+                <td style="padding:8px 10px;line-height:1.4;">
                     ${fh.fecha}<br><span style="font-size:10px;color:#6b7a8f;">🕐 ${fh.hora || "--:--"}</span>
                 </td>
-                <td style="padding:8px 10px;word-wrap:break-word;overflow-wrap:break-word;">${r.usuario || "admin"}</td>
+                <td style="padding:8px 10px;">${r.usuario || "admin"}</td>
             </tr>`;
         });
 
@@ -274,7 +398,7 @@ const AppController = {
         tabla.style.cssText = "width:100%;border-collapse:collapse;font-size:11px;table-layout:fixed;";
         tabla.innerHTML = `
             <colgroup>${anchos.map(a => `<col style="width:${a};">`).join("")}</colgroup>
-            <thead><tr>${headers.map((h, i) => `<th style="background:#1a2a3a;color:#fff;padding:8px 10px;text-align:left;word-wrap:break-word;">${h}</th>`).join("")}</tr></thead>
+            <thead><tr>${headers.map(h => `<th style="background:#1a2a3a;color:#fff;padding:8px 10px;text-align:left;">${h}</th>`).join("")}</tr></thead>
             <tbody>${rows}</tbody>`;
         contenedor.appendChild(tabla);
 
