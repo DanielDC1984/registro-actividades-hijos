@@ -65,10 +65,10 @@ const Store = {
         localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.data));
     },
 
-    // Guarda local y sincroniza a Supabase (fire-and-forget)
-    persist() {
+    // Guarda local y sincroniza a Supabase
+    async persist() {
         this.saveLocal();
-        this.saveToSupabase();
+        await this.saveToSupabase();
     },
 
     // ---------- Supabase ----------
@@ -85,25 +85,25 @@ const Store = {
             }
             if (dbData) {
                 if (dbData.hijos && dbData.hijos.length > 0) this.data.hijos = dbData.hijos;
+                
                 if (dbData.actividades && dbData.actividades.length > 0) {
-                    this.data.actividades = dbData.actividades.map(a => ({
-                        ...a,
-                        puntos: typeof a.puntos === "number" ? a.puntos : (parseInt(a.puntos, 10) || 0)
-                    }));
+                    this.data.actividades = dbData.actividades.map(remoteAct => {
+                        const localAct = (this.data.actividades || []).find(l => l.id == remoteAct.id);
+                        const pts = typeof remoteAct.puntos === "number" ? remoteAct.puntos : (localAct && typeof localAct.puntos === "number" ? localAct.puntos : 0);
+                        return { ...remoteAct, puntos: pts };
+                    });
+
+                    // Cargar recompensas y canjes incrustados en actividades si existen
+                    if (dbData.actividades[0] && dbData.actividades[0]._recompensas) {
+                        this.data.recompensas = dbData.actividades[0]._recompensas;
+                    }
+                    if (dbData.actividades[0] && dbData.actividades[0]._canjes) {
+                        this.data.canjes = dbData.actividades[0]._canjes;
+                    }
                 }
                 if (dbData.registros && dbData.registros.length > 0) this.data.registros = dbData.registros;
-
-                // Cargar recompensas y canjes de columnas dedicadas o de fallback
-                let recs = dbData.recompensas;
-                let cjs = dbData.canjes;
-                if ((!recs || recs.length === 0) && dbData.actividades && dbData.actividades[0] && dbData.actividades[0]._extraRecompensas) {
-                    recs = dbData.actividades[0]._extraRecompensas;
-                }
-                if ((!cjs || cjs.length === 0) && dbData.actividades && dbData.actividades[0] && dbData.actividades[0]._extraCanjes) {
-                    cjs = dbData.actividades[0]._extraCanjes;
-                }
-                if (recs) this.data.recompensas = recs;
-                if (cjs) this.data.canjes = cjs;
+                if (dbData.recompensas && dbData.recompensas.length > 0) this.data.recompensas = dbData.recompensas;
+                if (dbData.canjes && dbData.canjes.length > 0) this.data.canjes = dbData.canjes;
 
                 this.saveLocal();
             }
@@ -113,43 +113,35 @@ const Store = {
     },
 
     async saveToSupabase() {
-        // Intento 1: Intentar guardado con columnas dedicadas
-        const payloadFull = {
-            id: FAMILIA_ID,
-            hijos: this.data.hijos,
-            actividades: this.data.actividades,
-            registros: this.data.registros,
-            recompensas: this.data.recompensas || [],
-            canjes: this.data.canjes || [],
-            updated_at: new Date().toISOString(),
-        };
-
-        const { error } = await supabaseClient.from("familias").upsert(payloadFull);
-        if (error) {
-            console.warn("Supabase upsert completo rechazado. Usando guardado de respaldo compatible:", error.message);
-            // Fallback: Incrustar recompensas y canjes dentro de actividades para compatibilidad con tablas estándar
-            const actividadesBackup = this.data.actividades.map((a, idx) => {
+        try {
+            // Incrustar las recompensas y los canjes en actividades[0] para que la tabla 'familias' de Postgres NUNCA rechace la consulta por columnas faltantes
+            const actividadesSeguras = this.data.actividades.map((a, idx) => {
                 if (idx === 0) {
                     return {
                         ...a,
-                        _extraRecompensas: this.data.recompensas || [],
-                        _extraCanjes: this.data.canjes || []
+                        _recompensas: this.data.recompensas || [],
+                        _canjes: this.data.canjes || []
                     };
                 }
                 return a;
             });
-            const payloadBase = {
+
+            // Enviar solo las 4 columnas nativas que existen en la tabla familias de Supabase
+            const payload = {
                 id: FAMILIA_ID,
                 hijos: this.data.hijos,
-                actividades: actividadesBackup,
-                registros: this.data.registros,
-                updated_at: new Date().toISOString(),
+                actividades: actividadesSeguras,
+                registros: this.data.registros
             };
-            const { error: err2 } = await supabaseClient.from("familias").upsert(payloadBase);
-            if (err2) console.error("Error al guardar respaldo en Supabase:", err2.message);
-            else console.log("✅ Guardado de respaldo en Supabase exitoso");
-        } else {
-            console.log("✅ Guardado en Supabase exitoso");
+
+            const { error } = await supabaseClient.from("familias").upsert(payload);
+            if (error) {
+                console.error("Error al sincronizar con Supabase:", error.message);
+            } else {
+                console.log("✅ Sincronización exitosa con Supabase");
+            }
+        } catch (e) {
+            console.error("Excepción en saveToSupabase:", e);
         }
     },
 
@@ -165,6 +157,12 @@ const Store = {
                             ...a,
                             puntos: typeof a.puntos === "number" ? a.puntos : (parseInt(a.puntos, 10) || 0)
                         }));
+                        if (payload.new.actividades[0] && payload.new.actividades[0]._recompensas) {
+                            this.data.recompensas = payload.new.actividades[0]._recompensas;
+                        }
+                        if (payload.new.actividades[0] && payload.new.actividades[0]._canjes) {
+                            this.data.canjes = payload.new.actividades[0]._canjes;
+                        }
                     }
                     if (payload.new.registros) this.data.registros = payload.new.registros;
                     this.saveLocal();
