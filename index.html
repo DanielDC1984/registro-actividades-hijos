@@ -82,6 +82,14 @@
                     <div class="icon primary">📝</div>
                     <div class="info"><div class="name">Registrar Actividad</div><div class="desc">Acceso directo</div></div>
                 </div>
+                <div class="sidebar-item" data-view="ranking">
+                    <div class="icon orange">🏆</div>
+                    <div class="info"><div class="name">Ranking de Puntos</div><div class="desc">Tabla de posiciones</div></div>
+                </div>
+                <div class="sidebar-item" data-view="recompensas">
+                    <div class="icon green">🎁</div>
+                    <div class="info"><div class="name">Tienda Recompensas</div><div class="desc">Canjear puntos</div></div>
+                </div>
             </div>
             <div class="sidebar-group">
                 <div class="sidebar-group-label">📊 Reportes</div>
@@ -108,6 +116,10 @@
                     <div class="icon purple">👥</div>
                     <div class="info"><div class="name">Gestionar Usuarios</div><div class="desc">Aprobar, bloquear, eliminar</div></div>
                     <span class="badge" id="pendingCount">0</span>
+                </div>
+                <div class="sidebar-item" data-view="puntos-config">
+                    <div class="icon orange">⚙️</div>
+                    <div class="info"><div class="name">Configurar Puntos</div><div class="desc">Puntos por actividad</div></div>
                 </div>
                 <div class="sidebar-item" data-view="hijos">
                     <div class="icon blue">👨‍👦</div>
@@ -167,6 +179,67 @@
                     </div>
                     <button type="submit" class="btn-primary">✅ Guardar</button>
                 </form>
+            </div>
+
+            <!-- ========== VISTA: RANKING ========== -->
+            <div class="view" id="view-ranking">
+                <div class="view-title">🏆 Ranking Familiar de Puntos</div>
+                <p style="color:#6b7a8f;margin-bottom:16px;font-size:14px;">Descubre quién lidera la tabla de posiciones.</p>
+                
+                <div class="ranking-tabs">
+                    <button class="btn-tab active" onclick="AppController.setRankingFiltro('diario')">📅 Hoy</button>
+                    <button class="btn-tab" onclick="AppController.setRankingFiltro('semanal')">📆 Esta Semana</button>
+                    <button class="btn-tab" onclick="AppController.setRankingFiltro('mensual')">🗓️ Este Mes</button>
+                    <button class="btn-tab" onclick="AppController.setRankingFiltro('general')">🏆 Histórico</button>
+                    <button class="btn-tab" onclick="AppController.setRankingFiltro('rango')">📆 Por Rango</button>
+                </div>
+
+                <div id="rankingRangoInputs" class="form-row" style="display:none;margin-top:12px;background:#fff;padding:12px;border-radius:14px;">
+                    <div class="form-group"><label>Desde</label><input type="date" id="rankingFechaDesde"></div>
+                    <div class="form-group"><label>Hasta</label><input type="date" id="rankingFechaHasta"></div>
+                    <button class="btn-primary" onclick="AppController.filtrarRankingRango()" style="height:44px;margin-top:22px;">🔍 Filtrar</button>
+                </div>
+
+                <div id="rankingPodio" class="podium-container" style="margin-top:20px;"></div>
+                <div id="rankingLista" class="ranking-list" style="margin-top:16px;"></div>
+                <div id="rankingChart" class="chart-container" style="margin-top:24px;"></div>
+            </div>
+
+            <!-- ========== VISTA: RECOMPENSAS ========== -->
+            <div class="view" id="view-recompensas">
+                <div class="view-title">🎁 Tienda de Recompensas</div>
+                <p style="color:#6b7a8f;margin-bottom:16px;font-size:14px;">Canjea tus puntos acumulados por premios especiales.</p>
+                
+                <div id="recompensasHijoStatus" style="margin-bottom:16px;"></div>
+
+                <div id="adminFormRecompensa" class="admin-panel" style="display:none;margin-bottom:20px;">
+                    <h3>➕ Agregar Nueva Recompensa (Admin)</h3>
+                    <form id="formNuevaRecompensa" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+                        <div class="form-group" style="flex:2;min-width:180px;margin:0;">
+                            <label>Nombre del Premio</label>
+                            <input type="text" id="recompensaNombre" placeholder="Ej: 1 hora de videojuegos..." required>
+                        </div>
+                        <div class="form-group" style="flex:1;min-width:100px;margin:0;">
+                            <label>Puntos Costo</label>
+                            <input type="number" id="recompensaPuntos" placeholder="100" min="1" required>
+                        </div>
+                        <button type="submit" class="btn-primary" style="width:auto;padding:12px 20px;margin:0;">💾 Guardar</button>
+                    </form>
+                </div>
+
+                <div id="adminCanjesPendientes" class="admin-panel" style="display:none;margin-bottom:20px;">
+                    <h3>⏳ Solicitudes de Canje Pendientes</h3>
+                    <div id="listaCanjesPendientes"></div>
+                </div>
+
+                <div id="listaRecompensas" class="recompensas-grid"></div>
+            </div>
+
+            <!-- ========== VISTA: CONFIGURAR PUNTOS (ADMIN) ========== -->
+            <div class="view" id="view-puntos-config">
+                <div class="view-title">⚙️ Configuración de Puntos por Actividad</div>
+                <p style="color:#6b7a8f;margin-bottom:16px;font-size:14px;">Asigna o modifica la cantidad de puntos que otorga cada actividad.</p>
+                <div id="puntosConfigLista" class="puntos-config-container"></div>
             </div>
 
             <div class="view" id="view-admin">
@@ -240,6 +313,7 @@
     <!-- Librerías externas -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
     <!-- App: Modelo -> Vista -> Controlador -->
     <script src="js/config.js"></script>
