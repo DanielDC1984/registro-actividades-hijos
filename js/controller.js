@@ -443,4 +443,5 @@ const AppController = {
     },
 };
 
+window.AppController = AppController;
 document.addEventListener("DOMContentLoaded", () => AppController.init());

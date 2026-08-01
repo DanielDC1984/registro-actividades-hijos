@@ -79,21 +79,27 @@ const Store = {
                 .select("*")
                 .eq("id", FAMILIA_ID)
                 .single();
+
             if (error && error.code !== "PGRST116") {
                 console.warn("Aviso al consultar Supabase:", error.message);
                 return;
             }
+
             if (dbData) {
                 if (dbData.hijos && dbData.hijos.length > 0) this.data.hijos = dbData.hijos;
                 
                 if (dbData.actividades && dbData.actividades.length > 0) {
+                    // Fusión inteligente: PROTEGER los puntos locales si Supabase devuelve 0 o no tiene puntos
                     this.data.actividades = dbData.actividades.map(remoteAct => {
                         const localAct = (this.data.actividades || []).find(l => l.id == remoteAct.id);
-                        const pts = typeof remoteAct.puntos === "number" ? remoteAct.puntos : (localAct && typeof localAct.puntos === "number" ? localAct.puntos : 0);
-                        return { ...remoteAct, puntos: pts };
+                        const remotePts = typeof remoteAct.puntos === "number" ? remoteAct.puntos : (parseInt(remoteAct.puntos, 10) || 0);
+                        const localPts = localAct && typeof localAct.puntos === "number" ? localAct.puntos : (localAct ? (parseInt(localAct.puntos, 10) || 0) : 0);
+                        
+                        const finalPts = Math.max(remotePts, localPts);
+                        return { ...remoteAct, puntos: finalPts };
                     });
 
-                    // Cargar recompensas y canjes incrustados en actividades si existen
+                    // Cargar recompensas y canjes incrustados en actividades[0] si existen
                     if (dbData.actividades[0] && dbData.actividades[0]._recompensas) {
                         this.data.recompensas = dbData.actividades[0]._recompensas;
                     }
@@ -101,10 +107,12 @@ const Store = {
                         this.data.canjes = dbData.actividades[0]._canjes;
                     }
                 }
+
                 if (dbData.registros && dbData.registros.length > 0) this.data.registros = dbData.registros;
                 if (dbData.recompensas && dbData.recompensas.length > 0) this.data.recompensas = dbData.recompensas;
                 if (dbData.canjes && dbData.canjes.length > 0) this.data.canjes = dbData.canjes;
 
+                // Guardar la fusión resultante en LocalStorage
                 this.saveLocal();
             }
         } catch (e) {
@@ -114,8 +122,8 @@ const Store = {
 
     async saveToSupabase() {
         try {
-            // Incrustar las recompensas y los canjes en actividades[0] para que la tabla 'familias' de Postgres NUNCA rechace la consulta por columnas faltantes
-            const actividadesSeguras = this.data.actividades.map((a, idx) => {
+            // Incrustar recompensas y canjes en la primera actividad para compatibilidad total con la tabla familias
+            const actividadesToSave = this.data.actividades.map((a, idx) => {
                 if (idx === 0) {
                     return {
                         ...a,
@@ -126,19 +134,28 @@ const Store = {
                 return a;
             });
 
-            // Enviar solo las 4 columnas nativas que existen en la tabla familias de Supabase
             const payload = {
                 id: FAMILIA_ID,
                 hijos: this.data.hijos,
-                actividades: actividadesSeguras,
+                actividades: actividadesToSave,
                 registros: this.data.registros
             };
 
-            const { error } = await supabaseClient.from("familias").upsert(payload);
+            // Probar upsert con onConflict id
+            let { error } = await supabaseClient.from("familias").upsert(payload, { onConflict: "id" });
+
+            // Si upsert falló, hacer update directo a la fila por id
             if (error) {
-                console.error("Error al sincronizar con Supabase:", error.message);
+                console.warn("Upsert falló en Supabase, realizando update directo:", error.message);
+                const { error: errUpdate } = await supabaseClient
+                    .from("familias")
+                    .update(payload)
+                    .eq("id", FAMILIA_ID);
+
+                if (errUpdate) console.error("Error en update Supabase:", errUpdate.message);
+                else console.log("✅ Supabase actualizado mediante update()");
             } else {
-                console.log("✅ Sincronización exitosa con Supabase");
+                console.log("✅ Supabase actualizado mediante upsert()");
             }
         } catch (e) {
             console.error("Excepción en saveToSupabase:", e);
