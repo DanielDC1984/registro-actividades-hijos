@@ -3,7 +3,18 @@
 // ============================================================
 const Store = {
     STORAGE_KEY: "actividadesData_global",
-    data: { hijos: [], actividades: [], registros: [], recompensas: [], canjes: [] },
+    data: {
+        hijos: [],
+        actividades: [],
+        registros: [],
+        recompensas: [],
+        canjes: [],
+        anuncio: {
+            activo: true,
+            titulo: "📢 ¡Nueva actualización en el sistema!",
+            mensaje: "¡Hola a todos! A partir de ahora, cada actividad registrada otorga PUNTOS. Pueden competir en el 🏆 Ranking Familiar y canjear sus puntos por premios en la 🎁 Tienda de Recompensas."
+        }
+    },
 
     // ---------- Carga inicial ----------
     load() {
@@ -18,6 +29,13 @@ const Store = {
         if (!this.data.registros) this.data.registros = [];
         if (!this.data.recompensas) this.data.recompensas = [];
         if (!this.data.canjes) this.data.canjes = [];
+        if (!this.data.anuncio) {
+            this.data.anuncio = {
+                activo: true,
+                titulo: "📢 ¡Nueva actualización en el sistema!",
+                mensaje: "¡Hola a todos! A partir de ahora, cada actividad registrada otorga PUNTOS. Pueden competir en el 🏆 Ranking Familiar y canjear sus puntos por premios en la 🎁 Tienda de Recompensas."
+            };
+        }
 
         // Migrar registros antiguos que solo tenían "fecha" (sin hora)
         this.data.registros = (this.data.registros || []).map(r => (
@@ -99,20 +117,19 @@ const Store = {
                         return { ...remoteAct, puntos: finalPts };
                     });
 
-                    // Cargar recompensas y canjes incrustados en actividades[0] si existen
-                    if (dbData.actividades[0] && dbData.actividades[0]._recompensas) {
-                        this.data.recompensas = dbData.actividades[0]._recompensas;
-                    }
-                    if (dbData.actividades[0] && dbData.actividades[0]._canjes) {
-                        this.data.canjes = dbData.actividades[0]._canjes;
+                    // Cargar recompensas, canjes y anuncio incrustados en actividades[0] si existen
+                    if (dbData.actividades[0]) {
+                        if (dbData.actividades[0]._recompensas) this.data.recompensas = dbData.actividades[0]._recompensas;
+                        if (dbData.actividades[0]._canjes) this.data.canjes = dbData.actividades[0]._canjes;
+                        if (dbData.actividades[0]._anuncio) this.data.anuncio = dbData.actividades[0]._anuncio;
                     }
                 }
 
                 if (dbData.registros && dbData.registros.length > 0) this.data.registros = dbData.registros;
                 if (dbData.recompensas && dbData.recompensas.length > 0) this.data.recompensas = dbData.recompensas;
                 if (dbData.canjes && dbData.canjes.length > 0) this.data.canjes = dbData.canjes;
+                if (dbData.anuncio) this.data.anuncio = dbData.anuncio;
 
-                // Guardar la fusión resultante en LocalStorage
                 this.saveLocal();
             }
         } catch (e) {
@@ -122,13 +139,14 @@ const Store = {
 
     async saveToSupabase() {
         try {
-            // Incrustar recompensas y canjes en la primera actividad para compatibilidad total con la tabla familias
+            // Incrustar las recompensas, canjes y anuncio en actividades[0] para que la tabla familias de Postgres NUNCA rechace la consulta
             const actividadesToSave = this.data.actividades.map((a, idx) => {
                 if (idx === 0) {
                     return {
                         ...a,
                         _recompensas: this.data.recompensas || [],
-                        _canjes: this.data.canjes || []
+                        _canjes: this.data.canjes || [],
+                        _anuncio: this.data.anuncio || null
                     };
                 }
                 return a;
@@ -141,10 +159,8 @@ const Store = {
                 registros: this.data.registros
             };
 
-            // Probar upsert con onConflict id
             let { error } = await supabaseClient.from("familias").upsert(payload, { onConflict: "id" });
 
-            // Si upsert falló, hacer update directo a la fila por id
             if (error) {
                 console.warn("Upsert falló en Supabase, realizando update directo:", error.message);
                 const { error: errUpdate } = await supabaseClient
@@ -174,11 +190,10 @@ const Store = {
                             ...a,
                             puntos: typeof a.puntos === "number" ? a.puntos : (parseInt(a.puntos, 10) || 0)
                         }));
-                        if (payload.new.actividades[0] && payload.new.actividades[0]._recompensas) {
-                            this.data.recompensas = payload.new.actividades[0]._recompensas;
-                        }
-                        if (payload.new.actividades[0] && payload.new.actividades[0]._canjes) {
-                            this.data.canjes = payload.new.actividades[0]._canjes;
+                        if (payload.new.actividades[0]) {
+                            if (payload.new.actividades[0]._recompensas) this.data.recompensas = payload.new.actividades[0]._recompensas;
+                            if (payload.new.actividades[0]._canjes) this.data.canjes = payload.new.actividades[0]._canjes;
+                            if (payload.new.actividades[0]._anuncio) this.data.anuncio = payload.new.actividades[0]._anuncio;
                         }
                     }
                     if (payload.new.registros) this.data.registros = payload.new.registros;
@@ -186,6 +201,16 @@ const Store = {
                     onRemoteChange();
                 })
             .subscribe(status => { if (status === "SUBSCRIBED") console.log("📡 Escuchando cambios..."); });
+    },
+
+    // ---------- Anuncio del Sistema ----------
+    updateAnuncio(activo, titulo, mensaje) {
+        this.data.anuncio = {
+            activo: Boolean(activo),
+            titulo: titulo || "📢 Anuncio",
+            mensaje: mensaje || ""
+        };
+        this.persist();
     },
 
     // ---------- Lookups ----------

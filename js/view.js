@@ -49,6 +49,25 @@ const View = {
         this.ocultarMensajesLogin();
     },
 
+    // ---------- Modal Anuncio ----------
+    mostrarModalAnuncio() {
+        const anuncio = Store.data.anuncio;
+        if (!anuncio || !anuncio.activo) return;
+
+        const elTitulo = document.getElementById("anuncioTitulo");
+        const elMensaje = document.getElementById("anuncioMensaje");
+        if (elTitulo) elTitulo.textContent = anuncio.titulo || "📢 ¡Atención!";
+        if (elMensaje) elMensaje.textContent = anuncio.mensaje || "";
+
+        const modal = document.getElementById("modalAnuncio");
+        if (modal) modal.classList.add("active");
+    },
+
+    cerrarModalAnuncio() {
+        const modal = document.getElementById("modalAnuncio");
+        if (modal) modal.classList.remove("active");
+    },
+
     // ---------- Estado de sincronización ----------
     updateSyncStatus(state, text) {
         const dot = document.getElementById("statusDot");
@@ -179,36 +198,59 @@ const View = {
             </div>`).join("");
     },
 
-    // ---------- Configuración de Puntos (Admin) ----------
+    // ---------- Configuración de Puntos y Anuncio (Admin) ----------
     renderPuntosConfig() {
         const container = document.getElementById("puntosConfigLista");
         if (!container) return;
         const actividades = Store.data.actividades;
-
-        if (actividades.length === 0) {
-            container.innerHTML = '<div class="empty-state"><p>No hay actividades registradas para configurar puntos</p></div>';
-            return;
-        }
+        const anuncio = Store.data.anuncio || { activo: true, titulo: "📢 Anuncio", mensaje: "" };
 
         let html = `
+            <!-- PANEL: MENSAJE DE BIENVENIDA -->
+            <div class="admin-panel" style="margin-bottom:20px;">
+                <h3>📢 Mensaje de Bienvenida para Usuarios</h3>
+                <p style="color:#6b7a8f;font-size:13px;margin-bottom:12px;">Escribe un aviso para mostrar a todos los usuarios al iniciar sesión:</p>
+                
+                <div class="form-group" style="margin-bottom:10px;">
+                    <label style="font-size:13px;display:flex;align-items:center;gap:6px;">
+                        <input type="checkbox" id="anuncioActivoInput" ${anuncio.activo ? "checked" : ""} style="width:auto;margin:0;">
+                        <strong>Mostrar anuncio al iniciar sesión</strong>
+                    </label>
+                </div>
+                <div class="form-group" style="margin-bottom:10px;">
+                    <label>Título del Anuncio</label>
+                    <input type="text" id="anuncioTituloInput" value="${anuncio.titulo || ''}" placeholder="Ej: 📢 ¡Novedad en el sistema!">
+                </div>
+                <div class="form-group" style="margin-bottom:12px;">
+                    <label>Mensaje del Anuncio</label>
+                    <textarea id="anuncioMensajeInput" rows="3" placeholder="Mensaje que verán los usuarios...">${anuncio.mensaje || ''}</textarea>
+                </div>
+                <button class="btn-primary" style="width:auto;padding:10px 20px;" onclick="AppController.guardarAnuncio(document.getElementById('anuncioActivoInput').checked, document.getElementById('anuncioTituloInput').value, document.getElementById('anuncioMensajeInput').value)">💾 Guardar Anuncio</button>
+            </div>
+
+            <!-- PANEL: PUNTOS POR ACTIVIDAD -->
             <div class="admin-panel">
                 <h3>⚙️ Puntos por Tipo de Actividad</h3>
                 <p style="color:#6b7a8f;font-size:13px;margin-bottom:14px;">Define los puntos que ganarán los niños al realizar cada tarea:</p>
                 <div class="puntos-grid">`;
 
-        actividades.forEach(a => {
-            const pts = a.puntos || 0;
-            html += `
-                <div class="punto-item">
-                    <div class="punto-info">
-                        <span class="act-name">🎯 ${a.nombre}</span>
-                    </div>
-                    <div class="punto-input-group">
-                        <input type="number" id="inputPuntos_${a.id}" value="${pts}" min="0" max="1000">
-                        <button class="btn-primary" style="width:auto;padding:6px 14px;font-size:13px;" onclick="AppController.guardarPuntosActividad(${a.id}, document.getElementById('inputPuntos_${a.id}').value)">💾 Guardar</button>
-                    </div>
-                </div>`;
-        });
+        if (actividades.length === 0) {
+            html += '<div class="empty-state"><p>No hay actividades registradas para configurar puntos</p></div>';
+        } else {
+            actividades.forEach(a => {
+                const pts = a.puntos || 0;
+                html += `
+                    <div class="punto-item">
+                        <div class="punto-info">
+                            <span class="act-name">🎯 ${a.nombre}</span>
+                        </div>
+                        <div class="punto-input-group">
+                            <input type="number" id="inputPuntos_${a.id}" value="${pts}" min="0" max="1000">
+                            <button class="btn-primary" style="width:auto;padding:6px 14px;font-size:13px;" onclick="AppController.guardarPuntosActividad(${a.id}, document.getElementById('inputPuntos_${a.id}').value)">💾 Guardar</button>
+                        </div>
+                    </div>`;
+            });
+        }
         html += `</div></div>`;
         container.innerHTML = html;
     },

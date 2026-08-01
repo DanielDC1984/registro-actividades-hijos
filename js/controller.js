@@ -72,9 +72,17 @@ const AppController = {
         Store.load();
         View.renderAll();
         this._aplicarUI();
+        View.mostrarModalAnuncio();
+
         Store.loadFromSupabase()
-            .then(() => { View.renderAll(); View.updateSyncStatus("online", "Conectado"); })
-            .catch(err => { console.error("Error cargando de Supabase:", err); View.updateSyncStatus("offline", "Offline"); });
+            .then(() => {
+                View.renderAll();
+                View.updateSyncStatus("online", "Conectado");
+            })
+            .catch(err => {
+                console.error("Error cargando de Supabase:", err);
+                View.updateSyncStatus("offline", "Offline");
+            });
     },
 
     _aplicarUI() {
@@ -137,14 +145,23 @@ const AppController = {
         View.renderRanking("rango", desde, hasta);
     },
 
-    // ---------- Puntos Admin ----------
+    // ---------- Puntos y Anuncio Admin ----------
     guardarPuntosActividad(actividadId, puntos) {
         const user = Auth.getCurrentUser();
-        if (!user || user.role !== "admin") { showToast("❌ Acción solo permitida para el Administrador", true); return; }
+        const isAdmin = user && (user.role === "admin" || user.username === "admin");
+        if (!isAdmin) { showToast("❌ Acción solo permitida para el Administrador", true); return; }
         if (Store.updatePuntosActividad(actividadId, puntos)) {
             View.renderAll();
             showToast("✅ Puntos guardados correctamente");
         }
+    },
+
+    guardarAnuncio(activo, titulo, mensaje) {
+        const user = Auth.getCurrentUser();
+        const isAdmin = user && (user.role === "admin" || user.username === "admin");
+        if (!isAdmin) { showToast("❌ Acción solo permitida para el Administrador", true); return; }
+        Store.updateAnuncio(activo, titulo, mensaje);
+        showToast("✅ Anuncio de bienvenida guardado");
     },
 
     // ---------- Recompensas ----------
@@ -165,7 +182,8 @@ const AppController = {
 
     responderCanje(canjeId, estado) {
         const user = Auth.getCurrentUser();
-        if (!user || user.role !== "admin") { showToast("❌ Solo el admin puede responder canjes", true); return; }
+        const isAdmin = user && (user.role === "admin" || user.username === "admin");
+        if (!isAdmin) { showToast("❌ Solo el admin puede responder canjes", true); return; }
         if (Store.responderCanje(canjeId, estado)) {
             View.renderRecompensas();
             View.renderRanking(this.rankingFiltroActual);
@@ -237,7 +255,7 @@ const AppController = {
             const id = parseInt(document.getElementById("editRegistroId").value, 10);
             const registro = Store.data.registros.find(r => r.id === id);
             const user = Auth.getCurrentUser();
-            const isAdmin = user && user.role === "admin";
+            const isAdmin = user && (user.role === "admin" || user.username === "admin");
             const isOwner = user && registro && registro.usuario === user.username;
 
             if (!isAdmin && !isOwner) {
@@ -301,7 +319,7 @@ const AppController = {
         const registro = Store.data.registros.find(r => r.id === id);
         if (!registro) { showToast("⚠️ Registro no encontrado", true); return; }
         const user = Auth.getCurrentUser();
-        const isAdmin = user && user.role === "admin";
+        const isAdmin = user && (user.role === "admin" || user.username === "admin");
         const isOwner = user && registro.usuario === user.username;
 
         if (!isAdmin && !isOwner) {
@@ -319,7 +337,7 @@ const AppController = {
         const registro = Store.data.registros.find(r => r.id === id);
         if (!registro) { showToast("⚠️ Registro no encontrado", true); return; }
         const user = Auth.getCurrentUser();
-        const isAdmin = user && user.role === "admin";
+        const isAdmin = user && (user.role === "admin" || user.username === "admin");
         const isOwner = user && registro.usuario === user.username;
 
         if (!isAdmin && !isOwner) {
