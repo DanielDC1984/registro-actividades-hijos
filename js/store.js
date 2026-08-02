@@ -79,20 +79,15 @@ const Store = {
                 { id: 4, nombre: "Música", puntos: 10, activa: true },
             ];
         }
-        if (this.data.recompensas.length === 0) {
+        if (!this.data.recompensas.length) {
             this.data.recompensas = [
                 { id: 101, nombre: "1 hora de videojuegos / pantalla", puntos: 50, icono: "🎮", activa: true },
                 { id: 102, nombre: "Salida a comer helado", puntos: 80, icono: "🍦", activa: true },
                 { id: 103, nombre: "Elegir la película del fin de semana", puntos: 100, icono: "🎬", activa: true },
             ];
         }
-        if (this.data.registros.length === 0) {
-            const ahora = getFechaHoraLocal();
-            this.data.registros = [
-                { id: 1, hijoId: 1, actividadId: 1, descripcion: "Leyó 10 páginas", fechaHora: ahora, usuario: "admin" },
-                { id: 2, hijoId: 2, actividadId: 2, descripcion: "Dibujó un paisaje", fechaHora: ahora, usuario: "admin" },
-            ];
-        }
+        if (!this.data.canjes) this.data.canjes = [];
+        if (!this.data.registros) this.data.registros = [];
         this.saveLocal();
     },
 
@@ -109,23 +104,16 @@ const Store = {
     // ---------- Supabase ----------
     async loadFromSupabase() {
         try {
-            const { data: dbData, error } = await supabaseClient
-                .from("familias")
-                .select("*")
-                .eq("id", FAMILIA_ID)
-                .single();
+            const { data, error } = await supabaseClient.from("familias").select("*").eq("id", FAMILIA_ID).single();
+            if (error && error.code !== "PGRST116") throw error;
 
-            if (error && error.code !== "PGRST116") {
-                console.warn("Aviso al consultar Supabase:", error.message);
-                return;
-            }
-
-            if (dbData) {
+            if (data) {
+                const dbData = data;
                 if (dbData.hijos && dbData.hijos.length > 0) this.data.hijos = dbData.hijos;
-                
+
                 if (dbData.actividades && dbData.actividades.length > 0) {
-                    // Carga autoritativa desde Supabase
                     this.data.actividades = dbData.actividades.map(remoteAct => {
+                        const localAct = this.data.actividades.find(a => a.id === remoteAct.id);
                         const remotePts = typeof remoteAct.puntos === "number" ? remoteAct.puntos : (parseInt(remoteAct.puntos, 10) || 0);
                         const isActiva = typeof remoteAct.activa === "boolean" ? remoteAct.activa : true;
                         return { ...remoteAct, puntos: remotePts, activa: isActiva };
@@ -133,16 +121,16 @@ const Store = {
 
                     // Cargar recompensas, canjes, anuncio y auditoría incrustados en actividades[0] si existen
                     if (dbData.actividades[0]) {
-                        if (dbData.actividades[0]._recompensas) this.data.recompensas = dbData.actividades[0]._recompensas;
-                        if (dbData.actividades[0]._canjes) this.data.canjes = dbData.actividades[0]._canjes;
+                        if (Array.isArray(dbData.actividades[0]._recompensas)) this.data.recompensas = dbData.actividades[0]._recompensas;
+                        if (Array.isArray(dbData.actividades[0]._canjes)) this.data.canjes = dbData.actividades[0]._canjes;
                         if (dbData.actividades[0]._anuncio) this.data.anuncio = dbData.actividades[0]._anuncio;
                         if (dbData.actividades[0]._auditLog) this.data.auditLog = dbData.actividades[0]._auditLog;
                     }
                 }
 
-                if (dbData.registros && dbData.registros.length > 0) this.data.registros = dbData.registros;
-                if (dbData.recompensas && dbData.recompensas.length > 0) this.data.recompensas = dbData.recompensas;
-                if (dbData.canjes && dbData.canjes.length > 0) this.data.canjes = dbData.canjes;
+                if (Array.isArray(dbData.registros)) this.data.registros = dbData.registros;
+                if (Array.isArray(dbData.recompensas) && dbData.recompensas.length > 0) this.data.recompensas = dbData.recompensas;
+                if (Array.isArray(dbData.canjes) && dbData.canjes.length > 0) this.data.canjes = dbData.canjes;
                 
                 // Priorizar dbData.anuncio solo si la actividad 0 no tenía _anuncio
                 if (dbData.anuncio && (!dbData.actividades || !dbData.actividades[0] || !dbData.actividades[0]._anuncio)) {

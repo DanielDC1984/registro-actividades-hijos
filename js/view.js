@@ -595,25 +595,41 @@ const View = {
 
         // Si es Admin, renderizar canjes pendientes con opción de Contrapropuesta
         const esAdminUser = user && (user.role === "admin" || user.username === "admin");
+        const adminCanjesBox = document.getElementById("adminCanjesPendientes");
+
+        if (adminCanjesBox) {
+            adminCanjesBox.style.display = esAdminUser ? "block" : "none";
+        }
+
         if (esAdminUser && pendientesBox) {
             const pendientes = canjes.filter(c => c.estado === "pendiente");
             if (pendientes.length === 0) {
-                pendientesBox.innerHTML = `<p style="color:#6b7a8f;font-size:13px;">No hay solicitudes de canje pendientes.</p>`;
+                pendientesBox.innerHTML = `<p style="color:#6b7a8f;font-size:13px;margin:0;">No hay solicitudes de canje o premios especiales pendientes por revisar.</p>`;
             } else {
                 let pth = "";
                 pendientes.forEach(c => {
+                    const esPremioEspecial = c.esEspecial || c.recompensaId === "especial";
+                    const badgeEspecial = esPremioEspecial ? `<span style="background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;margin-left:6px;">✨ Premio Especial Propuesto</span>` : "";
                     const ptsTxt = c.puntosPropuestos ? `⭐ ${c.puntosPropuestos} pts (Sugeridos por usuario)` : `⭐ ${c.puntos} pts`;
+
                     pth += `
-                        <div class="user-item">
-                            <div class="user-data">
-                                <span class="name">👤 ${Store.getNombreHijo(c.hijoId)}</span>
-                                <span>solicita <strong>${c.nombreRecompensa}</strong> (${ptsTxt})</span>
-                                <small style="color:#6b7a8f;">Por ${c.usuario}</small>
+                        <div class="user-item" style="padding:12px;margin-bottom:10px;${esPremioEspecial ? 'background:#f0fdf4;border:1px solid #bbf7d0;' : ''}">
+                            <div class="user-data" style="flex:1;">
+                                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                                    <span class="name" style="font-size:14px;color:#1e293b;">👤 ${Store.getNombreHijo(c.hijoId)}</span>
+                                    ${badgeEspecial}
+                                </div>
+                                <div style="font-size:13px;color:#334155;margin-top:3px;">
+                                    Solicita: <strong style="color:#0f172a;">${c.nombreRecompensa}</strong> (${ptsTxt})
+                                </div>
+                                <div style="font-size:12px;color:#64748b;margin-top:2px;">
+                                    Enviado por: <strong>@${c.usuario || 'usuario'}</strong> · <small>${c.fechaHora || ''}</small>
+                                </div>
                             </div>
-                            <div class="actions" style="display:flex;gap:4px;flex-wrap:wrap;">
-                                <button class="btn-approve" onclick="AppController.responderCanje(${c.id}, 'aprobado')">✅ Aprobar</button>
-                                <button class="btn-block" style="background:#f59e0b;color:#fff;" onclick="AppController.contraproponerCanjeAdmin(${c.id})">🔄 Contrapropuesta</button>
-                                <button class="btn-delete-user" onclick="AppController.responderCanje(${c.id}, 'rechazado')">❌ Rechazar</button>
+                            <div class="actions" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+                                <button class="btn-approve" style="padding:6px 12px;font-size:12px;" onclick="AppController.responderCanje(${c.id}, 'aprobado')">✅ Aprobar</button>
+                                <button class="btn-block" style="background:#f59e0b;color:#fff;padding:6px 12px;font-size:12px;" onclick="AppController.contraproponerCanjeAdmin(${c.id})">🔄 Contrapropuesta</button>
+                                <button class="btn-delete-user" style="padding:6px 12px;font-size:12px;" onclick="AppController.responderCanje(${c.id}, 'rechazado')">❌ Rechazar</button>
                             </div>
                         </div>`;
                 });
