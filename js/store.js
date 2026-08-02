@@ -58,6 +58,13 @@ const Store = {
             activa: typeof a.activa === "boolean" ? a.activa : true
         }));
 
+        // Asegurar campo activa en recompensas
+        this.data.recompensas = (this.data.recompensas || []).map(r => ({
+            ...r,
+            puntos: typeof r.puntos === "number" ? r.puntos : (parseInt(r.puntos, 10) || 1),
+            activa: typeof r.activa === "boolean" ? r.activa : true
+        }));
+
         if (this.data.hijos.length === 0) {
             this.data.hijos = [
                 { id: 1, nombre: "Mateo", edad: 5 },
@@ -74,9 +81,9 @@ const Store = {
         }
         if (this.data.recompensas.length === 0) {
             this.data.recompensas = [
-                { id: 101, nombre: "1 hora de videojuegos / pantalla", puntos: 50, icono: "🎮" },
-                { id: 102, nombre: "Salida a comer helado", puntos: 80, icono: "🍦" },
-                { id: 103, nombre: "Elegir la película del fin de semana", puntos: 100, icono: "🎬" },
+                { id: 101, nombre: "1 hora de videojuegos / pantalla", puntos: 50, icono: "🎮", activa: true },
+                { id: 102, nombre: "Salida a comer helado", puntos: 80, icono: "🍦", activa: true },
+                { id: 103, nombre: "Elegir la película del fin de semana", puntos: 100, icono: "🎬", activa: true },
             ];
         }
         if (this.data.registros.length === 0) {
@@ -383,15 +390,47 @@ const Store = {
 
     // ---------- CRUD: Recompensas y Canjes ----------
     addRecompensa(nombre, puntos, icono = "🎁") {
-        const nRecompensa = { id: Date.now(), nombre, puntos: parseInt(puntos, 10), icono };
+        if (!this.isAdmin()) return false;
+        const nRecompensa = {
+            id: Date.now(),
+            nombre: (nombre || "").trim(),
+            puntos: Math.max(1, parseInt(puntos, 10) || 1),
+            icono,
+            activa: true
+        };
         this.data.recompensas.push(nRecompensa);
         this.persist();
         return nRecompensa;
     },
 
+    updateRecompensa(id, nombre, puntos) {
+        if (!this.isAdmin()) return false;
+        const rec = this.data.recompensas.find(r => r.id == id);
+        if (rec) {
+            rec.nombre = (nombre || "").trim() || rec.nombre;
+            rec.puntos = Math.max(1, parseInt(puntos, 10) || 1);
+            this.persist();
+            return true;
+        }
+        return false;
+    },
+
+    toggleEstadoRecompensa(id) {
+        if (!this.isAdmin()) return false;
+        const rec = this.data.recompensas.find(r => r.id == id);
+        if (rec) {
+            rec.activa = (rec.activa === false) ? true : false;
+            this.persist();
+            return true;
+        }
+        return false;
+    },
+
     deleteRecompensa(id) {
+        if (!this.isAdmin()) return false;
         this.data.recompensas = this.data.recompensas.filter(r => r.id != id);
         this.persist();
+        return true;
     },
 
     solicitarCanje(hijoId, recompensaId, usuario) {
@@ -416,6 +455,64 @@ const Store = {
         this.data.canjes.push(canje);
         this.persist();
         return { ok: true, canje };
+    },
+
+    solicitarCanjeEspecial({ hijoId, nombrePremio, puntosPropuestos, usuario }) {
+        if (!hijoId || !nombrePremio || !puntosPropuestos) {
+            return { ok: false, msg: "Completa los datos del premio especial" };
+        }
+        const pts = Math.max(1, parseInt(puntosPropuestos, 10) || 1);
+        const canje = {
+            id: Date.now(),
+            hijoId,
+            recompensaId: "especial",
+            nombreRecompensa: `✨ ${nombrePremio.trim()}`,
+            puntosPropuestos: pts,
+            puntos: pts,
+            fechaHora: typeof getFechaHoraLocal === "function" ? getFechaHoraLocal() : new Date().toISOString(),
+            estado: "pendiente", // 'pendiente', 'contrapropuesta', 'aprobado', 'rechazado'
+            esEspecial: true,
+            usuario
+        };
+        this.data.canjes.push(canje);
+        this.persist();
+        return { ok: true, canje };
+    },
+
+    contraproponerCanjeAdmin(canjeId, nuevosPuntos, notaAdmin) {
+        if (!this.isAdmin()) return false;
+        const canje = this.data.canjes.find(c => c.id == canjeId);
+        if (canje) {
+            const pts = Math.max(1, parseInt(nuevosPuntos, 10) || 1);
+            canje.estado = "contrapropuesta";
+            canje.puntosContrapropuesta = pts;
+            canje.puntos = pts;
+            canje.notaContrapropuesta = (notaAdmin || "").trim();
+            this.persist();
+            return true;
+        }
+        return false;
+    },
+
+    responderContrapropuestaUsuario(canjeId, aceptar) {
+        const canje = this.data.canjes.find(c => c.id == canjeId);
+        if (!canje || canje.estado !== "contrapropuesta") return { ok: false, msg: "Solicitud no encontrada o no está en contrapropuesta" };
+
+        if (aceptar) {
+            const ptsRequeridos = canje.puntosContrapropuesta || canje.puntos;
+            const disp = this.getPuntosDisponiblesHijo(canje.hijoId);
+            if (disp < ptsRequeridos) {
+                return { ok: false, msg: `Puntos insuficientes. Se requieren ${ptsRequeridos} pts y tienes ${disp} pts.` };
+            }
+            canje.estado = "aprobado";
+            canje.puntos = ptsRequeridos;
+            this.persist();
+            return { ok: true, estado: "aprobado" };
+        } else {
+            canje.estado = "rechazado";
+            this.persist();
+            return { ok: true, estado: "rechazado" };
+        }
     },
 
     responderCanje(canjeId, estado) {

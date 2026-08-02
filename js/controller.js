@@ -243,6 +243,70 @@ const AppController = {
         }
     },
 
+    solicitarPremioEspecial(hijoId, nombrePremio, puntosPropuestos) {
+        const user = Auth.getCurrentUser();
+        if (!user) { showToast("⚠️ Debes iniciar sesión", true); return; }
+        if (!hijoId || !nombrePremio || !puntosPropuestos) {
+            showToast("⚠️ Completa todos los campos del premio especial", true);
+            return;
+        }
+
+        const res = Store.solicitarCanjeEspecial({
+            hijoId: parseInt(hijoId, 10),
+            nombrePremio,
+            puntosPropuestos,
+            usuario: user.username
+        });
+
+        if (!res.ok) {
+            showToast(`❌ ${res.msg}`, true);
+        } else {
+            View.renderRecompensas();
+            const form = document.getElementById("formPremioEspecial");
+            if (form) form.reset();
+            showToast("✨ Propuesta de premio especial enviada a la Administración");
+            if (typeof confetti === "function") confetti({ particleCount: 80, spread: 60, origin: { y: 0.7 } });
+        }
+    },
+
+    contraproponerCanjeAdmin(canjeId) {
+        const user = Auth.getCurrentUser();
+        const isAdmin = user && (user.role === "admin" || user.username === "admin");
+        if (!isAdmin) { showToast("❌ Solo el admin puede realizar contrapropuestas", true); return; }
+
+        const canje = Store.data.canjes.find(c => c.id == canjeId);
+        if (!canje) return;
+
+        const nuevosPuntos = prompt(`Propón una nueva cantidad de PUNTOS para "${canje.nombreRecompensa}" (Propuesta usuario: ${canje.puntosPropuestos || canje.puntos} pts):`, canje.puntosPropuestos || canje.puntos);
+        if (nuevosPuntos === null) return;
+
+        const ptsVal = Math.max(1, parseInt(nuevosPuntos, 10) || 0);
+        if (!ptsVal) { showToast("⚠️ Ingresa un número válido de puntos", true); return; }
+
+        const notaAdmin = prompt("Escribe una nota aclaratoria para el usuario (opcional):", "Puntos ajustados por administración");
+
+        if (Store.contraproponerCanjeAdmin(canjeId, ptsVal, notaAdmin || "")) {
+            View.renderRecompensas();
+            showToast("🔄 Contrapropuesta enviada al usuario");
+        }
+    },
+
+    responderContrapropuestaUsuario(canjeId, aceptar) {
+        const res = Store.responderContrapropuestaUsuario(canjeId, aceptar);
+        if (!res.ok) {
+            showToast(`❌ ${res.msg}`, true);
+        } else {
+            View.renderRecompensas();
+            View.renderRanking(this.rankingFiltroActual);
+            if (aceptar) {
+                showToast("🎉 ¡Contrapropuesta aceptada! Premio canjeado.");
+                if (typeof confetti === "function") confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+            } else {
+                showToast("❌ Contrapropuesta rechazada");
+            }
+        }
+    },
+
     responderCanje(canjeId, estado) {
         const user = Auth.getCurrentUser();
         const isAdmin = user && (user.role === "admin" || user.username === "admin");
@@ -365,6 +429,17 @@ const AppController = {
                 this.cambiarMiPassword(oldP, newP, confP);
             });
         }
+
+        const formEspecial = document.getElementById("formPremioEspecial");
+        if (formEspecial) {
+            formEspecial.addEventListener("submit", e => {
+                e.preventDefault();
+                const hijoId = document.getElementById("selectHijoPremioEspecial").value;
+                const nombre = document.getElementById("nombrePremioEspecial").value.trim();
+                const puntos = document.getElementById("puntosPremioEspecial").value;
+                this.solicitarPremioEspecial(hijoId, nombre, puntos);
+            });
+        }
     },
 
     // ---------- Cambiar Contraseñas ----------
@@ -451,6 +526,33 @@ const AppController = {
         Store.deleteRecompensa(id);
         View.renderRecompensas();
         showToast("🗑️ Recompensa eliminada");
+    },
+
+    guardarEdicionRecompensa(id, nombre, puntos) {
+        const user = Auth.getCurrentUser();
+        const isAdmin = user && (user.role === "admin" || user.username === "admin");
+        if (!isAdmin) { showToast("❌ Solo Admin puede editar premios", true); return; }
+
+        if (!nombre || !nombre.trim()) { showToast("⚠️ Escribe un nombre para el premio", true); return; }
+        if (!puntos || parseInt(puntos, 10) < 1) { showToast("⚠️ El costo debe ser al menos 1 punto", true); return; }
+
+        if (Store.updateRecompensa(id, nombre.trim(), puntos)) {
+            View.renderRecompensas();
+            showToast("✅ Premio actualizado correctamente");
+        }
+    },
+
+    toggleEstadoRecompensa(id) {
+        const user = Auth.getCurrentUser();
+        const isAdmin = user && (user.role === "admin" || user.username === "admin");
+        if (!isAdmin) { showToast("❌ Solo Admin puede habilitar/deshabilitar premios", true); return; }
+
+        if (Store.toggleEstadoRecompensa(id)) {
+            View.renderRecompensas();
+            const rec = Store.data.recompensas.find(r => r.id == id);
+            const estadoText = (rec && rec.activa !== false) ? "habilitado" : "deshabilitado";
+            showToast(`✅ Premio "${rec ? rec.nombre : ''}" ${estadoText}`);
+        }
     },
 
     eliminarRegistro(id) {

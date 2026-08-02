@@ -182,7 +182,7 @@ const View = {
             actHtmlEdit += `<option value="${a.id}">${a.nombre} (⭐ ${pts} pts)${esActiva ? '' : ' [Deshabilitada]'}</option>`;
         });
 
-        ["selectHijo", "selectHijoReporte", "editSelectHijo"].forEach(id => {
+        ["selectHijo", "selectHijoReporte", "editSelectHijo", "selectHijoPremioEspecial"].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.innerHTML = hijosHtml;
         });
@@ -523,7 +523,37 @@ const View = {
             statusBox.innerHTML = "";
         }
 
-        // Si es Admin, renderizar canjes pendientes
+        // Mostrar contrapropuestas pendientes de respuesta del usuario
+        const contrapropuestas = canjes.filter(c => c.estado === "contrapropuesta");
+        if (contrapropuestas.length > 0 && statusBox) {
+            let cpHtml = `<div style="margin-top:14px;"><h4 style="color:#d97706;margin-bottom:8px;">🔄 Contrapropuestas de Premios Pendientes de tu Respuesta:</h4>`;
+            contrapropuestas.forEach(c => {
+                const disp = Store.getPuntosDisponiblesHijo(c.hijoId);
+                const ptsReq = c.puntosContrapropuesta || c.puntos;
+                const alcanzo = disp >= ptsReq;
+                cpHtml += `
+                    <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:12px;margin-bottom:10px;">
+                        <div style="font-weight:700;color:#92400e;font-size:14px;">🔄 ${c.nombreRecompensa}</div>
+                        <div style="color:#78350f;font-size:13px;margin-top:2px;">
+                            Para: 👤 <strong>${Store.getNombreHijo(c.hijoId)}</strong> (Puntos dispon.: ⭐ ${disp} pts)
+                        </div>
+                        <div style="font-size:13px;color:#92400e;margin-top:4px;">
+                            Puntos propuestos por usuario: <s>${c.puntosPropuestos || c.puntos} pts</s> ➔ <strong>Propuesta Admin: ⭐ ${ptsReq} pts</strong>
+                        </div>
+                        ${c.notaContrapropuesta ? `<div style="font-size:12px;color:#b45309;margin-top:4px;font-style:italic;">💬 Nota Admin: "${c.notaContrapropuesta}"</div>` : ''}
+                        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+                            <button class="btn-primary" style="padding:6px 14px;font-size:12px;background:#16a34a;" ${!alcanzo ? 'disabled' : ''} onclick="AppController.responderContrapropuestaUsuario(${c.id}, true)">
+                                ✅ Aceptar Contrapropuesta (${ptsReq} pts) ${!alcanzo ? ' - Faltan Pts' : ''}
+                            </button>
+                            <button class="btn-secondary" style="padding:6px 14px;font-size:12px;background:#ef4444;color:#fff;border:none;" onclick="AppController.responderContrapropuestaUsuario(${c.id}, false)">❌ Rechazar Contrapropuesta</button>
+                        </div>
+                    </div>`;
+            });
+            cpHtml += `</div>`;
+            statusBox.innerHTML += cpHtml;
+        }
+
+        // Si es Admin, renderizar canjes pendientes con opción de Contrapropuesta
         const esAdminUser = user && (user.role === "admin" || user.username === "admin");
         if (esAdminUser && pendientesBox) {
             const pendientes = canjes.filter(c => c.estado === "pendiente");
@@ -532,15 +562,17 @@ const View = {
             } else {
                 let pth = "";
                 pendientes.forEach(c => {
+                    const ptsTxt = c.puntosPropuestos ? `⭐ ${c.puntosPropuestos} pts (Sugeridos por usuario)` : `⭐ ${c.puntos} pts`;
                     pth += `
                         <div class="user-item">
                             <div class="user-data">
                                 <span class="name">👤 ${Store.getNombreHijo(c.hijoId)}</span>
-                                <span>solicita <strong>${c.nombreRecompensa}</strong> (⭐ ${c.puntos} pts)</span>
+                                <span>solicita <strong>${c.nombreRecompensa}</strong> (${ptsTxt})</span>
                                 <small style="color:#6b7a8f;">Por ${c.usuario}</small>
                             </div>
-                            <div class="actions">
+                            <div class="actions" style="display:flex;gap:4px;flex-wrap:wrap;">
                                 <button class="btn-approve" onclick="AppController.responderCanje(${c.id}, 'aprobado')">✅ Aprobar</button>
+                                <button class="btn-block" style="background:#f59e0b;color:#fff;" onclick="AppController.contraproponerCanjeAdmin(${c.id})">🔄 Contrapropuesta</button>
                                 <button class="btn-delete-user" onclick="AppController.responderCanje(${c.id}, 'rechazado')">❌ Rechazar</button>
                             </div>
                         </div>`;
@@ -557,24 +589,66 @@ const View = {
 
         let html = `<div class="recompensas-grid-container">`;
         recompensas.forEach(rec => {
+            const esActiva = rec.activa !== false;
             let selectHijoOptions = `<option value="">Seleccionar hijo para canjear...</option>`;
             hijos.forEach(h => {
                 const disp = Store.getPuntosDisponiblesHijo(h.id);
                 const alcanzo = disp >= rec.puntos;
-                selectHijoOptions += `<option value="${h.id}" ${!alcanzo ? "disabled" : ""}>👤 ${h.nombre} (${disp} pts) ${!alcanzo ? "- Faltan pts" : ""}</option>`;
+                selectHijoOptions += `<option value="${h.id}" ${(!alcanzo || !esActiva) ? "disabled" : ""}>👤 ${h.nombre} (${disp} pts) ${!alcanzo ? "- Faltan pts" : ""}</option>`;
             });
 
             html += `
-                <div class="recompensa-card">
-                    <div class="rec-icon">${rec.icono || "🎁"}</div>
-                    <div class="rec-title">${rec.nombre}</div>
-                    <div class="rec-cost">⭐ ${rec.puntos} Puntos</div>
-                    <div class="rec-action">
-                        <select id="selectCanjeHijo_${rec.id}" class="select-canje-hijo">
-                            ${selectHijoOptions}
-                        </select>
-                        <button class="btn-primary" style="margin-top:8px;padding:8px;" onclick="AppController.solicitarCanje(${rec.id}, document.getElementById('selectCanjeHijo_${rec.id}').value)">🎁 Solicitar Canje</button>
-                        ${esAdminUser ? `<button class="btn-delete-reg" style="margin-top:6px;width:100%;" onclick="AppController.eliminarRecompensa(${rec.id})">🗑️ Eliminar Premio</button>` : ""}
+                <div class="recompensa-card" style="${!esActiva ? 'opacity:0.8;background:#f8fafc;border:2px dashed #cbd5e1;' : ''}">
+                    <div style="display:flex;justify-content:space-between;align-items:center;width:100%;margin-bottom:8px;">
+                        <span class="rec-icon" style="margin:0;">${rec.icono || "🎁"}</span>
+                        <span style="font-size:11px;padding:2px 8px;border-radius:12px;font-weight:700;background:${esActiva ? '#dcfce7' : '#fee2e2'};color:${esActiva ? '#16a34a' : '#dc2626'};">
+                            ${esActiva ? '🟢 Habilitado' : '🔴 Deshabilitado'}
+                        </span>
+                    </div>
+
+                    <div id="viewRec_${rec.id}">
+                        <div class="rec-title">${rec.nombre}</div>
+                        <div class="rec-cost">⭐ ${rec.puntos} Puntos</div>
+                    </div>
+
+                    ${esAdminUser ? `
+                    <div id="editRec_${rec.id}" style="display:none;width:100%;margin-bottom:10px;text-align:left;">
+                        <div style="margin-bottom:6px;">
+                            <label style="font-size:11px;color:#64748b;font-weight:600;">Nombre del Premio:</label>
+                            <input type="text" id="inputEditNombreRec_${rec.id}" value="${rec.nombre}" style="width:100%;padding:6px 10px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;">
+                        </div>
+                        <div style="margin-bottom:8px;">
+                            <label style="font-size:11px;color:#64748b;font-weight:600;">Puntos Costo:</label>
+                            <input type="number" id="inputEditPuntosRec_${rec.id}" value="${rec.puntos}" min="1" style="width:100%;padding:6px 10px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;">
+                        </div>
+                        <div style="display:flex;gap:6px;">
+                            <button type="button" class="btn-primary" style="padding:6px 12px;font-size:12px;flex:1;" onclick="(function(){
+                                var n = document.getElementById('inputEditNombreRec_${rec.id}').value;
+                                var p = document.getElementById('inputEditPuntosRec_${rec.id}').value;
+                                AppController.guardarEdicionRecompensa(${rec.id}, n, p);
+                            })()">💾 Guardar</button>
+                            <button type="button" class="btn-secondary" style="padding:6px 12px;font-size:12px;" onclick="document.getElementById('editRec_${rec.id}').style.display='none'; document.getElementById('viewRec_${rec.id}').style.display='block';">Cancelar</button>
+                        </div>
+                    </div>
+                    ` : ''}
+
+                    <div class="rec-action" style="width:100%;">
+                        ${esActiva ? `
+                            <select id="selectCanjeHijo_${rec.id}" class="select-canje-hijo">
+                                ${selectHijoOptions}
+                            </select>
+                            <button class="btn-primary" style="margin-top:8px;padding:8px;" onclick="AppController.solicitarCanje(${rec.id}, document.getElementById('selectCanjeHijo_${rec.id}').value)">🎁 Solicitar Canje</button>
+                        ` : `
+                            <div style="font-size:12px;color:#94a3b8;font-style:italic;margin-top:8px;text-align:center;">⚠️ Premio deshabilitado temporalmente</div>
+                        `}
+
+                        ${esAdminUser ? `
+                            <div style="display:flex;gap:4px;margin-top:8px;flex-wrap:wrap;">
+                                <button type="button" style="flex:1;background:#6366f1;color:#fff;border:none;padding:6px 8px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;" onclick="document.getElementById('viewRec_${rec.id}').style.display='none'; document.getElementById('editRec_${rec.id}').style.display='block';">✏️ Editar</button>
+                                <button type="button" style="flex:1;background:${esActiva ? '#f59e0b' : '#10b981'};color:#fff;border:none;padding:6px 8px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;" onclick="AppController.toggleEstadoRecompensa(${rec.id})">${esActiva ? '🚫 Deshabilitar' : '✅ Habilitar'}</button>
+                                <button type="button" class="btn-delete-reg" style="flex:1;padding:6px 8px;font-size:11px;" onclick="AppController.eliminarRecompensa(${rec.id})">🗑️ Eliminar</button>
+                            </div>
+                        ` : ''}
                     </div>
                 </div>`;
         });
