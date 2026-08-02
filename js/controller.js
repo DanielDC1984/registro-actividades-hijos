@@ -774,13 +774,28 @@ const AppController = {
             if (user && user.role === "admin") this._refrescarAdmin();
         });
 
-        await Auth.load();
+        // 1. Restaurar sesión activa de inmediato desde localStorage para evitar deslogueos al recargar
         const user = Auth.getCurrentUser();
         if (user) {
-            const valido = Auth.getUsers().find(u => u.username === user.username && u.approved && !u.blocked);
-            if (valido) { View.setUserDisplayName(user.username); this.mostrarApp(); return; }
+            View.setUserDisplayName(user.username);
+            this.mostrarApp();
+        } else {
+            View.mostrarLogin();
         }
-        View.mostrarLogin();
+
+        // 2. Cargar usuarios remotos de Supabase en segundo plano para actualizar estado
+        try {
+            await Auth.load();
+            if (user) {
+                const valido = Auth.getUsers().find(u => u.username === user.username && u.approved && !u.blocked);
+                if (!valido && user.username !== "admin" && user.role !== "admin") {
+                    this.cerrarSesion();
+                    showToast("🔒 Tu sesión ha sido desaprobada o bloqueada por el Administrador", true);
+                }
+            }
+        } catch (e) {
+            console.warn("Modo de red diferido:", e);
+        }
     },
 };
 
