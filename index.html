@@ -267,6 +267,27 @@
                     </form>
                 </div>
 
+                <!-- FORMULARIO PREMIO ESPECIAL / PERSONALIZADO -->
+                <div class="admin-panel" style="margin-bottom:20px;background:linear-gradient(135deg,#f0fdf4,#e0f2fe);border:1px solid #bae6fd;">
+                    <h3 style="color:#0369a1;">✨ Solicitar Premio Especial / Personalizado</h3>
+                    <p style="color:#0c4a6e;font-size:13px;margin-bottom:12px;">¿Quieres un premio que no está en la lista? Propón el premio y los puntos que sugieres a cambio:</p>
+                    <form id="formPremioEspecial" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+                        <div class="form-group" style="flex:1;min-width:140px;margin:0;">
+                            <label style="color:#0369a1;">👤 Hijo</label>
+                            <select id="selectHijoPremioEspecial" required><option value="">Seleccionar...</option></select>
+                        </div>
+                        <div class="form-group" style="flex:2;min-width:180px;margin:0;">
+                            <label style="color:#0369a1;">🎁 Premio Propuesto</label>
+                            <input type="text" id="nombrePremioEspecial" placeholder="Ej: Paseo al parque de diversiones..." required>
+                        </div>
+                        <div class="form-group" style="flex:1;min-width:110px;margin:0;">
+                            <label style="color:#0369a1;">⭐ Puntos Sugeridos</label>
+                            <input type="number" id="puntosPremioEspecial" placeholder="100" min="1" required inputmode="numeric">
+                        </div>
+                        <button type="submit" class="btn-primary" style="width:auto;padding:12px 20px;margin:0;background:linear-gradient(135deg,#0284c7,#0369a1);">✨ Enviar Propuesta</button>
+                    </form>
+                </div>
+
                 <div id="adminCanjesPendientes" class="admin-panel" style="display:none;margin-bottom:20px;">
                     <h3>⏳ Solicitudes de Canje Pendientes</h3>
                     <div id="listaCanjesPendientes"></div>
