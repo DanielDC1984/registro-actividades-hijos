@@ -136,29 +136,44 @@ const AppController = {
         if (viewTarget === "denuncias") View.renderModuloDenuncias();
         if (viewTarget === "estadisticas") View.renderEstadisticas();
 
-        // Cerrar siempre el menú lateral en dispositivos móviles/tablets al cambiar de vista
+        // En pantallas móviles (< 768px), cerrar el menú al cambiar de vista
         const sidebar = document.getElementById("sidebar");
         const overlay = document.getElementById("sidebarOverlay");
-        if (sidebar) sidebar.classList.remove("open");
-        if (overlay) overlay.classList.remove("show");
+        const appContainer = document.getElementById("appContainer");
+        if (window.innerWidth < 768) {
+            if (sidebar) sidebar.classList.remove("open");
+            if (overlay) overlay.classList.remove("show");
+            if (appContainer) appContainer.classList.remove("sidebar-open");
+        }
     },
 
     initMenu() {
         const sidebar = document.getElementById("sidebar");
         const overlay = document.getElementById("sidebarOverlay");
         const toggleBtn = document.getElementById("menuToggle");
+        const appContainer = document.getElementById("appContainer");
+
+        // Estado inicial por defecto en PC (abierto)
+        if (window.innerWidth >= 768) {
+            if (sidebar) sidebar.classList.add("open");
+            if (appContainer) appContainer.classList.add("sidebar-open");
+        }
 
         if (toggleBtn) {
             toggleBtn.addEventListener("click", e => {
                 e.stopPropagation();
                 if (sidebar) sidebar.classList.toggle("open");
-                if (overlay) overlay.classList.toggle("show");
+                if (appContainer) appContainer.classList.toggle("sidebar-open");
+                if (window.innerWidth < 768 && overlay) {
+                    overlay.classList.toggle("show");
+                }
             });
         }
 
         if (overlay) {
             overlay.addEventListener("click", () => {
                 if (sidebar) sidebar.classList.remove("open");
+                if (appContainer) appContainer.classList.remove("sidebar-open");
                 overlay.classList.remove("show");
             });
         }
