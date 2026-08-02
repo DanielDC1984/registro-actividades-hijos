@@ -332,15 +332,39 @@ const AppController = {
             const fechaHora = document.getElementById("fechaHoraActividad").value;
             if (!hijoId || !actividadId || !fechaHora) { showToast("⚠️ Completa todos los campos", true); return; }
 
-            Store.addRegistro({ hijoId, actividadId, descripcion, fechaHora, usuario: user ? user.username : "anonimo" });
+            const res = Store.addRegistro({ hijoId, actividadId, descripcion, fechaHora, usuario: user ? user.username : "anonimo" });
             View.renderAll();
             e.target.reset();
             document.getElementById("fechaHoraActividad").value = getFechaHoraLocal();
 
             const pts = Store.getPuntosActividad(actividadId);
-            showToast(`✅ Actividad registrada (+${pts} pts)`);
+            if (res && res.esDuplicado) {
+                showToast(`⚠️ Atención: Esta actividad ya fue registrada hoy para este hijo. Guardada con advertencia (+${pts} pts)`, true);
+            } else {
+                showToast(`✅ Actividad registrada (+${pts} pts)`);
+            }
             if (typeof confetti === "function") confetti({ particleCount: 60, spread: 50, origin: { y: 0.7 } });
         });
+
+        const formDen = document.getElementById("formDenunciaDirecta");
+        if (formDen) {
+            formDen.addEventListener("submit", e => {
+                e.preventDefault();
+                const user = Auth.getCurrentUser();
+                const registroId = document.getElementById("selectRegistroDenuncia").value;
+                const detalle = document.getElementById("detalleDenunciaInput").value.trim();
+                if (!registroId || !detalle) { showToast("⚠️ Selecciona un registro y escribe el motivo", true); return; }
+
+                const res = Store.addDenuncia({ registroId, detalle, usuarioReporta: user ? user.username : "anonimo" });
+                if (res.ok) {
+                    formDen.reset();
+                    View.renderModuloDenuncias();
+                    showToast("🚨 Observación/Denuncia registrada correctamente");
+                } else {
+                    showToast(`❌ ${res.msg}`, true);
+                }
+            });
+        }
 
         document.getElementById("formHijo").addEventListener("submit", e => {
             e.preventDefault();
@@ -506,6 +530,32 @@ const AppController = {
         Store.deleteActividad(id);
         View.renderAll();
         showToast("🗑️ Actividad removida");
+    },
+
+    anularRegistroAdmin(id) {
+        const user = Auth.getCurrentUser();
+        const isAdmin = user && (user.role === "admin" || user.username === "admin");
+        if (!isAdmin) { showToast("❌ Solo Admin puede anular actividades", true); return; }
+
+        const motivo = prompt("Motivo de la anulación (opcional):", "Anulado por irregularidad");
+        if (motivo === null) return;
+
+        if (Store.anularRegistro(id, motivo)) {
+            View.renderAll();
+            showToast("🚫 Actividad anulada correctamente. Puntos descontados.");
+        }
+    },
+
+    atenderDenunciaAdmin(denunciaId, anularAsociado) {
+        const user = Auth.getCurrentUser();
+        const isAdmin = user && (user.role === "admin" || user.username === "admin");
+        if (!isAdmin) { showToast("❌ Solo Admin puede procesar denuncias", true); return; }
+
+        if (Store.atenderDenuncia(denunciaId, anularAsociado, "Anulado tras revisión de denuncia")) {
+            View.renderModuloDenuncias();
+            View.renderAll();
+            showToast(anularAsociado ? "🚫 Denuncia atendida y actividad anulada." : "✅ Denuncia marcada como atendida.");
+        }
     },
 
     toggleEstadoActividad(id) {

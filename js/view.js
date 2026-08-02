@@ -182,7 +182,7 @@ const View = {
             actHtmlEdit += `<option value="${a.id}">${a.nombre} (⭐ ${pts} pts)${esActiva ? '' : ' [Deshabilitada]'}</option>`;
         });
 
-        ["selectHijo", "selectHijoReporte", "editSelectHijo", "selectHijoPremioEspecial"].forEach(id => {
+        ["selectHijo", "selectHijoReporte", "editSelectHijo", "selectHijoPremioEspecial", "selectHijoFiltroDenuncia", "selectHijoEstadisticas"].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.innerHTML = hijosHtml;
         });
@@ -195,6 +195,46 @@ const View = {
 
         const fEl = document.getElementById("fechaHoraActividad");
         if (fEl && !fEl.value) fEl.value = getFechaHoraLocal();
+
+        this.actualizarSelectRegistrosDenuncia();
+    },
+
+    actualizarSelectRegistrosDenuncia() {
+        const selectHijo = document.getElementById("selectHijoFiltroDenuncia");
+        const selectRegistro = document.getElementById("selectRegistroDenuncia");
+        if (!selectRegistro) return;
+
+        const hijoId = selectHijo ? selectHijo.value : "";
+        let registros = Store.registrosTodos().filter(r => r.estado !== "anulado");
+        if (hijoId) {
+            registros = registros.filter(r => r.hijoId == hijoId);
+        }
+
+        if (registros.length === 0) {
+            selectRegistro.innerHTML = `<option value="">No hay actividades disponibles para denunciar</option>`;
+            return;
+        }
+
+        let html = `<option value="">Selecciona un registro observado...</option>`;
+        registros.forEach(r => {
+            const fh = formatearFechaHoraMostrar(r.fechaHora || r.fecha || "");
+            const hNombre = Store.getNombreHijo(r.hijoId);
+            const aNombre = Store.getNombreActividad(r.actividadId);
+            const pts = Store.getPuntosActividad(r.actividadId);
+            html += `<option value="${r.id}">👤 ${hNombre} - 🎯 ${aNombre} (⭐ ${pts} pts) - ${fh.fecha} ${fh.hora}</option>`;
+        });
+        selectRegistro.innerHTML = html;
+    },
+
+    observarRegistroDirecto(registroId) {
+        if (typeof AppController !== "undefined" && typeof AppController.switchView === "function") {
+            AppController.switchView("denuncias");
+        }
+        const selectReg = document.getElementById("selectRegistroDenuncia");
+        if (selectReg) selectReg.value = registroId;
+
+        const inputDet = document.getElementById("detalleDenunciaInput");
+        if (inputDet) inputDet.focus();
     },
 
     // ---------- Hijos / Actividades ----------
@@ -686,26 +726,40 @@ const View = {
             const pts = Store.getPuntosActividad(r.actividadId);
             const isOwner = user && r.usuario === user.username;
             const canModify = isAdmin || isOwner;
+            const esAnulado = r.estado === "anulado";
+            const esDuplicado = r.esPosibleDuplicado;
+
+            let badgesEstado = "";
+            if (esAnulado) {
+                badgesEstado = `<br><span style="font-size:10px;padding:2px 6px;border-radius:8px;background:#fee2e2;color:#dc2626;font-weight:700;">🚫 Anulado (${r.motivoAnulacion || "Irregularidad"})</span>`;
+            } else if (esDuplicado) {
+                badgesEstado = `<br><span style="font-size:10px;padding:2px 6px;border-radius:8px;background:#fef3c7;color:#d97706;font-weight:700;">⚠️ Posible duplicado de hoy</span>`;
+            }
 
             html += `
-                <tr>
+                <tr style="${esAnulado ? 'opacity:0.65;background:#fff5f5;text-decoration:line-through;' : ''}">
                     <td>${i + 1}</td>
                     <td><span class="badge-hijo">${Store.getNombreHijo(r.hijoId)}</span></td>
-                    <td><span class="badge-actividad">${Store.getNombreActividad(r.actividadId)}</span></td>
-                    <td><span class="badge-puntos">+${pts} pts</span></td>
+                    <td>
+                        <span class="badge-actividad">${Store.getNombreActividad(r.actividadId)}</span>
+                        ${badgesEstado}
+                    </td>
+                    <td><span class="badge-puntos">${esAnulado ? '0 pts' : '+' + pts + ' pts'}</span></td>
                     <td class="descripcion-cell">${r.descripcion || "Sin descripción"}</td>
                     <td class="fecha-hora-cell">
                         <span class="fecha">${fh.fecha}</span>
                         <span class="hora">🕐 ${fh.hora || "--:--"}</span>
                     </td>
                     ${mostrarUsuario ? `<td class="usuario-cell">${r.usuario || "admin"}</td>` : ""}
-                    <td class="col-acciones">
-                        ${canModify ? `
+                    <td class="col-acciones" style="white-space:nowrap;">
+                        <button style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;padding:4px 8px;border-radius:6px;font-size:11px;cursor:pointer;margin-right:2px;" onclick="View.observarRegistroDirecto(${r.id})" title="Reportar observación / irregularidad">🚨 Observar</button>
+                        ${isAdmin && !esAnulado ? `
+                            <button style="background:#ef4444;color:#fff;border:none;padding:4px 8px;border-radius:6px;font-size:11px;cursor:pointer;margin-right:2px;" onclick="AppController.anularRegistroAdmin(${r.id})" title="Anular actividad y restar puntos">🚫 Anular</button>
+                        ` : ''}
+                        ${canModify && !esAnulado ? `
                             <button class="btn-edit" onclick="AppController.abrirModalEditar(${r.id})" title="Editar">✏️</button>
                             <button class="btn-delete-reg" onclick="AppController.eliminarRegistro(${r.id})" title="Eliminar">🗑️</button>
-                        ` : `
-                            <span style="font-size:11px;color:#94a3b8;font-style:italic;" title="Solo el creador o admin pueden modificar">🔒 Protegido</span>
-                        `}
+                        ` : ''}
                     </td>
                 </tr>`;
         });
@@ -743,6 +797,148 @@ const View = {
         document.getElementById("completoLista").innerHTML = this.generarTabla(lista, "📊 Reporte Completo - Todos los registros", true);
     },
 
+    // ---------- Módulo de Denuncias / Observaciones ----------
+    renderModuloDenuncias() {
+        this.actualizarSelectRegistrosDenuncia();
+
+        const user = Auth.getCurrentUser();
+        const esAdminUser = user && (user.role === "admin" || user.username === "admin");
+        const adminBox = document.getElementById("adminBuzonDenuncias");
+        const listEl = document.getElementById("listaDenunciasAdmin");
+
+        if (adminBox) adminBox.style.display = esAdminUser ? "block" : "none";
+        if (esAdminUser && listEl) {
+            const denuncias = Store.data.denuncias || [];
+            const pendientes = denuncias.filter(d => !d.atendida);
+
+            if (pendientes.length === 0) {
+                listEl.innerHTML = `<p style="color:#6b7a8f;font-size:13px;margin:0;">No hay denuncias u observaciones pendientes por revisar.</p>`;
+            } else {
+                let html = "";
+                pendientes.forEach(d => {
+                    const reg = (Store.data.registros || []).find(r => r.id == d.registroId);
+                    const regText = reg ? `👤 ${Store.getNombreHijo(reg.hijoId)} - 🎯 ${Store.getNombreActividad(reg.actividadId)} (${reg.fechaHora || reg.fecha || ''})` : `Registro #${d.registroId}`;
+                    const yaAnulado = reg && reg.estado === "anulado";
+
+                    html += `
+                        <div class="user-item" style="background:#fff;border:1px solid #fef08a;border-radius:10px;padding:12px;margin-bottom:10px;">
+                            <div class="user-data" style="flex:1;">
+                                <div style="font-weight:700;color:#92400e;font-size:14px;">🚨 Observación de @${d.usuarioReporta}</div>
+                                <div style="font-size:12px;color:#6b7a8f;margin-top:2px;">Fecha reportada: ${d.fechaHora || ''}</div>
+                                <div style="font-size:13px;color:#78350f;margin-top:4px;font-style:italic;">💬 "${d.detalle}"</div>
+                                <div style="font-size:12px;color:#b45309;margin-top:6px;font-weight:600;">
+                                    📌 Registro Asociado: ${regText} ${yaAnulado ? ' <span style="color:#dc2626;">(Ya anulado)</span>' : ''}
+                                </div>
+                            </div>
+                            <div class="actions" style="display:flex;gap:6px;flex-wrap:wrap;">
+                                ${!yaAnulado ? `
+                                    <button type="button" class="btn-delete-user" style="padding:6px 12px;font-size:12px;" onclick="AppController.atenderDenunciaAdmin(${d.id}, true)">🚫 Anular Actividad Observada</button>
+                                ` : ''}
+                                <button type="button" class="btn-primary" style="padding:6px 12px;font-size:12px;background:#16a34a;" onclick="AppController.atenderDenunciaAdmin(${d.id}, false)">✅ Marcar Atendida</button>
+                            </div>
+                        </div>`;
+                });
+                listEl.innerHTML = html;
+            }
+        }
+    },
+
+    // ---------- Estadísticas y Métricas ----------
+    toggleFechasPersonalizadasEstadisticas() {
+        const val = document.getElementById("selectFiltroFechaEstadisticas").value;
+        const box = document.getElementById("boxFechasPersonalizadasEst");
+        if (box) box.style.display = val === "rango" ? "flex" : "none";
+    },
+
+    renderEstadisticas() {
+        const filtroFecha = document.getElementById("selectFiltroFechaEstadisticas") ? document.getElementById("selectFiltroFechaEstadisticas").value : "semana";
+        const fechaInicio = document.getElementById("fechaInicioEstadisticas") ? document.getElementById("fechaInicioEstadisticas").value : null;
+        const fechaFin = document.getElementById("fechaFinEstadisticas") ? document.getElementById("fechaFinEstadisticas").value : null;
+        const hijoId = document.getElementById("selectHijoEstadisticas") ? document.getElementById("selectHijoEstadisticas").value : null;
+
+        const stats = Store.getEstadisticasActividades({ filtroFecha, fechaInicio, fechaFin, hijoId });
+
+        const boxResumen = document.getElementById("estadisticasResumen");
+        const boxTop = document.getElementById("topActividadesContainer");
+        const boxDesglose = document.getElementById("desgloseHijoContainer");
+
+        if (boxResumen) {
+            boxResumen.innerHTML = `
+                <div class="saldo-card" style="background:linear-gradient(135deg,#eff6ff,#dbeafe);border:1px solid #bfdbfe;">
+                    <h4 style="color:#1e40af;margin-bottom:12px;">📊 Resumen del Periodo:</h4>
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;">
+                        <div style="background:#fff;padding:12px;border-radius:12px;text-align:center;">
+                            <div style="font-size:24px;font-weight:800;color:#2563eb;">${stats.totalRegistros}</div>
+                            <div style="font-size:12px;color:#64748b;font-weight:600;">Total Actividades</div>
+                        </div>
+                        <div style="background:#fff;padding:12px;border-radius:12px;text-align:center;">
+                            <div style="font-size:24px;font-weight:800;color:#16a34a;">⭐ ${stats.totalPuntos}</div>
+                            <div style="font-size:12px;color:#64748b;font-weight:600;">Puntos Generados</div>
+                        </div>
+                        <div style="background:#fff;padding:12px;border-radius:12px;text-align:center;">
+                            <div style="font-size:24px;font-weight:800;color:#7c3aed;">${stats.rankingActividades.length}</div>
+                            <div style="font-size:12px;color:#64748b;font-weight:600;">Tipos Únicos</div>
+                        </div>
+                    </div>
+                </div>`;
+        }
+
+        if (boxTop) {
+            if (stats.rankingActividades.length === 0) {
+                boxTop.innerHTML = `<div class="empty-state"><span class="emoji">📊</span><p>No hay datos registrados en este periodo</p></div>`;
+            } else {
+                let html = `
+                    <div class="admin-panel">
+                        <h3>🏆 Top Actividades Más Realizadas</h3>
+                        <div style="display:flex;flex-direction:column;gap:10px;margin-top:12px;">`;
+                stats.rankingActividades.forEach((item, index) => {
+                    let medal = `#${index + 1}`;
+                    if (index === 0) medal = "🥇";
+                    else if (index === 1) medal = "🥈";
+                    else if (index === 2) medal = "🥉";
+
+                    html += `
+                        <div style="background:#f8fafc;border:1px solid #e2e8f0;padding:10px 14px;border-radius:10px;">
+                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                                <span style="font-weight:700;font-size:14px;">${medal} 🎯 ${item.nombre}</span>
+                                <span style="font-weight:700;color:#2563eb;font-size:13px;">${item.cantidad} veces (${item.porcentaje}%) · ⭐ ${item.puntosTotales} pts</span>
+                            </div>
+                            <div style="background:#e2e8f0;height:8px;border-radius:4px;overflow:hidden;">
+                                <div style="background:linear-gradient(90deg,#3b82f6,#6366f1);height:100%;width:${item.porcentaje}%;"></div>
+                            </div>
+                        </div>`;
+                });
+                html += `</div></div>`;
+                boxTop.innerHTML = html;
+            }
+        }
+
+        if (boxDesglose) {
+            if (stats.desgloseHijos.length === 0) {
+                boxDesglose.innerHTML = "";
+            } else {
+                let html = `
+                    <div class="admin-panel">
+                        <h3>👥 Desglose de Actividades por Hijo</h3>
+                        <div style="overflow-x:auto;margin-top:10px;">
+                            <table class="tabla-reporte">
+                                <thead><tr><th>👤 Hijo</th><th>🎯 Actividad</th><th>🔢 Frecuencia</th><th>⭐ Puntos Totales</th></tr></thead>
+                                <tbody>`;
+                stats.desgloseHijos.forEach(item => {
+                    html += `
+                        <tr>
+                            <td><span class="badge-hijo">${item.hijoNombre}</span></td>
+                            <td><span class="badge-actividad">${item.actividadNombre}</span></td>
+                            <td><strong>${item.cantidad} veces</strong></td>
+                            <td><span class="badge-puntos">⭐ ${item.puntosTotales} pts</span></td>
+                        </tr>`;
+                });
+                html += `</tbody></table></div></div>`;
+                boxDesglose.innerHTML = html;
+            }
+        }
+    },
+
     renderAll() {
         this.actualizarContadores(Store.data);
         this.populateSelects(Store.data);
@@ -753,6 +949,8 @@ const View = {
         this.renderPuntosConfig();
         this.renderRanking(AppController.rankingFiltroActual);
         this.renderRecompensas();
+        this.renderModuloDenuncias();
+        this.renderEstadisticas();
     },
 
     // ---------- Modal edición ----------

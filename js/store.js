@@ -567,15 +567,73 @@ const Store = {
         return false;
     },
 
+    getPuntosGanadosHijo(hijoId, desde = null, hasta = null) {
+        let registros = (this.data.registros || []).filter(r => r.hijoId == hijoId && r.estado !== "anulado");
+        if (desde && hasta) {
+            registros = registros.filter(r => {
+                const f = r.fechaHora ? r.fechaHora.split("T")[0] : r.fecha;
+                return f >= desde && f <= hasta;
+            });
+        }
+        return registros.reduce((sum, r) => sum + this.getPuntosActividad(r.actividadId), 0);
+    },
+
+    getPuntosCanjeadosHijo(hijoId) {
+        return (this.data.canjes || [])
+            .filter(c => c.hijoId == hijoId && c.estado === "aprobado")
+            .reduce((sum, c) => sum + (c.puntos || 0), 0);
+    },
+
+    getPuntosDisponiblesHijo(hijoId) {
+        const ganados = this.getPuntosGanadosHijo(hijoId);
+        const canjeados = this.getPuntosCanjeadosHijo(hijoId);
+        return Math.max(0, ganados - canjeados);
+    },
+
     // ---------- CRUD: Registros ----------
     addRegistro({ hijoId, actividadId, descripcion, fechaHora, usuario }) {
-        this.data.registros.push({
-            id: Date.now(), hijoId, actividadId,
+        const hoy = (fechaHora || "").split("T")[0] || (typeof getFechaLocal === "function" ? getFechaLocal() : new Date().toISOString().split("T")[0]);
+        const yaExisteHoy = (this.data.registros || []).some(r => r.hijoId == hijoId && r.actividadId == actividadId && r.estado !== "anulado" && (r.fechaHora ? r.fechaHora.split("T")[0] : r.fecha) === hoy);
+
+        const nReg = {
+            id: Date.now(),
+            hijoId,
+            actividadId,
             descripcion: descripcion || "Sin descripción",
-            fechaHora, usuario: usuario || "anonimo",
-        });
+            fechaHora: fechaHora || (typeof getFechaHoraLocal === "function" ? getFechaHoraLocal() : new Date().toISOString()),
+            usuario: usuario || "anonimo",
+            estado: "aprobado",
+            esPosibleDuplicado: yaExisteHoy
+        };
+
+        this.data.registros.push(nReg);
         this.persist();
+        return { ok: true, registro: nReg, esDuplicado: yaExisteHoy };
     },
+
+    anularRegistro(id, motivo = "Anulado por el Administrador") {
+        if (!this.isAdmin()) return false;
+        const reg = (this.data.registros || []).find(r => r.id == id);
+        if (reg) {
+            reg.estado = "anulado";
+            reg.motivoAnulacion = motivo;
+            if (!this.data.auditLog) this.data.auditLog = [];
+            const user = Auth.getCurrentUser();
+            this.data.auditLog.unshift({
+                id: Date.now() + Math.floor(Math.random() * 1000),
+                tipo: "anulacion_actividad",
+                registroId: reg.id,
+                hijoId: reg.hijoId,
+                usuario: user ? user.username : "admin",
+                motivo,
+                fechaHora: typeof getFechaHoraLocal === "function" ? getFechaHoraLocal() : new Date().toISOString()
+            });
+            this.persist();
+            return true;
+        }
+        return false;
+    },
+
     updateRegistro(id, cambios) {
         const index = this.data.registros.findIndex(r => r.id === id);
         if (index === -1) return false;
@@ -583,9 +641,126 @@ const Store = {
         this.persist();
         return true;
     },
+
     deleteRegistro(id) {
+        if (!this.isAdmin()) return false;
         this.data.registros = this.data.registros.filter(r => r.id !== id);
         this.persist();
+        return true;
+    },
+
+    // ---------- Denuncias / Irregularidades ----------
+    addDenuncia({ registroId, detalle, usuarioReporta }) {
+        if (!registroId || !detalle) return { ok: false, msg: "Selecciona un registro y describe la observación" };
+        if (!this.data.denuncias) this.data.denuncias = [];
+        const denuncia = {
+            id: Date.now(),
+            registroId: parseInt(registroId, 10),
+            detalle: (detalle || "").trim(),
+            usuarioReporta: usuarioReporta || "anonimo",
+            fechaHora: typeof getFechaHoraLocal === "function" ? getFechaHoraLocal() : new Date().toISOString(),
+            atendida: false
+        };
+        this.data.denuncias.push(denuncia);
+        this.persist();
+        return { ok: true, denuncia };
+    },
+
+    atenderDenuncia(denunciaId, anularAsociado = false, motivoAnulacion = "") {
+        if (!this.isAdmin()) return false;
+        if (!this.data.denuncias) this.data.denuncias = [];
+        const d = this.data.denuncias.find(item => item.id == denunciaId);
+        if (d) {
+            d.atendida = true;
+            if (anularAsociado && d.registroId) {
+                this.anularRegistro(d.registroId, motivoAnulacion || `Anulado por denuncia #${d.id}`);
+            }
+            this.persist();
+            return true;
+        }
+        return false;
+    },
+
+    // ---------- Analíticas y Estadísticas ----------
+    getEstadisticasActividades({ filtroFecha = "semana", fechaInicio = null, fechaFin = null, hijoId = null } = {}) {
+        let registros = (this.data.registros || []).filter(r => r.estado !== "anulado");
+        
+        if (hijoId) {
+            registros = registros.filter(r => r.hijoId == hijoId);
+        }
+
+        const hoy = typeof getFechaLocal === "function" ? getFechaLocal() : new Date().toISOString().split("T")[0];
+        if (filtroFecha === "hoy") {
+            registros = registros.filter(r => (r.fechaHora ? r.fechaHora.split("T")[0] : r.fecha) === hoy);
+        } else if (filtroFecha === "semana") {
+            const now = new Date();
+            const day = now.getDay() || 7;
+            if (day !== 1) now.setHours(-24 * (day - 1));
+            const fDesde = now.toISOString().split("T")[0];
+            const endWeek = new Date(now);
+            endWeek.setDate(endWeek.getDate() + 6);
+            const fHasta = endWeek.toISOString().split("T")[0];
+            registros = registros.filter(r => {
+                const f = r.fechaHora ? r.fechaHora.split("T")[0] : r.fecha;
+                return f >= fDesde && f <= fHasta;
+            });
+        } else if (filtroFecha === "mes") {
+            const now = new Date();
+            const fDesde = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
+            const fHasta = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split("T")[0];
+            registros = registros.filter(r => {
+                const f = r.fechaHora ? r.fechaHora.split("T")[0] : r.fecha;
+                return f >= fDesde && f <= fHasta;
+            });
+        } else if (filtroFecha === "rango" && fechaInicio && fechaFin) {
+            registros = registros.filter(r => {
+                const f = r.fechaHora ? r.fechaHora.split("T")[0] : r.fecha;
+                return f >= fechaInicio && f <= fechaFin;
+            });
+        }
+
+        const totalRegistros = registros.length;
+        let totalPuntos = 0;
+        const conteoActividades = {};
+        const conteoHijos = {};
+
+        registros.forEach(r => {
+            const actId = r.actividadId;
+            const actNombre = this.getNombreActividad(actId);
+            const pts = this.getPuntosActividad(actId);
+            totalPuntos += pts;
+
+            if (!conteoActividades[actId]) {
+                conteoActividades[actId] = { id: actId, nombre: actNombre, cantidad: 0, puntosTotales: 0 };
+            }
+            conteoActividades[actId].cantidad += 1;
+            conteoActividades[actId].puntosTotales += pts;
+
+            const hId = r.hijoId;
+            const hNombre = this.getNombreHijo(hId);
+            const keyHijoAct = `${hId}_${actId}`;
+            if (!conteoHijos[keyHijoAct]) {
+                conteoHijos[keyHijoAct] = { hijoId: hId, hijoNombre: hNombre, actividadNombre: actNombre, cantidad: 0, puntosTotales: 0 };
+            }
+            conteoHijos[keyHijoAct].cantidad += 1;
+            conteoHijos[keyHijoAct].puntosTotales += pts;
+        });
+
+        const rankingActividades = Object.values(conteoActividades).map(a => ({
+            ...a,
+            porcentaje: totalRegistros > 0 ? Math.round((a.cantidad / totalRegistros) * 100) : 0
+        }));
+        rankingActividades.sort((a, b) => b.cantidad - a.cantidad);
+
+        const desgloseHijos = Object.values(conteoHijos);
+        desgloseHijos.sort((a, b) => b.cantidad - a.cantidad);
+
+        return {
+            totalRegistros,
+            totalPuntos,
+            rankingActividades,
+            desgloseHijos
+        };
     },
 
     // ---------- Ordenamiento y Filtros para reportes ----------
