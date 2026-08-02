@@ -156,6 +156,37 @@ const AppController = {
         }
     },
 
+    guardarTodosPuntos() {
+        const user = Auth.getCurrentUser();
+        const isAdmin = user && (user.role === "admin" || user.username === "admin");
+        if (!isAdmin) { showToast("❌ Acción solo permitida para el Administrador", true); return; }
+
+        // Forzar blur en todos los inputs para que el teclado virtual confirme valores
+        Store.data.actividades.forEach(a => {
+            const el = document.getElementById(`inputPuntos_${a.id}`);
+            if (el) el.blur();
+        });
+
+        // Pequeño delay (150ms) para que el blur confirme los valores en móvil
+        setTimeout(() => {
+            let actualizados = 0;
+            Store.data.actividades.forEach(a => {
+                const el = document.getElementById(`inputPuntos_${a.id}`);
+                if (el) {
+                    const nuevoPts = Math.max(0, parseInt(el.value, 10) || 0);
+                    if (Store.updatePuntosActividad(a.id, nuevoPts)) actualizados++;
+                }
+            });
+
+            if (actualizados > 0) {
+                View.renderAll();
+                showToast(`✅ ${actualizados} actividad${actualizados > 1 ? 'es' : ''} guardada${actualizados > 1 ? 's' : ''} correctamente`);
+            } else {
+                showToast("⚠️ No se encontraron actividades para guardar", true);
+            }
+        }, 150);
+    },
+
     guardarAnuncio(activo, titulo, mensaje) {
         const user = Auth.getCurrentUser();
         const isAdmin = user && (user.role === "admin" || user.username === "admin");

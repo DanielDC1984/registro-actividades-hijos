@@ -264,7 +264,48 @@ const View = {
                     </div>`;
             });
         }
-        html += `</div></div>`;
+        html += `
+                </div>
+                <!-- BOTÓN MAESTRO: GUARDAR TODO -->
+                <div style="
+                    margin-top: 18px;
+                    padding-top: 16px;
+                    border-top: 2px dashed #e2e8f0;
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    flex-wrap: wrap;
+                    gap: 10px;
+                ">
+                    <p style="margin:0; font-size:12px; color:#6b7a8f;">
+                        💡 Guarda todos los cambios de puntos en una sola acción
+                    </p>
+                    <button
+                        id="btnGuardarTodosPuntos"
+                        onclick="AppController.guardarTodosPuntos()"
+                        style="
+                            display: flex;
+                            align-items: center;
+                            gap: 8px;
+                            padding: 12px 24px;
+                            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+                            color: white;
+                            border: none;
+                            border-radius: 12px;
+                            font-size: 15px;
+                            font-weight: 700;
+                            cursor: pointer;
+                            box-shadow: 0 4px 15px rgba(99,102,241,0.4);
+                            transition: all 0.2s ease;
+                            letter-spacing: 0.3px;
+                        "
+                        onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(99,102,241,0.55)';"
+                        onmouseout="this.style.transform=''; this.style.boxShadow='0 4px 15px rgba(99,102,241,0.4)';"
+                    >
+                        💾 Guardar Todos los Puntos
+                    </button>
+                </div>
+            </div></div>`;
         container.innerHTML = html;
     },
 
