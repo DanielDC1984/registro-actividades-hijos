@@ -433,6 +433,19 @@ const AppController = {
         showToast("🗑️ Actividad removida");
     },
 
+    toggleEstadoActividad(id) {
+        const user = Auth.getCurrentUser();
+        const isAdmin = user && (user.role === "admin" || user.username === "admin");
+        if (!isAdmin) { showToast("❌ Solo el Administrador puede realizar esta acción", true); return; }
+
+        if (Store.toggleEstadoActividad(id)) {
+            View.renderAll();
+            const act = Store.data.actividades.find(a => a.id == id);
+            const estadoText = (act && act.activa !== false) ? "habilitada" : "deshabilitada";
+            showToast(`✅ Actividad "${act ? act.nombre : ''}" ${estadoText}`);
+        }
+    },
+
     eliminarRecompensa(id) {
         if (!confirm("¿Eliminar esta recompensa?")) return;
         Store.deleteRecompensa(id);

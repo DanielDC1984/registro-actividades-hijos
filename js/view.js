@@ -52,14 +52,14 @@ const View = {
     },
 
     // ---------- Modal Anuncio ----------
-    mostrarModalAnuncio() {
+    mostrarModalAnuncio(forzar = false) {
         const anuncio = Store.data.anuncio;
-        if (!anuncio || !anuncio.activo) return;
+        if (!forzar && (!anuncio || !anuncio.activo)) return;
 
         const elTitulo = document.getElementById("anuncioTitulo");
         const elMensaje = document.getElementById("anuncioMensaje");
-        if (elTitulo) elTitulo.textContent = anuncio.titulo || "📢 ¡Atención!";
-        if (elMensaje) elMensaje.textContent = anuncio.mensaje || "";
+        if (elTitulo) elTitulo.textContent = (anuncio && anuncio.titulo) || "📢 ¡Atención!";
+        if (elMensaje) elMensaje.textContent = (anuncio && anuncio.mensaje) || "Sin mensaje definido.";
 
         const modal = document.getElementById("modalAnuncio");
         if (modal) modal.classList.add("active");
@@ -169,20 +169,29 @@ const View = {
         data.hijos.forEach(h => {
             hijosHtml += `<option value="${h.id}">${h.nombre}${h.edad ? " (" + h.edad + " años)" : ""}</option>`;
         });
-        let actHtml = '<option value="">Seleccionar...</option>';
+
+        let actHtmlNew = '<option value="">Seleccionar...</option>';
+        let actHtmlEdit = '<option value="">Seleccionar...</option>';
+
         data.actividades.forEach(a => {
             const pts = a.puntos || 0;
-            actHtml += `<option value="${a.id}">${a.nombre} (⭐ ${pts} pts)</option>`;
+            const esActiva = a.activa !== false;
+            if (esActiva) {
+                actHtmlNew += `<option value="${a.id}">${a.nombre} (⭐ ${pts} pts)</option>`;
+            }
+            actHtmlEdit += `<option value="${a.id}">${a.nombre} (⭐ ${pts} pts)${esActiva ? '' : ' [Deshabilitada]'}</option>`;
         });
 
         ["selectHijo", "selectHijoReporte", "editSelectHijo"].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.innerHTML = hijosHtml;
         });
-        ["selectActividad", "editSelectActividad"].forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.innerHTML = actHtml;
-        });
+
+        const elNew = document.getElementById("selectActividad");
+        if (elNew) elNew.innerHTML = actHtmlNew;
+
+        const elEdit = document.getElementById("editSelectActividad");
+        if (elEdit) elEdit.innerHTML = actHtmlEdit;
 
         const fEl = document.getElementById("fechaHoraActividad");
         if (fEl && !fEl.value) fEl.value = getFechaHoraLocal();
@@ -207,14 +216,27 @@ const View = {
         const container = document.getElementById("listaActividadesGestion");
         if (!container) return;
         if (actividades.length === 0) { container.innerHTML = '<div class="empty-state"><p>No hay actividades registradas</p></div>'; return; }
-        container.innerHTML = actividades.map(a => `
+        container.innerHTML = actividades.map(a => {
+            const esActiva = a.activa !== false;
+            return `
             <div class="child-card">
                 <div class="child-info">
-                    <div class="child-name">🎯 ${a.nombre}</div>
+                    <div class="child-name" style="display:flex;align-items:center;gap:8px;">
+                        <span>🎯 ${a.nombre}</span>
+                        <span style="font-size:11px;padding:2px 8px;border-radius:12px;font-weight:700;background:${esActiva ? '#dcfce7' : '#fee2e2'};color:${esActiva ? '#16a34a' : '#dc2626'};">
+                            ${esActiva ? '🟢 Habilitada' : '🔴 Deshabilitada'}
+                        </span>
+                    </div>
                     <div class="child-age">Valor actual: <strong>⭐ ${a.puntos || 0} pts</strong></div>
                 </div>
-                <button class="btn-delete" onclick="AppController.eliminarActividadGestion(${a.id})">Eliminar</button>
-            </div>`).join("");
+                <div style="display:flex;gap:6px;">
+                    <button class="btn-block" style="background:${esActiva ? '#f59e0b' : '#10b981'};color:#fff;padding:6px 12px;font-size:12px;border:none;border-radius:10px;cursor:pointer;" onclick="AppController.toggleEstadoActividad(${a.id})">
+                        ${esActiva ? '🚫 Deshabilitar' : '✅ Habilitar'}
+                    </button>
+                    <button class="btn-delete" onclick="AppController.eliminarActividadGestion(${a.id})">Eliminar</button>
+                </div>
+            </div>`;
+        }).join("");
     },
 
     // ---------- Configuración de Puntos y Anuncio (Admin) ----------
@@ -244,7 +266,10 @@ const View = {
                     <label>Mensaje del Anuncio</label>
                     <textarea id="anuncioMensajeInput" rows="3" placeholder="Mensaje que verán los usuarios...">${anuncio.mensaje || ''}</textarea>
                 </div>
-                <button class="btn-primary" style="width:auto;padding:10px 20px;" onclick="AppController.guardarAnuncio(document.getElementById('anuncioActivoInput').checked, document.getElementById('anuncioTituloInput').value, document.getElementById('anuncioMensajeInput').value)">💾 Guardar Anuncio</button>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                    <button class="btn-primary" style="width:auto;padding:10px 20px;" onclick="AppController.guardarAnuncio(document.getElementById('anuncioActivoInput').checked, document.getElementById('anuncioTituloInput').value, document.getElementById('anuncioMensajeInput').value)">💾 Guardar Anuncio</button>
+                    <button type="button" style="width:auto;padding:10px 20px;background:#e0e7ff;color:#3730a3;border:1px solid #c7d2fe;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;" onclick="View.mostrarModalAnuncio(true)">👁️ Previsualizar Anuncio</button>
+                </div>
             </div>
 
             <!-- PANEL: PUNTOS POR ACTIVIDAD -->

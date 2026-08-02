@@ -51,10 +51,11 @@ const Store = {
             r.fecha && !r.fechaHora ? { ...r, fechaHora: r.fecha + "T00:00" } : r
         ));
 
-        // Asegurar campo puntos en actividades
+        // Asegurar campo puntos y activa en actividades
         this.data.actividades = this.data.actividades.map(a => ({
             ...a,
-            puntos: typeof a.puntos === "number" ? a.puntos : (parseInt(a.puntos, 10) || 0)
+            puntos: typeof a.puntos === "number" ? a.puntos : (parseInt(a.puntos, 10) || 0),
+            activa: typeof a.activa === "boolean" ? a.activa : true
         }));
 
         if (this.data.hijos.length === 0) {
@@ -65,10 +66,10 @@ const Store = {
         }
         if (this.data.actividades.length === 0) {
             this.data.actividades = [
-                { id: 1, nombre: "Lectura", puntos: 10 },
-                { id: 2, nombre: "Dibujo", puntos: 5 },
-                { id: 3, nombre: "Deporte", puntos: 15 },
-                { id: 4, nombre: "Música", puntos: 10 },
+                { id: 1, nombre: "Lectura", puntos: 10, activa: true },
+                { id: 2, nombre: "Dibujo", puntos: 5, activa: true },
+                { id: 3, nombre: "Deporte", puntos: 15, activa: true },
+                { id: 4, nombre: "Música", puntos: 10, activa: true },
             ];
         }
         if (this.data.recompensas.length === 0) {
@@ -116,10 +117,11 @@ const Store = {
                 if (dbData.hijos && dbData.hijos.length > 0) this.data.hijos = dbData.hijos;
                 
                 if (dbData.actividades && dbData.actividades.length > 0) {
-                    // Carga autoritativa desde Supabase (los puntos remotos prevalecen sobre manipulaciones locales)
+                    // Carga autoritativa desde Supabase
                     this.data.actividades = dbData.actividades.map(remoteAct => {
                         const remotePts = typeof remoteAct.puntos === "number" ? remoteAct.puntos : (parseInt(remoteAct.puntos, 10) || 0);
-                        return { ...remoteAct, puntos: remotePts };
+                        const isActiva = typeof remoteAct.activa === "boolean" ? remoteAct.activa : true;
+                        return { ...remoteAct, puntos: remotePts, activa: isActiva };
                     });
 
                     // Cargar recompensas, canjes, anuncio y auditoría incrustados en actividades[0] si existen
@@ -134,7 +136,11 @@ const Store = {
                 if (dbData.registros && dbData.registros.length > 0) this.data.registros = dbData.registros;
                 if (dbData.recompensas && dbData.recompensas.length > 0) this.data.recompensas = dbData.recompensas;
                 if (dbData.canjes && dbData.canjes.length > 0) this.data.canjes = dbData.canjes;
-                if (dbData.anuncio) this.data.anuncio = dbData.anuncio;
+                
+                // Priorizar dbData.anuncio solo si la actividad 0 no tenía _anuncio
+                if (dbData.anuncio && (!dbData.actividades || !dbData.actividades[0] || !dbData.actividades[0]._anuncio)) {
+                    this.data.anuncio = dbData.anuncio;
+                }
 
                 this.saveLocal();
             }
@@ -163,7 +169,8 @@ const Store = {
                 id: FAMILIA_ID,
                 hijos: this.data.hijos,
                 actividades: actividadesToSave,
-                registros: this.data.registros
+                registros: this.data.registros,
+                anuncio: this.data.anuncio || null
             };
 
             let { error } = await supabaseClient.from("familias").upsert(payload, { onConflict: "id" });
@@ -451,6 +458,16 @@ const Store = {
         this.data.actividades = this.data.actividades.filter(a => a.id !== id);
         this.persist();
         return true;
+    },
+    toggleEstadoActividad(id) {
+        if (!this.isAdmin()) return false;
+        const act = this.data.actividades.find(a => a.id == id);
+        if (act) {
+            act.activa = (act.activa === false) ? true : false;
+            this.persist();
+            return true;
+        }
+        return false;
     },
 
     // ---------- CRUD: Registros ----------
