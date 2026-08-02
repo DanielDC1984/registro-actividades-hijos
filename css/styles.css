@@ -21,7 +21,8 @@ html,body{background:#f0f4f8;display:flex;min-height:100vh;width:100%;overflow-x
 @keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
 .app-container{display:none;width:100%;min-height:100vh}
 .app-container.active{display:flex}
-.sidebar{position:fixed;top:0;left:0;width:280px;max-width:85vw;height:100vh;height:100dvh;max-height:100vh;max-height:100dvh;background:linear-gradient(180deg,#1a2a3a,#0f1a26);padding:20px 0 60px 0;z-index:1000;transform:translateX(-100%);transition:transform .3s ease-in-out;box-shadow:4px 0 20px rgba(0,0,0,.3);overflow-y:scroll;overflow-x:hidden;-webkit-overflow-scrolling:touch;touch-action:pan-y;overscroll-behavior-y:contain}
+.sidebar{position:fixed;top:0;left:0;width:280px;max-width:85vw;height:100vh;height:100dvh;max-height:100vh;max-height:100dvh;background:linear-gradient(180deg,#1a2a3a,#0f1a26);padding:20px 0 60px 0;z-index:1000;transform:translateX(-100%);transition:transform .3s ease-in-out;box-shadow:4px 0 20px rgba(0,0,0,.3);overflow-y:scroll!important;overflow-x:hidden!important;-webkit-overflow-scrolling:touch!important;touch-action:pan-y!important;overscroll-behavior-y:contain!important}
+.sidebar *{touch-action:pan-y!important}
 .sidebar.open{transform:translateX(0)}
 .sidebar-header{padding:0 20px 20px;border-bottom:1px solid rgba(255,255,255,.1);margin-bottom:16px}
 .sidebar-header h2{color:#fff;font-size:20px;display:flex;align-items:center;gap:10px}
@@ -29,7 +30,7 @@ html,body{background:#f0f4f8;display:flex;min-height:100vh;width:100%;overflow-x
 .sidebar-header p{color:rgba(255,255,255,.6);font-size:13px;margin-top:4px}
 .sidebar-group{margin-bottom:20px}
 .sidebar-group-label{color:rgba(255,255,255,.4);font-size:11px;text-transform:uppercase;letter-spacing:.5px;padding:0 20px;margin-bottom:6px;font-weight:600}
-.sidebar-item{display:flex;align-items:center;gap:12px;padding:12px 20px;color:rgba(255,255,255,.7);cursor:pointer;border-left:3px solid transparent;transition:all .2s;touch-action:pan-y}
+.sidebar-item{display:flex;align-items:center;gap:12px;padding:12px 20px;color:rgba(255,255,255,.7);cursor:pointer;border-left:3px solid transparent;transition:all .2s;touch-action:pan-y!important}
 .sidebar-item:hover{background:rgba(255,255,255,.05);color:#fff}
 .sidebar-item.active{background:rgba(74,108,247,.15);color:#fff;border-left-color:#4a6cf7}
 .sidebar-item .icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
