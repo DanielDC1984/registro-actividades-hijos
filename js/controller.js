@@ -22,6 +22,7 @@ const AppController = {
         }
 
         if (userEl) userEl.value = "";
+        sessionStorage.removeItem("anuncioMostradoEnSesion");
         View.setUserDisplayName(res.user.username);
         this.mostrarApp();
         showToast("✅ Sesión iniciada");
@@ -46,6 +47,7 @@ const AppController = {
 
     cerrarSesion() {
         Auth.logout();
+        sessionStorage.removeItem("anuncioMostradoEnSesion");
         const form = document.getElementById("loginForm");
         if (form) form.reset();
         View.mostrarLogin();
@@ -84,19 +86,17 @@ const AppController = {
         Store.load();
         View.renderAll();
         this._aplicarUI();
-        // Mostrar anuncio desde datos locales (puede no estar actualizado aun)
-        View.mostrarModalAnuncio();
+        
+        // Mostrar anuncio SOLO UNA VEZ por inicio de sesión
+        if (!sessionStorage.getItem("anuncioMostradoEnSesion")) {
+            View.mostrarModalAnuncio();
+            sessionStorage.setItem("anuncioMostradoEnSesion", "true");
+        }
 
         Store.loadFromSupabase()
             .then(() => {
                 View.renderAll();
                 View.updateSyncStatus("online", "Conectado");
-                // Re-mostrar anuncio con datos actualizados de Supabase
-                // Solo si el modal no ha sido cerrado ya por el usuario
-                const modal = document.getElementById("modalAnuncio");
-                if (modal && !modal.classList.contains("active")) {
-                    View.mostrarModalAnuncio();
-                }
             })
             .catch(err => {
                 console.error("Error cargando de Supabase:", err);
@@ -111,32 +111,63 @@ const AppController = {
         if (user.role === "admin") this._refrescarAdmin();
     },
 
-    // ---------- Menú lateral ----------
+    // ---------- Navegación y Menú lateral ----------
+    switchView(viewTarget) {
+        if (!viewTarget) return;
+        const targetViewEl = document.getElementById(`view-${viewTarget}`);
+        if (!targetViewEl) return;
+
+        document.querySelectorAll(".sidebar-item").forEach(i => {
+            if (i.getAttribute("data-view") === viewTarget) {
+                i.classList.add("active");
+            } else {
+                i.classList.remove("active");
+            }
+        });
+
+        document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+        targetViewEl.classList.add("active");
+
+        if (viewTarget === "admin") this._refrescarAdmin();
+        if (viewTarget === "completo") View.renderReporteCompleto();
+        if (viewTarget === "ranking") View.renderRanking(this.rankingFiltroActual);
+        if (viewTarget === "recompensas") View.renderRecompensas();
+        if (viewTarget === "puntos-config") View.renderPuntosConfig();
+        if (viewTarget === "denuncias") View.renderModuloDenuncias();
+        if (viewTarget === "estadisticas") View.renderEstadisticas();
+
+        // Cerrar siempre el menú lateral en dispositivos móviles/tablets al cambiar de vista
+        const sidebar = document.getElementById("sidebar");
+        const overlay = document.getElementById("sidebarOverlay");
+        if (sidebar) sidebar.classList.remove("open");
+        if (overlay) overlay.classList.remove("show");
+    },
+
     initMenu() {
         const sidebar = document.getElementById("sidebar");
         const overlay = document.getElementById("sidebarOverlay");
-        document.getElementById("menuToggle").addEventListener("click", () => {
-            sidebar.classList.toggle("open");
-            overlay.classList.toggle("show");
-        });
-        overlay.addEventListener("click", () => { sidebar.classList.remove("open"); overlay.classList.remove("show"); });
+        const toggleBtn = document.getElementById("menuToggle");
+
+        if (toggleBtn) {
+            toggleBtn.addEventListener("click", e => {
+                e.stopPropagation();
+                if (sidebar) sidebar.classList.toggle("open");
+                if (overlay) overlay.classList.toggle("show");
+            });
+        }
+
+        if (overlay) {
+            overlay.addEventListener("click", () => {
+                if (sidebar) sidebar.classList.remove("open");
+                overlay.classList.remove("show");
+            });
+        }
 
         document.querySelectorAll(".sidebar-item").forEach(item => {
-            item.addEventListener("click", () => {
+            item.addEventListener("click", e => {
+                e.preventDefault();
                 const viewTarget = item.getAttribute("data-view");
-                if (!viewTarget) return;
-                document.querySelectorAll(".sidebar-item").forEach(i => i.classList.remove("active"));
-                item.classList.add("active");
-                document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
-                document.getElementById(`view-${viewTarget}`).classList.add("active");
-
-                if (viewTarget === "admin") this._refrescarAdmin();
-                if (viewTarget === "completo") View.renderReporteCompleto();
-                if (viewTarget === "ranking") View.renderRanking(this.rankingFiltroActual);
-                if (viewTarget === "recompensas") View.renderRecompensas();
-                if (viewTarget === "puntos-config") View.renderPuntosConfig();
-
-                if (window.innerWidth < 768) { sidebar.classList.remove("open"); overlay.classList.remove("show"); }
+                this.switchView(viewTarget);
             });
         });
     },
