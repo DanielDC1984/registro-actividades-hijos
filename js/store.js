@@ -127,17 +127,9 @@ const Store = {
                     }
                 }
 
-                // Sincronizar desde columnas de primer nivel solo si la actividad 0 no tenía los datos incrustados
-                if (Array.isArray(dbData.recompensas) && (!dbData.actividades || !dbData.actividades[0] || !dbData.actividades[0]._recompensas)) {
-                    this.data.recompensas = dbData.recompensas;
-                }
-                if (Array.isArray(dbData.canjes) && (!dbData.actividades || !dbData.actividades[0] || !dbData.actividades[0]._canjes)) {
-                    this.data.canjes = dbData.canjes;
-                }
+                // NOTA: la tabla familias NO tiene columnas raíz "recompensas", "canjes", ni "anuncio".
+                // Esos datos viven ÚNICAMENTE en actividades[0]._recompensas, ._canjes, ._anuncio
                 if (Array.isArray(dbData.registros)) this.data.registros = dbData.registros;
-                if (dbData.anuncio && (!dbData.actividades || !dbData.actividades[0] || !dbData.actividades[0]._anuncio)) {
-                    this.data.anuncio = dbData.anuncio;
-                }
 
                 this.saveLocal();
             }
@@ -162,14 +154,14 @@ const Store = {
                 return a;
             });
 
+            // IMPORTANTE: Solo incluir columnas que existen en la tabla de Supabase.
+            // La tabla "familias" tiene: id, hijos, actividades, registros
+            // Las recompensas, canjes y anuncio viajan incrustados en actividades[0]._recompensas, ._canjes, ._anuncio
             const payload = {
                 id: FAMILIA_ID,
                 hijos: this.data.hijos,
                 actividades: actividadesToSave,
-                registros: this.data.registros,
-                recompensas: this.data.recompensas || [],
-                canjes: this.data.canjes || [],
-                anuncio: this.data.anuncio || null
+                registros: this.data.registros
             };
 
             let { error } = await supabaseClient.from("familias").upsert(payload, { onConflict: "id" });
@@ -418,10 +410,10 @@ const Store = {
         return false;
     },
 
-    deleteRecompensa(id) {
+    async deleteRecompensa(id) {
         if (!this.isAdmin()) return false;
         this.data.recompensas = this.data.recompensas.filter(r => r.id != id);
-        this.persist();
+        await this.persist();
         return true;
     },
 
@@ -449,7 +441,7 @@ const Store = {
         return { ok: true, canje };
     },
 
-    solicitarCanjeEspecial({ hijoId, nombrePremio, puntosPropuestos, usuario }) {
+    async solicitarCanjeEspecial({ hijoId, nombrePremio, puntosPropuestos, usuario }) {
         if (!hijoId || !nombrePremio || !puntosPropuestos) {
             return { ok: false, msg: "Completa los datos del premio especial" };
         }
@@ -462,12 +454,12 @@ const Store = {
             puntosPropuestos: pts,
             puntos: pts,
             fechaHora: typeof getFechaHoraLocal === "function" ? getFechaHoraLocal() : new Date().toISOString(),
-            estado: "pendiente", // 'pendiente', 'contrapropuesta', 'aprobado', 'rechazado'
+            estado: "pendiente",
             esEspecial: true,
             usuario
         };
         this.data.canjes.push(canje);
-        this.persist();
+        await this.persist();
         return { ok: true, canje };
     },
 

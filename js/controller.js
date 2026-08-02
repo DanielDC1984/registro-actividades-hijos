@@ -289,7 +289,7 @@ const AppController = {
         }
     },
 
-    solicitarPremioEspecial(hijoId, nombrePremio, puntosPropuestos) {
+    async solicitarPremioEspecial(hijoId, nombrePremio, puntosPropuestos) {
         const user = Auth.getCurrentUser();
         if (!user) { showToast("⚠️ Debes iniciar sesión", true); return; }
         if (!hijoId || !nombrePremio || !puntosPropuestos) {
@@ -297,7 +297,8 @@ const AppController = {
             return;
         }
 
-        const res = Store.solicitarCanjeEspecial({
+        showToast("⏳ Enviando propuesta...");
+        const res = await Store.solicitarCanjeEspecial({
             hijoId: parseInt(hijoId, 10),
             nombrePremio,
             puntosPropuestos,
@@ -310,7 +311,7 @@ const AppController = {
             View.renderRecompensas();
             const form = document.getElementById("formPremioEspecial");
             if (form) form.reset();
-            showToast("✨ Propuesta de premio especial enviada a la Administración");
+            showToast("✨ Propuesta enviada correctamente a la Administración");
             if (typeof confetti === "function") confetti({ particleCount: 80, spread: 60, origin: { y: 0.7 } });
         }
     },
@@ -617,11 +618,16 @@ const AppController = {
         }
     },
 
-    eliminarRecompensa(id) {
+    async eliminarRecompensa(id) {
         if (!confirm("¿Eliminar esta recompensa?")) return;
-        Store.deleteRecompensa(id);
-        View.renderRecompensas();
-        showToast("🗑️ Recompensa eliminada");
+        showToast("⏳ Eliminando...");
+        const ok = await Store.deleteRecompensa(id);
+        if (ok) {
+            View.renderRecompensas();
+            showToast("🗑️ Recompensa eliminada correctamente");
+        } else {
+            showToast("❌ No tienes permisos para eliminar", true);
+        }
     },
 
     guardarEdicionRecompensa(id, nombre, puntos) {
