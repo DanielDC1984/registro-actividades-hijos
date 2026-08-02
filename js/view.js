@@ -711,7 +711,7 @@ const View = {
                 <span>${titulo}</span>
                 <span class="fecha-info">📊 ${listaOrdenada.length} registros</span>
             </div>
-            <div style="overflow-x:auto;">
+            <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;">
                 <table class="tabla-reporte">
                     <thead><tr>
                         <th>#</th><th>👤 Hijo</th><th>🎯 Actividad</th><th>⭐ Puntos</th>
