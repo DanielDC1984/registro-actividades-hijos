@@ -243,10 +243,23 @@ const View = {
                     <div class="punto-item">
                         <div class="punto-info">
                             <span class="act-name">🎯 ${a.nombre}</span>
+                            <span id="ptsDisplay_${a.id}" style="font-size:12px;color:#6b7a8f;">Actual: <strong>${pts} pts</strong></span>
                         </div>
                         <div class="punto-input-group">
-                            <input type="number" id="inputPuntos_${a.id}" value="${pts}" min="0" max="1000">
-                            <button class="btn-primary" style="width:auto;padding:6px 14px;font-size:13px;" onclick="AppController.guardarPuntosActividad(${a.id}, document.getElementById('inputPuntos_${a.id}').value)">💾 Guardar</button>
+                            <input
+                                type="number"
+                                id="inputPuntos_${a.id}"
+                                value="${pts}"
+                                min="0" max="1000"
+                                inputmode="numeric"
+                                pattern="[0-9]*"
+                                oninput="document.getElementById('ptsDisplay_${a.id}').innerHTML='Actual: <strong>' + (this.value||0) + ' pts</strong>'"
+                            >
+                            <button class="btn-primary" style="width:auto;padding:6px 14px;font-size:13px;"
+                                onclick="(function(){
+                                    var el = document.getElementById('inputPuntos_${a.id}');
+                                    if(el){ el.blur(); AppController.guardarPuntosActividad(${a.id}, el.value); }
+                                })()">💾 Guardar</button>
                         </div>
                     </div>`;
             });
@@ -384,7 +397,8 @@ const View = {
         }
 
         // Si es Admin, renderizar canjes pendientes
-        if (user && user.role === "admin" && pendientesBox) {
+        const esAdminUser = user && (user.role === "admin" || user.username === "admin");
+        if (esAdminUser && pendientesBox) {
             const pendientes = canjes.filter(c => c.estado === "pendiente");
             if (pendientes.length === 0) {
                 pendientesBox.innerHTML = `<p style="color:#6b7a8f;font-size:13px;">No hay solicitudes de canje pendientes.</p>`;
@@ -416,7 +430,6 @@ const View = {
 
         let html = `<div class="recompensas-grid-container">`;
         recompensas.forEach(rec => {
-            const esAdmin = user && user.role === "admin";
             let selectHijoOptions = `<option value="">Seleccionar hijo para canjear...</option>`;
             hijos.forEach(h => {
                 const disp = Store.getPuntosDisponiblesHijo(h.id);
@@ -434,7 +447,7 @@ const View = {
                             ${selectHijoOptions}
                         </select>
                         <button class="btn-primary" style="margin-top:8px;padding:8px;" onclick="AppController.solicitarCanje(${rec.id}, document.getElementById('selectCanjeHijo_${rec.id}').value)">🎁 Solicitar Canje</button>
-                        ${esAdmin ? `<button class="btn-delete-reg" style="margin-top:6px;width:100%;" onclick="AppController.eliminarRecompensa(${rec.id})">🗑️ Eliminar Premio</button>` : ""}
+                        ${esAdminUser ? `<button class="btn-delete-reg" style="margin-top:6px;width:100%;" onclick="AppController.eliminarRecompensa(${rec.id})">🗑️ Eliminar Premio</button>` : ""}
                     </div>
                 </div>`;
         });
