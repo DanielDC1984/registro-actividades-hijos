@@ -8,6 +8,11 @@ const AppController = {
     // ---------- Autenticación ----------
     async iniciarSesion(username, password) {
         const res = await Auth.login(username, password);
+        // Limpiar contraseña de la memoria de inputs inmediatamente
+        const passEl = document.getElementById("loginPassword");
+        const userEl = document.getElementById("loginUsername");
+        if (passEl) passEl.value = "";
+
         if (!res.ok) {
             if (res.reason === "blocked") View.mostrarError("❌ Tu cuenta ha sido bloqueada");
             else if (res.reason === "pending") View.mostrarInfo("⏳ Cuenta pendiente de aprobación");
@@ -15,6 +20,8 @@ const AppController = {
             else View.mostrarError("❌ Usuario o contraseña incorrectos");
             return;
         }
+
+        if (userEl) userEl.value = "";
         View.setUserDisplayName(res.user.username);
         this.mostrarApp();
         showToast("✅ Sesión iniciada");
@@ -22,6 +29,9 @@ const AppController = {
 
     async registrarUsuario(username, password) {
         const res = await Auth.register(username, password);
+        const passEl = document.getElementById("loginPassword");
+        if (passEl) passEl.value = "";
+
         if (!res.ok) {
             if (res.reason === "network") View.mostrarError(`❌ Error de conexión: ${res.error}`);
             else View.mostrarError("❌ El usuario ya existe");
@@ -36,6 +46,8 @@ const AppController = {
 
     cerrarSesion() {
         Auth.logout();
+        const form = document.getElementById("loginForm");
+        if (form) form.reset();
         View.mostrarLogin();
         showToast("👋 Sesión cerrada");
     },
@@ -72,12 +84,19 @@ const AppController = {
         Store.load();
         View.renderAll();
         this._aplicarUI();
+        // Mostrar anuncio desde datos locales (puede no estar actualizado aun)
         View.mostrarModalAnuncio();
 
         Store.loadFromSupabase()
             .then(() => {
                 View.renderAll();
                 View.updateSyncStatus("online", "Conectado");
+                // Re-mostrar anuncio con datos actualizados de Supabase
+                // Solo si el modal no ha sido cerrado ya por el usuario
+                const modal = document.getElementById("modalAnuncio");
+                if (modal && !modal.classList.contains("active")) {
+                    View.mostrarModalAnuncio();
+                }
             })
             .catch(err => {
                 console.error("Error cargando de Supabase:", err);
@@ -191,8 +210,21 @@ const AppController = {
         const user = Auth.getCurrentUser();
         const isAdmin = user && (user.role === "admin" || user.username === "admin");
         if (!isAdmin) { showToast("❌ Acción solo permitida para el Administrador", true); return; }
-        Store.updateAnuncio(activo, titulo, mensaje);
-        showToast("✅ Anuncio de bienvenida guardado");
+
+        // Leer valores directamente del DOM con blur() para garantizar valor correcto en móvil
+        const checkboxEl = document.getElementById("anuncioActivoInput");
+        const tituloEl   = document.getElementById("anuncioTituloInput");
+        const mensajeEl  = document.getElementById("anuncioMensajeInput");
+        if (checkboxEl) checkboxEl.blur();
+        if (tituloEl)   tituloEl.blur();
+        if (mensajeEl)  mensajeEl.blur();
+
+        const activoFinal  = checkboxEl  ? checkboxEl.checked  : activo;
+        const tituloFinal  = tituloEl    ? tituloEl.value.trim()  || "📢 Anuncio" : titulo;
+        const mensajeFinal = mensajeEl   ? mensajeEl.value.trim()  : mensaje;
+
+        Store.updateAnuncio(activoFinal, tituloFinal, mensajeFinal);
+        showToast(`✅ Anuncio ${activoFinal ? 'activado' : 'desactivado'} y guardado`);
     },
 
     // ---------- Recompensas ----------
@@ -322,6 +354,68 @@ const AppController = {
             this.isRegisterMode ? this.registrarUsuario(username, password) : this.iniciarSesion(username, password);
         });
         document.getElementById("toggleAuthLink").addEventListener("click", () => this.toggleAuthMode());
+
+        const formPass = document.getElementById("formCambiarPassword");
+        if (formPass) {
+            formPass.addEventListener("submit", e => {
+                e.preventDefault();
+                const oldP = document.getElementById("passActualInput").value;
+                const newP = document.getElementById("passNuevaInput").value;
+                const confP = document.getElementById("passConfirmarInput").value;
+                this.cambiarMiPassword(oldP, newP, confP);
+            });
+        }
+    },
+
+    // ---------- Cambiar Contraseñas ----------
+    async cambiarMiPassword(oldPass, newPass, confirmPass) {
+        if (!oldPass || !newPass || !confirmPass) {
+            showToast("⚠️ Completa todos los campos de contraseña", true);
+            return;
+        }
+        if (newPass !== confirmPass) {
+            showToast("⚠️ La nueva contraseña y la confirmación no coinciden", true);
+            return;
+        }
+        if (newPass.length < 6) {
+            showToast("⚠️ La contraseña debe tener al menos 6 caracteres", true);
+            return;
+        }
+
+        const user = Auth.getCurrentUser();
+        const isAdmin = user && (user.role === "admin" || user.username === "admin");
+        if (!isAdmin) { showToast("❌ Solo el Administrador puede realizar esta acción", true); return; }
+
+        const res = await Auth.changePassword(user.username, oldPass, newPass);
+        if (res.ok) {
+            View.cerrarModalCambiarPassword();
+            showToast("✅ Contraseña actualizada correctamente");
+        } else if (res.reason === "wrong_password") {
+            showToast("❌ La contraseña actual es incorrecta", true);
+        } else {
+            showToast("❌ Error al actualizar contraseña", true);
+        }
+    },
+
+    async adminCambiarPassword(targetUsername) {
+        const currentUser = Auth.getCurrentUser();
+        const isAdmin = currentUser && (currentUser.role === "admin" || currentUser.username === "admin");
+        if (!isAdmin) { showToast("❌ Solo el Administrador puede realizar esta acción", true); return; }
+
+        const nuevaPass = prompt(`Escribe la nueva contraseña para el usuario "${targetUsername}" (mínimo 6 caracteres):`);
+        if (nuevaPass === null) return;
+        if (!nuevaPass || nuevaPass.trim().length < 6) {
+            showToast("⚠️ La contraseña debe tener al menos 6 caracteres", true);
+            return;
+        }
+
+        const res = await Auth.adminResetPassword(targetUsername, nuevaPass.trim());
+        if (res.ok) {
+            this._refrescarAdmin();
+            showToast(`✅ Contraseña de "${targetUsername}" restablecida`);
+        } else {
+            showToast("❌ Error al cambiar la contraseña", true);
+        }
     },
 
     // ---------- CRUD desde botones inline ----------

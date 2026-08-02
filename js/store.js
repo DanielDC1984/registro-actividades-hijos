@@ -9,11 +9,19 @@ const Store = {
         registros: [],
         recompensas: [],
         canjes: [],
+        auditLog: [],
         anuncio: {
             activo: true,
             titulo: "📢 ¡Nueva actualización en el sistema!",
             mensaje: "¡Hola a todos! A partir de ahora, cada actividad registrada otorga PUNTOS. Pueden competir en el 🏆 Ranking Familiar y canjear sus puntos por premios en la 🎁 Tienda de Recompensas."
         }
+    },
+
+    // Helper de seguridad: verifica si el usuario en sesión es Admin
+    isAdmin() {
+        if (typeof Auth === "undefined") return false;
+        const user = Auth.getCurrentUser();
+        return Boolean(user && (user.role === "admin" || user.username === "admin"));
     },
 
     // ---------- Carga inicial ----------
@@ -29,6 +37,7 @@ const Store = {
         if (!this.data.registros) this.data.registros = [];
         if (!this.data.recompensas) this.data.recompensas = [];
         if (!this.data.canjes) this.data.canjes = [];
+        if (!this.data.auditLog) this.data.auditLog = [];
         if (!this.data.anuncio) {
             this.data.anuncio = {
                 activo: true,
@@ -107,21 +116,18 @@ const Store = {
                 if (dbData.hijos && dbData.hijos.length > 0) this.data.hijos = dbData.hijos;
                 
                 if (dbData.actividades && dbData.actividades.length > 0) {
-                    // Fusión inteligente: PROTEGER los puntos locales si Supabase devuelve 0 o no tiene puntos
+                    // Carga autoritativa desde Supabase (los puntos remotos prevalecen sobre manipulaciones locales)
                     this.data.actividades = dbData.actividades.map(remoteAct => {
-                        const localAct = (this.data.actividades || []).find(l => l.id == remoteAct.id);
                         const remotePts = typeof remoteAct.puntos === "number" ? remoteAct.puntos : (parseInt(remoteAct.puntos, 10) || 0);
-                        const localPts = localAct && typeof localAct.puntos === "number" ? localAct.puntos : (localAct ? (parseInt(localAct.puntos, 10) || 0) : 0);
-                        
-                        const finalPts = Math.max(remotePts, localPts);
-                        return { ...remoteAct, puntos: finalPts };
+                        return { ...remoteAct, puntos: remotePts };
                     });
 
-                    // Cargar recompensas, canjes y anuncio incrustados en actividades[0] si existen
+                    // Cargar recompensas, canjes, anuncio y auditoría incrustados en actividades[0] si existen
                     if (dbData.actividades[0]) {
                         if (dbData.actividades[0]._recompensas) this.data.recompensas = dbData.actividades[0]._recompensas;
                         if (dbData.actividades[0]._canjes) this.data.canjes = dbData.actividades[0]._canjes;
                         if (dbData.actividades[0]._anuncio) this.data.anuncio = dbData.actividades[0]._anuncio;
+                        if (dbData.actividades[0]._auditLog) this.data.auditLog = dbData.actividades[0]._auditLog;
                     }
                 }
 
@@ -139,14 +145,15 @@ const Store = {
 
     async saveToSupabase() {
         try {
-            // Incrustar las recompensas, canjes y anuncio en actividades[0] para que la tabla familias de Postgres NUNCA rechace la consulta
+            // Incrustar recompensas, canjes, anuncio y auditoría en actividades[0]
             const actividadesToSave = this.data.actividades.map((a, idx) => {
                 if (idx === 0) {
                     return {
                         ...a,
                         _recompensas: this.data.recompensas || [],
                         _canjes: this.data.canjes || [],
-                        _anuncio: this.data.anuncio || null
+                        _anuncio: this.data.anuncio || null,
+                        _auditLog: this.data.auditLog || []
                     };
                 }
                 return a;
@@ -205,12 +212,18 @@ const Store = {
 
     // ---------- Anuncio del Sistema ----------
     updateAnuncio(activo, titulo, mensaje) {
+        if (!this.isAdmin()) {
+            console.warn("⛔ Intento no autorizado de modificar anuncio");
+            if (typeof showToast === "function") showToast("❌ Permiso denegado: solo Admin", true);
+            return false;
+        }
         this.data.anuncio = {
             activo: Boolean(activo),
             titulo: titulo || "📢 Anuncio",
             mensaje: mensaje || ""
         };
         this.persist();
+        return true;
     },
 
     // ---------- Lookups ----------
@@ -229,10 +242,43 @@ const Store = {
 
     // ---------- Puntos y Ranking ----------
     updatePuntosActividad(actividadId, puntos) {
+        if (!this.isAdmin()) {
+            console.warn("⛔ Intento no autorizado de modificar puntos");
+            if (typeof showToast === "function") showToast("❌ Permiso denegado: solo el Administrador puede modificar los puntos", true);
+            return false;
+        }
+
         const act = this.data.actividades.find(a => a.id == actividadId);
         if (act) {
-            act.puntos = Math.max(0, parseInt(puntos, 10) || 0);
-            this.persist();
+            const nuevoPts = Math.max(0, parseInt(puntos, 10) || 0);
+            const anteriorPts = act.puntos || 0;
+
+            if (nuevoPts !== anteriorPts) {
+                // Registrar entrada de Auditoría
+                if (!this.data.auditLog) this.data.auditLog = [];
+                const user = Auth.getCurrentUser();
+                const usuarioNombre = user ? user.username : "desconocido";
+                const fechaStr = typeof getFechaHoraLocal === "function" ? getFechaHoraLocal() : new Date().toISOString();
+
+                this.data.auditLog.unshift({
+                    id: Date.now() + Math.floor(Math.random() * 1000),
+                    tipo: "cambio_puntos",
+                    actividadId: act.id,
+                    actividadNombre: act.nombre,
+                    puntosAnteriores: anteriorPts,
+                    puntosNuevos: nuevoPts,
+                    usuario: usuarioNombre,
+                    fechaHora: fechaStr
+                });
+
+                if (this.data.auditLog.length > 50) {
+                    this.data.auditLog = this.data.auditLog.slice(0, 50);
+                }
+
+                act.puntos = nuevoPts;
+                this.persist();
+                return true;
+            }
             return true;
         }
         return false;
@@ -366,6 +412,10 @@ const Store = {
     },
 
     responderCanje(canjeId, estado) {
+        if (!this.isAdmin()) {
+            if (typeof showToast === "function") showToast("❌ Solo Admin puede responder canjes", true);
+            return false;
+        }
         const canje = this.data.canjes.find(c => c.id == canjeId);
         if (canje) {
             canje.estado = estado; // 'aprobado' | 'rechazado'
@@ -377,22 +427,30 @@ const Store = {
 
     // ---------- CRUD: Hijos ----------
     addHijo(nombre, edad) {
+        if (!this.isAdmin()) return false;
         this.data.hijos.push({ id: Date.now(), nombre, edad: edad ? parseInt(edad, 10) : null });
         this.persist();
+        return true;
     },
     deleteHijo(id) {
+        if (!this.isAdmin()) return false;
         this.data.hijos = this.data.hijos.filter(h => h.id !== id);
         this.persist();
+        return true;
     },
 
     // ---------- CRUD: Actividades (catálogo) ----------
     addActividad(nombre, puntos = 0) {
+        if (!this.isAdmin()) return false;
         this.data.actividades.push({ id: Date.now(), nombre, puntos: parseInt(puntos, 10) || 0 });
         this.persist();
+        return true;
     },
     deleteActividad(id) {
+        if (!this.isAdmin()) return false;
         this.data.actividades = this.data.actividades.filter(a => a.id !== id);
         this.persist();
+        return true;
     },
 
     // ---------- CRUD: Registros ----------

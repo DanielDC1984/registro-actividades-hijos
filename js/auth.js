@@ -47,7 +47,15 @@ const Auth = {
         if (!stored) return null;
         try { return JSON.parse(stored); } catch (e) { return null; }
     },
-    setCurrentUser(user) { localStorage.setItem(this.CURRENT_KEY, JSON.stringify(user)); },
+    setCurrentUser(user) {
+        if (!user) {
+            localStorage.removeItem(this.CURRENT_KEY);
+            return;
+        }
+        // NUNCA guardar la contraseña en la sesión del dispositivo
+        const { password, ...safeUser } = user;
+        localStorage.setItem(this.CURRENT_KEY, JSON.stringify(safeUser));
+    },
     clearCurrentUser() { localStorage.removeItem(this.CURRENT_KEY); },
 
     // Devuelve { ok: true, user } o { ok: false, reason: 'invalid'|'blocked'|'pending'|'network', error? }
@@ -114,6 +122,39 @@ const Auth = {
         if (username === "admin") return { ok: false, reason: "is_admin" };
         await this._deleteRemote(username);
         this.users = this.users.filter(u => u.username !== username);
+        this._cache();
+        return { ok: true };
+    },
+
+    // Solo el Admin puede cambiar su propia contraseña o la de otros
+    async changePassword(username, oldPassword, newPassword) {
+        const currentUser = this.getCurrentUser();
+        const isAdmin = currentUser && (currentUser.role === "admin" || currentUser.username === "admin");
+        if (!isAdmin) return { ok: false, reason: "unauthorized" };
+
+        const user = this.users.find(u => u.username === username);
+        if (!user) return { ok: false, reason: "not_found" };
+        if (user.password !== oldPassword) return { ok: false, reason: "wrong_password" };
+        if (!newPassword || newPassword.length < 6) return { ok: false, reason: "too_short" };
+
+        user.password = newPassword;
+        await this._upsertRemote(user);
+        this._cache();
+        return { ok: true };
+    },
+
+    // Admin resetea la contraseña de cualquier usuario
+    async adminResetPassword(targetUsername, newPassword) {
+        const currentUser = this.getCurrentUser();
+        const isAdmin = currentUser && (currentUser.role === "admin" || currentUser.username === "admin");
+        if (!isAdmin) return { ok: false, reason: "unauthorized" };
+
+        const targetUser = this.users.find(u => u.username === targetUsername);
+        if (!targetUser) return { ok: false, reason: "not_found" };
+        if (!newPassword || newPassword.length < 6) return { ok: false, reason: "too_short" };
+
+        targetUser.password = newPassword;
+        await this._upsertRemote(targetUser);
         this._cache();
         return { ok: true };
     },

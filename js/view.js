@@ -4,6 +4,8 @@
 const View = {
     // ---------- Login / App shell ----------
     mostrarLogin() {
+        const form = document.getElementById("loginForm");
+        if (form) form.reset();
         document.getElementById("loginContainer").style.display = "flex";
         document.getElementById("appContainer").classList.remove("active");
     },
@@ -68,6 +70,19 @@ const View = {
         if (modal) modal.classList.remove("active");
     },
 
+    // ---------- Modal Cambiar Contraseña ----------
+    abrirModalCambiarPassword() {
+        const modal = document.getElementById("modalCambiarPassword");
+        const form = document.getElementById("formCambiarPassword");
+        if (form) form.reset();
+        if (modal) modal.classList.add("active");
+    },
+
+    cerrarModalCambiarPassword() {
+        const modal = document.getElementById("modalCambiarPassword");
+        if (modal) modal.classList.remove("active");
+    },
+
     // ---------- Estado de sincronización ----------
     updateSyncStatus(state, text) {
         const dot = document.getElementById("statusDot");
@@ -90,6 +105,9 @@ const View = {
         const adminCanjes = document.getElementById("adminCanjesPendientes");
         if (adminCanjes) adminCanjes.style.display = esAdmin ? "block" : "none";
 
+        const btnPass = document.getElementById("btnCambiarMiPassword");
+        if (btnPass) btnPass.style.display = esAdmin ? "flex" : "none";
+
         document.querySelectorAll('[data-view="hijos"]').forEach(el => el.style.display = esAdmin ? "flex" : "none");
         document.querySelectorAll('[data-view="actividades"]').forEach(el => el.style.display = esAdmin ? "flex" : "none");
         document.querySelectorAll('[data-view="puntos-config"]').forEach(el => el.style.display = esAdmin ? "flex" : "none");
@@ -102,6 +120,7 @@ const View = {
 
     renderAdminPanel(users) {
         const container = document.getElementById("adminUserList");
+        if (!container) return;
         if (users.length === 0) {
             container.innerHTML = `<div class="empty-state"><span class="emoji">👥</span><p>No hay usuarios registrados</p></div>`;
             return;
@@ -114,15 +133,15 @@ const View = {
             else if (u.approved) { statusClass = "approved"; statusText = "✅ Aprobado"; }
             else { statusClass = "pending"; statusText = "⏳ Pendiente"; }
 
-            let actionsHtml;
+            let actionsHtml = "";
             if (u.role !== "admin") {
-                actionsHtml = "";
                 if (!u.approved) actionsHtml += `<button class="btn-approve" onclick="AppController.aprobarUsuario('${u.username}')">✅ Aprobar</button>`;
                 if (u.blocked) actionsHtml += `<button class="btn-unblock" onclick="AppController.desbloquearUsuario('${u.username}')">🔓 Desbloquear</button>`;
                 else if (u.approved) actionsHtml += `<button class="btn-block" onclick="AppController.bloquearUsuario('${u.username}')">🔒 Bloquear</button>`;
+                actionsHtml += `<button class="btn-block" style="background:#6366f1;" onclick="AppController.adminCambiarPassword('${u.username}')">🔑 Pass</button>`;
                 actionsHtml += `<button class="btn-delete-user" onclick="AppController.eliminarUsuario('${u.username}')">🗑️ Eliminar</button>`;
             } else {
-                actionsHtml = `<span style="font-size:11px;color:#6b7a8f;">👑 Administrador</span>`;
+                actionsHtml = `<button class="btn-block" style="background:#6366f1;" onclick="View.abrirModalCambiarPassword()">🔑 Cambiar Pass</button>`;
             }
 
             html += `
@@ -305,7 +324,49 @@ const View = {
                         💾 Guardar Todos los Puntos
                     </button>
                 </div>
-            </div></div>`;
+            </div>
+
+            <!-- PANEL: HISTORIAL DE AUDITORÍA Y SEGURIDAD -->
+            <div class="admin-panel" style="margin-top:20px;">
+                <h3>📜 Historial de Cambios de Puntos (Auditoría)</h3>
+                <p style="color:#6b7a8f;font-size:13px;margin-bottom:14px;">Registro en tiempo real de todas las modificaciones de puntos realizadas por los administradores:</p>
+                <div class="audit-list">`;
+
+        const logs = Store.data.auditLog || [];
+        if (logs.length === 0) {
+            html += `<div class="empty-state"><p style="font-size:13px;color:#8a9aa8;">Sin modificaciones registradas aún</p></div>`;
+        } else {
+            logs.forEach(log => {
+                const fechaFmt = log.fechaHora ? log.fechaHora.replace('T', ' ') : 'Fecha desconocida';
+                html += `
+                    <div style="
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        padding: 10px 14px;
+                        background: #f8fafc;
+                        border-radius: 10px;
+                        border: 1px solid #e2e8f0;
+                        margin-bottom: 8px;
+                        flex-wrap: wrap;
+                        gap: 8px;
+                        font-size: 13px;
+                    ">
+                        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                            <span style="font-weight:700; color:#1e293b;">🎯 ${log.actividadNombre || 'Actividad'}</span>
+                            <span style="background:#e0e7ff; color:#3730a3; padding:2px 8px; border-radius:12px; font-weight:600; font-size:12px;">
+                                ${log.puntosAnteriores} pts ➔ ${log.puntosNuevos} pts
+                            </span>
+                        </div>
+                        <div style="color:#64748b; font-size:12px; display:flex; gap:12px; align-items:center;">
+                            <span>👤 <strong>${log.usuario}</strong></span>
+                            <span>🕒 ${fechaFmt}</span>
+                        </div>
+                    </div>`;
+            });
+        }
+
+        html += `</div></div>`;
         container.innerHTML = html;
     },
 
