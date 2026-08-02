@@ -17,15 +17,15 @@
             <div class="error-msg" id="loginError"></div>
             <div class="success-msg" id="loginSuccess"></div>
             <div class="info-msg" id="loginInfo"></div>
-            <form id="loginForm">
+            <form id="loginForm" autocomplete="off">
                 <div id="loginFields">
                     <div class="form-group">
                         <label>👤 Usuario</label>
-                        <input type="text" id="loginUsername" placeholder="Ej: juan123" required>
+                        <input type="text" id="loginUsername" placeholder="Ej: juan123" required autocomplete="off" spellcheck="false" autocapitalize="none">
                     </div>
                     <div class="form-group">
                         <label>🔒 Contraseña</label>
-                        <input type="password" id="loginPassword" placeholder="Mínimo 6 caracteres" required minlength="6">
+                        <input type="password" id="loginPassword" placeholder="Mínimo 6 caracteres" required minlength="6" autocomplete="new-password" spellcheck="false">
                     </div>
                 </div>
                 <div class="loading-spinner" id="loginSpinner">
@@ -67,6 +67,31 @@
                     <div class="modal-actions">
                         <button type="button" class="btn-secondary" onclick="View.cerrarModalEditar()">Cancelar</button>
                         <button type="submit" class="btn-primary">💾 Guardar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- MODAL CAMBIAR CONTRASEÑA -->
+        <div class="modal-overlay" id="modalCambiarPassword">
+            <div class="modal-content">
+                <div class="modal-title">🔑 Cambiar Contraseña</div>
+                <form id="formCambiarPassword" autocomplete="off">
+                    <div class="form-group">
+                        <label>🔑 Contraseña Actual</label>
+                        <input type="password" id="passActualInput" placeholder="Tu contraseña actual" required autocomplete="new-password">
+                    </div>
+                    <div class="form-group">
+                        <label>🔒 Nueva Contraseña</label>
+                        <input type="password" id="passNuevaInput" placeholder="Mínimo 6 caracteres" required minlength="6" autocomplete="new-password">
+                    </div>
+                    <div class="form-group">
+                        <label>🔒 Confirmar Nueva Contraseña</label>
+                        <input type="password" id="passConfirmarInput" placeholder="Repite la nueva contraseña" required minlength="6" autocomplete="new-password">
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn-secondary" onclick="View.cerrarModalCambiarPassword()">Cancelar</button>
+                        <button type="submit" class="btn-primary">💾 Guardar Contraseña</button>
                     </div>
                 </form>
             </div>
@@ -159,7 +184,8 @@
             <div class="user-info">
                 <div>👤 <span class="username" id="userDisplayName">usuario</span></div>
                 <div><span class="role-badge user" id="userRoleBadge">Usuario</span></div>
-                <button onclick="AppController.cerrarSesion()" style="margin-top:8px;background:#ef4444;color:#fff;border:none;padding:6px 16px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;width:100%;">🚪 Cerrar Sesión</button>
+                <button id="btnCambiarMiPassword" onclick="View.abrirModalCambiarPassword()" style="display:none;margin-top:10px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border:none;padding:8px 12px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;width:100%;align-items:center;justify-content:center;gap:6px;">🔑 Cambiar Contraseña</button>
+                <button onclick="AppController.cerrarSesion()" style="margin-top:6px;background:#ef4444;color:#fff;border:none;padding:6px 16px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;width:100%;">🚪 Cerrar Sesión</button>
             </div>
         </nav>
 
