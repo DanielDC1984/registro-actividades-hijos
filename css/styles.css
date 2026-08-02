@@ -1,5 +1,5 @@
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}
-html,body{background:#f0f4f8;display:flex;min-height:100vh;width:100%;overflow-x:hidden;overscroll-behavior-y:none;overscroll-behavior-x:none}
+html,body{background:#f0f4f8;display:flex;min-height:100vh;width:100%;overflow-x:hidden;touch-action:pan-y}
 .login-container{display:flex;justify-content:center;align-items:center;min-height:100vh;width:100%;background:linear-gradient(135deg,#1a2a3a,#2a4a6a);padding:20px}
 .login-box{background:#fff;padding:40px 32px;border-radius:24px;max-width:400px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3)}
 .login-box .logo{text-align:center;font-size:48px;margin-bottom:8px}
@@ -46,7 +46,7 @@ html,body{background:#f0f4f8;display:flex;min-height:100vh;width:100%;overflow-x
 .sidebar-item .badge{background:rgba(74,108,247,.3);padding:2px 10px;border-radius:20px;font-size:11px;color:#4a6cf7}
 .sidebar-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:999;opacity:0;pointer-events:none;transition:opacity .3s ease-in-out}
 .sidebar-overlay.show{opacity:1;pointer-events:auto}
-.main-content{flex:1;padding:16px;min-height:100vh;width:100%;max-width:100%}
+.main-content{flex:1;padding:16px;min-height:100vh;width:100%;max-width:100%;touch-action:pan-y}
 .topbar{display:flex;align-items:center;gap:12px;padding:8px 4px 16px;border-bottom:1px solid #eef2f7;margin-bottom:20px}
 .menu-toggle{background:0;border:none;font-size:28px;cursor:pointer;padding:4px;color:#1a2a3a;line-height:1}
 .topbar-title{font-size:18px;font-weight:700;color:#1a2a3a;flex:1}
