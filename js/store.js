@@ -79,7 +79,7 @@ const Store = {
                 { id: 4, nombre: "Música", puntos: 10, activa: true },
             ];
         }
-        if (!this.data.recompensas.length) {
+        if (!stored && !this.data.recompensas.length) {
             this.data.recompensas = [
                 { id: 101, nombre: "1 hora de videojuegos / pantalla", puntos: 50, icono: "🎮", activa: true },
                 { id: 102, nombre: "Salida a comer helado", puntos: 80, icono: "🍦", activa: true },
@@ -113,13 +113,12 @@ const Store = {
 
                 if (dbData.actividades && dbData.actividades.length > 0) {
                     this.data.actividades = dbData.actividades.map(remoteAct => {
-                        const localAct = this.data.actividades.find(a => a.id === remoteAct.id);
                         const remotePts = typeof remoteAct.puntos === "number" ? remoteAct.puntos : (parseInt(remoteAct.puntos, 10) || 0);
                         const isActiva = typeof remoteAct.activa === "boolean" ? remoteAct.activa : true;
                         return { ...remoteAct, puntos: remotePts, activa: isActiva };
                     });
 
-                    // Cargar recompensas, canjes, anuncio y auditoría incrustados en actividades[0] si existen
+                    // Cargar recompensas, canjes, anuncio y auditoría incrustados en actividades[0] si existen (autoritativos)
                     if (dbData.actividades[0]) {
                         if (Array.isArray(dbData.actividades[0]._recompensas)) this.data.recompensas = dbData.actividades[0]._recompensas;
                         if (Array.isArray(dbData.actividades[0]._canjes)) this.data.canjes = dbData.actividades[0]._canjes;
@@ -128,11 +127,14 @@ const Store = {
                     }
                 }
 
+                // Sincronizar desde columnas de primer nivel solo si la actividad 0 no tenía los datos incrustados
+                if (Array.isArray(dbData.recompensas) && (!dbData.actividades || !dbData.actividades[0] || !dbData.actividades[0]._recompensas)) {
+                    this.data.recompensas = dbData.recompensas;
+                }
+                if (Array.isArray(dbData.canjes) && (!dbData.actividades || !dbData.actividades[0] || !dbData.actividades[0]._canjes)) {
+                    this.data.canjes = dbData.canjes;
+                }
                 if (Array.isArray(dbData.registros)) this.data.registros = dbData.registros;
-                if (Array.isArray(dbData.recompensas) && dbData.recompensas.length > 0) this.data.recompensas = dbData.recompensas;
-                if (Array.isArray(dbData.canjes) && dbData.canjes.length > 0) this.data.canjes = dbData.canjes;
-                
-                // Priorizar dbData.anuncio solo si la actividad 0 no tenía _anuncio
                 if (dbData.anuncio && (!dbData.actividades || !dbData.actividades[0] || !dbData.actividades[0]._anuncio)) {
                     this.data.anuncio = dbData.anuncio;
                 }
@@ -165,6 +167,8 @@ const Store = {
                 hijos: this.data.hijos,
                 actividades: actividadesToSave,
                 registros: this.data.registros,
+                recompensas: this.data.recompensas || [],
+                canjes: this.data.canjes || [],
                 anuncio: this.data.anuncio || null
             };
 
