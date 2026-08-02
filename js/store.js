@@ -474,18 +474,36 @@ const Store = {
         this.persist();
     },
 
-    // ---------- Filtros para reportes ----------
+    // ---------- Ordenamiento y Filtros para reportes ----------
+    ordenarPorFechaReciente(registros) {
+        if (!Array.isArray(registros)) return [];
+        return [...registros].sort((a, b) => {
+            const valA = a.fechaHora || (a.fecha ? a.fecha + "T00:00" : "");
+            const valB = b.fechaHora || (b.fecha ? b.fecha + "T00:00" : "");
+            if (valA !== valB) {
+                return valB.localeCompare(valA); // Más reciente primero ("2026-08-02T15:00" > "2026-08-02T10:00")
+            }
+            return (b.id || 0) - (a.id || 0); // Desempate por ID (timestamp)
+        });
+    },
+
     registrosDeHoy() {
         const hoy = getFechaLocal();
-        return this.data.registros.filter(r => (r.fechaHora ? r.fechaHora.split("T")[0] : r.fecha) === hoy);
+        const filtrados = this.data.registros.filter(r => (r.fechaHora ? r.fechaHora.split("T")[0] : r.fecha) === hoy);
+        return this.ordenarPorFechaReciente(filtrados);
     },
     registrosEnRango(desde, hasta) {
-        return this.data.registros.filter(r => {
+        const filtrados = this.data.registros.filter(r => {
             const f = r.fechaHora ? r.fechaHora.split("T")[0] : r.fecha;
             return f >= desde && f <= hasta;
         });
+        return this.ordenarPorFechaReciente(filtrados);
     },
     registrosDeHijo(hijoId) {
-        return this.data.registros.filter(r => r.hijoId == hijoId);
+        const filtrados = this.data.registros.filter(r => r.hijoId == hijoId);
+        return this.ordenarPorFechaReciente(filtrados);
+    },
+    registrosTodos() {
+        return this.ordenarPorFechaReciente(this.data.registros || []);
     },
 };

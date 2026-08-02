@@ -498,9 +498,11 @@ const AppController = {
             lista = Store.registrosDeHijo(hijoId);
             titulo = `👤 Reporte de ${Store.getNombreHijo(parseInt(hijoId, 10))}`;
         } else if (tipoReporte === "completo") {
-            lista = Store.data.registros;
+            lista = Store.registrosTodos();
             titulo = "📊 Reporte Completo - Todos los registros";
         }
+
+        lista = Store.ordenarPorFechaReciente(lista);
 
         if (lista.length === 0) { showToast("No hay datos para exportar", true); return; }
 

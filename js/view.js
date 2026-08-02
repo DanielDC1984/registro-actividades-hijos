@@ -559,15 +559,18 @@ const View = {
 
     // ---------- Reportes ----------
     generarTabla(lista, titulo, mostrarUsuario = false) {
-        if (lista.length === 0) return `<div class="empty-state"><span class="emoji">📭</span><p>No hay actividades registradas</p></div>`;
+        if (!lista || lista.length === 0) return `<div class="empty-state"><span class="emoji">📭</span><p>No hay actividades registradas</p></div>`;
         
+        // Ordenar siempre desde el más nuevo hasta el más antiguo por Fecha y Hora
+        const listaOrdenada = Store.ordenarPorFechaReciente(lista);
+
         const user = Auth.getCurrentUser();
         const isAdmin = user && user.role === "admin";
 
         let html = `
             <div class="reporte-titulo">
                 <span>${titulo}</span>
-                <span class="fecha-info">📊 ${lista.length} registros</span>
+                <span class="fecha-info">📊 ${listaOrdenada.length} registros</span>
             </div>
             <div style="overflow-x:auto;">
                 <table class="tabla-reporte">
@@ -579,7 +582,7 @@ const View = {
                     </tr></thead>
                     <tbody>`;
 
-        lista.forEach((r, i) => {
+        listaOrdenada.forEach((r, i) => {
             const fh = formatearFechaHoraMostrar(r.fechaHora || r.fecha || "");
             const pts = Store.getPuntosActividad(r.actividadId);
             const isOwner = user && r.usuario === user.username;
@@ -636,7 +639,7 @@ const View = {
     },
 
     renderReporteCompleto() {
-        const lista = Store.data.registros;
+        const lista = Store.registrosTodos();
         document.getElementById("completoCount").textContent = lista.length;
         document.getElementById("completoLista").innerHTML = this.generarTabla(lista, "📊 Reporte Completo - Todos los registros", true);
     },
