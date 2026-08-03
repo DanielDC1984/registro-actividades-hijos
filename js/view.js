@@ -443,6 +443,7 @@ const View = {
         if (!containerPodio || !containerLista) return;
 
         const ranking = Store.getRanking(filtro, desde, hasta);
+        const user = Auth.getCurrentUser();
 
         if (ranking.length === 0) {
             containerPodio.innerHTML = "";
@@ -451,52 +452,38 @@ const View = {
             return;
         }
 
-        // Render Podio (Top 3)
-        let podioHtml = "";
-        if (ranking.length > 0) {
-            const primero = ranking[0];
-            const segundo = ranking[1];
-            const tercero = ranking[2];
+        // ── Podio (Top 3) ────────────────────────────────────
+        const avatarColors = ["#f59e0b", "#94a3b8", "#cd7c3f"];
+        const podiumIcons  = ["🥇", "🥈", "🥉"];
+        const podiumLabels = ["1°", "2°", "3°"];
 
-            podioHtml = `<div class="podium">`;
+        let podioHtml = `<div class="podium">`;
 
-            // 2do Lugar
-            if (segundo) {
-                podioHtml += `
-                    <div class="podium-place place-2">
-                        <div class="avatar">🥈</div>
-                        <div class="name">${segundo.nombre}</div>
-                        <div class="points">${segundo.puntos} pts</div>
-                        <div class="bar">2°</div>
-                    </div>`;
-            }
+        // Orden visual: 2° | 1° | 3°
+        const orden = [ranking[1], ranking[0], ranking[2]];
+        const clases = ["place-2", "place-1", "place-3"];
+        const posiciones = [1, 0, 2];
 
-            // 1er Lugar
+        orden.forEach((item, i) => {
+            if (!item) return;
+            const pos = posiciones[i];
+            const iniciales = item.nombre.split(" ").map(p => p[0]).join("").toUpperCase().slice(0, 2);
             podioHtml += `
-                <div class="podium-place place-1">
-                    <div class="avatar">👑 🥇</div>
-                    <div class="name">${primero.nombre}</div>
-                    <div class="points">${primero.puntos} pts</div>
-                    <div class="bar">1°</div>
+                <div class="podium-place ${clases[i]}">
+                    <div class="podium-medal">${podiumIcons[pos]}</div>
+                    <div class="avatar" style="background:${avatarColors[pos]};color:#fff;font-weight:800;font-size:18px;border-radius:50%;width:52px;height:52px;display:flex;align-items:center;justify-content:center;margin:0 auto 6px;">${iniciales}</div>
+                    <div class="name">${item.nombre}</div>
+                    <div class="points">⭐ ${item.puntos} pts</div>
+                    <div class="bar">${podiumLabels[pos]}</div>
                 </div>`;
-
-            // 3er Lugar
-            if (tercero) {
-                podioHtml += `
-                    <div class="podium-place place-3">
-                        <div class="avatar">🥉</div>
-                        <div class="name">${tercero.nombre}</div>
-                        <div class="points">${tercero.puntos} pts</div>
-                        <div class="bar">3°</div>
-                    </div>`;
-            }
-
-            podioHtml += `</div>`;
-        }
+        });
+        podioHtml += `</div>`;
         containerPodio.innerHTML = podioHtml;
 
-        // Render Lista Completa de Puntuaciones
+        // ── Tabla Completa ────────────────────────────────────
         const maxPuntos = ranking[0] && ranking[0].puntos > 0 ? ranking[0].puntos : 1;
+        const rowColors = ["#fef3c7", "#f1f5f9", "#fef3c7"];
+
         let listHtml = `
             <div class="admin-panel">
                 <h3>📊 Tabla Completa de Posiciones</h3>
@@ -504,33 +491,140 @@ const View = {
 
         ranking.forEach((item, index) => {
             const pct = Math.round((item.puntos / maxPuntos) * 100);
-            const medallasHtml = item.insignias.map(ins => `<span class="badge-medalla" title="${ins.nombre}: ${ins.desc}">${ins.icono} ${ins.nombre}</span>`).join(" ");
+            const medallasHtml = item.insignias.map(ins =>
+                `<span class="badge-medalla" title="${ins.nombre}: ${ins.desc}">${ins.icono} ${ins.nombre}</span>`
+            ).join(" ");
 
-            let posEmoji = `#${index + 1}`;
-            if (index === 0) posEmoji = "🥇";
-            else if (index === 1) posEmoji = "🥈";
-            else if (index === 2) posEmoji = "🥉";
+            let posIcon, posStyle;
+            if (index === 0)      { posIcon = "🥇"; posStyle = "background:#fef9c3;border:2px solid #fbbf24;"; }
+            else if (index === 1) { posIcon = "🥈"; posStyle = "background:#f8fafc;border:2px solid #94a3b8;"; }
+            else if (index === 2) { posIcon = "🥉"; posStyle = "background:#fdf6ee;border:2px solid #cd7c3f;"; }
+            else                  { posIcon = `#${index + 1}`; posStyle = ""; }
+
+            const barColor = index === 0 ? "linear-gradient(90deg,#f59e0b,#fbbf24)"
+                           : index === 1 ? "linear-gradient(90deg,#64748b,#94a3b8)"
+                           : index === 2 ? "linear-gradient(90deg,#cd7c3f,#e4a06a)"
+                           : "linear-gradient(90deg,#4a6cf7,#7c5cfc)";
+
+            const iniciales = item.nombre.split(" ").map(p => p[0]).join("").toUpperCase().slice(0, 2);
 
             listHtml += `
-                <div class="ranking-row-item">
+                <div class="ranking-row-item" style="${posStyle}">
                     <div class="row-header">
                         <div class="row-left">
-                            <span class="row-pos">${posEmoji}</span>
-                            <span class="row-name">👤 ${item.nombre}</span>
-                            <span class="row-acts">(${item.totalActividades} actividades)</span>
+                            <span class="row-pos" style="font-size:${index < 3 ? '22px' : '15px'}">${posIcon}</span>
+                            <div style="width:36px;height:36px;border-radius:50%;background:${avatarColors[Math.min(index,2)] || '#4a6cf7'};color:#fff;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;">${iniciales}</div>
+                            <div>
+                                <div class="row-name">${item.nombre}</div>
+                                <div class="row-acts">📋 ${item.totalActividades} actividades · 💰 ${item.puntosDisponibles} pts disponibles</div>
+                            </div>
                         </div>
                         <div class="row-right">
                             <span class="row-pts">⭐ ${item.puntos} pts</span>
                         </div>
                     </div>
-                    <div class="progress-bar-bg">
-                        <div class="progress-bar-fill" style="width:${pct}%;"></div>
+                    <div class="progress-bar-bg" style="margin-top:8px;">
+                        <div class="progress-bar-fill" style="width:${pct}%;background:${barColor};"></div>
                     </div>
-                    ${item.insignias.length > 0 ? `<div class="row-badges">${medallasHtml}</div>` : ""}
+                    ${item.insignias.length > 0 ? `<div class="row-badges" style="margin-top:8px;">${medallasHtml}</div>` : ""}
                 </div>`;
         });
         listHtml += `</div></div>`;
         containerLista.innerHTML = listHtml;
+
+        // ── Historial de Recompensas con Filtros ──────────────
+        this.renderHistorialCanjes();
+    },
+
+    renderHistorialCanjes(filtroEstado = "todos", filtroHijo = "todos") {
+        let container = document.getElementById("historialCanjesContainer");
+        if (!container) return;
+
+        const canjes = Store.data.canjes || [];
+        const hijos  = Store.data.hijos  || [];
+
+        // Filtrar
+        let lista = canjes.filter(c => {
+            const porEstado = filtroEstado === "todos" || c.estado === filtroEstado;
+            const porHijo   = filtroHijo === "todos" || String(c.hijoId) === String(filtroHijo);
+            return porEstado && porHijo;
+        }).sort((a, b) => b.id - a.id); // más reciente primero
+
+        const estadoBadge = {
+            pendiente:      `<span style="background:#fef9c3;color:#b45309;border:1px solid #fcd34d;padding:2px 9px;border-radius:12px;font-size:11px;font-weight:700;">⏳ Pendiente</span>`,
+            aprobado:       `<span style="background:#dcfce7;color:#15803d;border:1px solid #86efac;padding:2px 9px;border-radius:12px;font-size:11px;font-weight:700;">✅ Aprobado</span>`,
+            rechazado:      `<span style="background:#fee2e2;color:#b91c1c;border:1px solid #fca5a5;padding:2px 9px;border-radius:12px;font-size:11px;font-weight:700;">❌ Rechazado</span>`,
+            contrapropuesta:`<span style="background:#e0f2fe;color:#0369a1;border:1px solid #7dd3fc;padding:2px 9px;border-radius:12px;font-size:11px;font-weight:700;">🔄 Contrapropuesta</span>`,
+        };
+
+        const hijoOptions = hijos.map(h =>
+            `<option value="${h.id}" ${String(filtroHijo) === String(h.id) ? 'selected' : ''}>${h.nombre}</option>`
+        ).join("");
+
+        let html = `
+            <div class="admin-panel" style="margin-top:24px;">
+                <h3>📜 Historial de Solicitudes de Recompensas</h3>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:center;">
+                    <div class="form-group" style="margin:0;min-width:140px;">
+                        <label style="font-size:12px;">Estado</label>
+                        <select id="histFiltroEstado" style="padding:8px 12px;border-radius:10px;border:1px solid #e2e8f0;font-size:13px;background:#fff;" onchange="View.renderHistorialCanjes(this.value, document.getElementById('histFiltroHijo').value)">
+                            <option value="todos" ${filtroEstado==="todos"?"selected":""}>📋 Todos</option>
+                            <option value="pendiente" ${filtroEstado==="pendiente"?"selected":""}>⏳ Pendientes</option>
+                            <option value="aprobado" ${filtroEstado==="aprobado"?"selected":""}>✅ Aprobados</option>
+                            <option value="rechazado" ${filtroEstado==="rechazado"?"selected":""}>❌ Rechazados</option>
+                            <option value="contrapropuesta" ${filtroEstado==="contrapropuesta"?"selected":""}>🔄 Contrapropuesta</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin:0;min-width:140px;">
+                        <label style="font-size:12px;">Hijo</label>
+                        <select id="histFiltroHijo" style="padding:8px 12px;border-radius:10px;border:1px solid #e2e8f0;font-size:13px;background:#fff;" onchange="View.renderHistorialCanjes(document.getElementById('histFiltroEstado').value, this.value)">
+                            <option value="todos" ${filtroHijo==="todos"?"selected":""}>👨‍👧 Todos</option>
+                            ${hijoOptions}
+                        </select>
+                    </div>
+                    <div style="margin-left:auto;font-size:13px;color:#64748b;padding-top:20px;">
+                        ${lista.length} resultado${lista.length !== 1 ? "s" : ""}
+                    </div>
+                </div>`;
+
+        if (lista.length === 0) {
+            html += `<div style="text-align:center;padding:32px;color:#94a3b8;font-size:14px;">
+                📭 No hay solicitudes con estos filtros
+            </div>`;
+        } else {
+            html += `<div style="display:flex;flex-direction:column;gap:10px;">`;
+            lista.forEach(c => {
+                const esPremioEspecial = c.esEspecial || c.recompensaId === "especial";
+                const rowBg = c.estado === "aprobado" ? "#f0fdf4"
+                            : c.estado === "rechazado" ? "#fff1f2"
+                            : c.estado === "contrapropuesta" ? "#f0f9ff"
+                            : "#fffbeb";
+                const rowBorder = c.estado === "aprobado" ? "#bbf7d0"
+                                : c.estado === "rechazado" ? "#fecdd3"
+                                : c.estado === "contrapropuesta" ? "#bae6fd"
+                                : "#fde68a";
+                html += `
+                <div style="background:${rowBg};border:1px solid ${rowBorder};border-radius:14px;padding:14px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
+                    <div style="flex:1;min-width:200px;">
+                        <div style="font-weight:700;font-size:14px;color:#1e293b;display:flex;align-items:center;gap:6px;">
+                            ${esPremioEspecial ? '<span style="background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;padding:1px 7px;border-radius:10px;font-size:10px;font-weight:700;">✨ Especial</span>' : ''}
+                            ${c.nombreRecompensa}
+                        </div>
+                        <div style="font-size:12px;color:#475569;margin-top:4px;">
+                            👤 <strong>${Store.getNombreHijo(c.hijoId)}</strong> · 
+                            por <strong>@${c.usuario || "usuario"}</strong> · 
+                            ⭐ ${c.puntosPropuestos || c.puntos} pts ·
+                            <small>${(c.fechaHora || "").replace("T", " ").slice(0, 16)}</small>
+                        </div>
+                        ${c.notaContrapropuesta ? `<div style="font-size:11px;color:#0369a1;margin-top:3px;font-style:italic;">💬 Admin: "${c.notaContrapropuesta}"</div>` : ""}
+                    </div>
+                    <div>${estadoBadge[c.estado] || estadoBadge["pendiente"]}</div>
+                </div>`;
+            });
+            html += `</div>`;
+        }
+        html += `</div>`;
+        container.innerHTML = html;
     },
 
     // ---------- Recompensas ----------

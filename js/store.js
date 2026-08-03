@@ -1,4 +1,4 @@
-﻿// ============================================================
+// ============================================================
 // ðŸ“Š MODELO: DATOS DE LA FAMILIA (LocalStorage + Supabase)
 // ============================================================
 const Store = {
@@ -68,7 +68,7 @@ const Store = {
         if (this.data.hijos.length === 0) {
             this.data.hijos = [
                 { id: 1, nombre: "Mateo", edad: 5 },
-                { id: 2, nombre: "SofÃ­a", edad: 3 },
+                { id: 2, nombre: "Sofía", edad: 3 },
             ];
         }
         if (this.data.actividades.length === 0) {
@@ -76,16 +76,17 @@ const Store = {
                 { id: 1, nombre: "Lectura", puntos: 10, activa: true },
                 { id: 2, nombre: "Dibujo", puntos: 5, activa: true },
                 { id: 3, nombre: "Deporte", puntos: 15, activa: true },
-                { id: 4, nombre: "MÃºsica", puntos: 10, activa: true },
+                { id: 4, nombre: "Música", puntos: 10, activa: true },
             ];
         }
         if (!stored && !this.data.recompensas.length) {
             this.data.recompensas = [
-                { id: 101, nombre: "1 hora de videojuegos / pantalla", puntos: 50, icono: "ðŸŽ®", activa: true },
-                { id: 102, nombre: "Salida a comer helado", puntos: 80, icono: "ðŸ¦", activa: true },
-                { id: 103, nombre: "Elegir la pelÃ­cula del fin de semana", puntos: 100, icono: "ðŸŽ¬", activa: true },
+                { id: 101, nombre: "1 hora de videojuegos / pantalla", puntos: 50, icono: "🎮", activa: true },
+                { id: 102, nombre: "Salida a comer helado", puntos: 80, icono: "🍦", activa: true },
+                { id: 103, nombre: "Elegir la película del fin de semana", puntos: 100, icono: "🎬", activa: true },
             ];
         }
+
         if (!this.data.canjes) this.data.canjes = [];
         if (!this.data.registros) this.data.registros = [];
         this.saveLocal();
@@ -310,16 +311,18 @@ const Store = {
         const registros = this.data.registros.filter(r => r.hijoId == hijoId);
         const totalPuntos = this.getPuntosGanadosHijo(hijoId);
 
-        if (registros.length >= 1) insignias.push({ icono: "ðŸŒŸ", nombre: "Primeros Pasos", desc: "Primera actividad registrada" });
-        if (registros.length >= 10) insignias.push({ icono: "âš¡", nombre: "Super Activo", desc: "10+ actividades realizadas" });
-        if (totalPuntos >= 50) insignias.push({ icono: "ðŸš€", nombre: "Impulso de 50 Pts", desc: "50+ puntos acumulados" });
-        if (totalPuntos >= 100) insignias.push({ icono: "ðŸ‘‘", nombre: "Centenario de Puntos", desc: "100+ puntos acumulados" });
+        if (registros.length >= 1)  insignias.push({ icono: "\u2B50", nombre: "Primeros Pasos",     desc: "Primera actividad registrada" });
+        if (registros.length >= 10) insignias.push({ icono: "\u26A1", nombre: "Super Activo",       desc: "10+ actividades realizadas" });
+        if (totalPuntos >= 50)      insignias.push({ icono: "\uD83D\uDE80", nombre: "Impulso de 50 Pts",  desc: "50+ puntos acumulados" });
+        if (totalPuntos >= 100)     insignias.push({ icono: "\uD83D\uDC51", nombre: "Centenario de Pts",  desc: "100+ puntos acumulados" });
+        if (totalPuntos >= 200)     insignias.push({ icono: "\uD83D\uDD25", nombre: "Imparable 200 Pts",  desc: "200+ puntos acumulados" });
+        if (totalPuntos >= 500)     insignias.push({ icono: "\uD83C\uDFC6", nombre: "Campeón 500 Pts",    desc: "500+ puntos acumulados" });
 
         const lecturas = registros.filter(r => {
             const nombreAct = this.getNombreActividad(r.actividadId).toLowerCase();
             return nombreAct.includes("lectura") || nombreAct.includes("leer");
         });
-        if (lecturas.length >= 3) insignias.push({ icono: "ðŸ“š", nombre: "Lector Estrella", desc: "3+ actividades de lectura" });
+        if (lecturas.length >= 3) insignias.push({ icono: "\uD83D\uDCDA", nombre: "Lector Estrella", desc: "3+ actividades de lectura" });
 
         return insignias;
     },
@@ -373,7 +376,7 @@ const Store = {
     },
 
     // ---------- CRUD: Recompensas y Canjes ----------
-    async addRecompensa(nombre, puntos, icono = "ðŸŽ") {
+    async addRecompensa(nombre, puntos, icono = "🎁") {
         if (!this.isAdmin()) return false;
         const nRecompensa = {
             id: Date.now(),
@@ -450,7 +453,7 @@ const Store = {
             id: Date.now(),
             hijoId,
             recompensaId: "especial",
-            nombreRecompensa: `âœ¨ ${nombrePremio.trim()}`,
+            nombreRecompensa: `✨ ${nombrePremio.trim()}`,
             puntosPropuestos: pts,
             puntos: pts,
             fechaHora: typeof getFechaHoraLocal === "function" ? getFechaHoraLocal() : new Date().toISOString(),
