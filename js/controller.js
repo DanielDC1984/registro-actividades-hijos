@@ -404,21 +404,26 @@ const AppController = {
 
         const formDen = document.getElementById("formDenunciaDirecta");
         if (formDen) {
-            formDen.addEventListener("submit", e => {
+            formDen.addEventListener("submit", async e => {
                 e.preventDefault();
                 const user = Auth.getCurrentUser();
                 const registroId = document.getElementById("selectRegistroDenuncia").value;
                 const detalle = document.getElementById("detalleDenunciaInput").value.trim();
                 if (!registroId || !detalle) { showToast("⚠️ Selecciona un registro y escribe el motivo", true); return; }
 
-                const res = Store.addDenuncia({ registroId, detalle, usuarioReporta: user ? user.username : "anonimo" });
-                if (res.ok) {
+                const btnSubmit = e.target.querySelector("button[type=submit]");
+                if (btnSubmit) btnSubmit.disabled = true;
+                showToast("⏳ Registrando observación...");
+
+                const res = await Store.addDenuncia({ registroId, detalle, usuarioReporta: user ? user.username : "anonimo" });
+                if (res && res.ok) {
                     formDen.reset();
                     View.renderModuloDenuncias();
                     showToast("🚨 Observación/Denuncia registrada correctamente");
                 } else {
-                    showToast(`❌ ${res.msg}`, true);
+                    showToast(`❌ ${res && res.msg ? res.msg : "Error al registrar observación"}`, true);
                 }
+                if (btnSubmit) btnSubmit.disabled = false;
             });
         }
 
@@ -602,15 +607,19 @@ const AppController = {
         }
     },
 
-    atenderDenunciaAdmin(denunciaId, anularAsociado) {
+    async atenderDenunciaAdmin(denunciaId, anularAsociado) {
         const user = Auth.getCurrentUser();
         const isAdmin = user && (user.role === "admin" || user.username === "admin");
         if (!isAdmin) { showToast("❌ Solo Admin puede procesar denuncias", true); return; }
 
-        if (Store.atenderDenuncia(denunciaId, anularAsociado, "Anulado tras revisión de denuncia")) {
+        showToast("⏳ Procesando denuncia...");
+        const ok = await Store.atenderDenuncia(denunciaId, anularAsociado, "Anulado tras revisión de denuncia");
+        if (ok) {
             View.renderModuloDenuncias();
             View.renderAll();
             showToast(anularAsociado ? "🚫 Denuncia atendida y actividad anulada." : "✅ Denuncia marcada como atendida.");
+        } else {
+            showToast("❌ Error al procesar la denuncia", true);
         }
     },
 

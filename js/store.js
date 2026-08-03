@@ -38,6 +38,7 @@ const Store = {
         if (!this.data.recompensas) this.data.recompensas = [];
         if (!this.data.canjes) this.data.canjes = [];
         if (!this.data.auditLog) this.data.auditLog = [];
+        if (!this.data.denuncias) this.data.denuncias = [];
         if (!this.data.anuncio) {
             this.data.anuncio = {
                 activo: true,
@@ -119,17 +120,18 @@ const Store = {
                         return { ...remoteAct, puntos: remotePts, activa: isActiva };
                     });
 
-                    // Cargar recompensas, canjes, anuncio y auditorÃ­a incrustados en actividades[0] si existen (autoritativos)
+                    // Cargar recompensas, canjes, anuncio, auditoría y denuncias incrustados en actividades[0] si existen (autoritativos)
                     if (dbData.actividades[0]) {
                         if (Array.isArray(dbData.actividades[0]._recompensas)) this.data.recompensas = dbData.actividades[0]._recompensas;
                         if (Array.isArray(dbData.actividades[0]._canjes)) this.data.canjes = dbData.actividades[0]._canjes;
                         if (dbData.actividades[0]._anuncio) this.data.anuncio = dbData.actividades[0]._anuncio;
                         if (dbData.actividades[0]._auditLog) this.data.auditLog = dbData.actividades[0]._auditLog;
+                        if (Array.isArray(dbData.actividades[0]._denuncias)) this.data.denuncias = dbData.actividades[0]._denuncias;
                     }
                 }
 
-                // NOTA: la tabla familias NO tiene columnas raÃ­z "recompensas", "canjes", ni "anuncio".
-                // Esos datos viven ÃšNICAMENTE en actividades[0]._recompensas, ._canjes, ._anuncio
+                // NOTA: la tabla familias NO tiene columnas raíz "recompensas", "canjes", ni "anuncio".
+                // Esos datos viven ÚNICAMENTE en actividades[0]._recompensas, ._canjes, ._anuncio, ._denuncias
                 if (Array.isArray(dbData.registros)) this.data.registros = dbData.registros;
 
                 this.saveLocal();
@@ -141,7 +143,7 @@ const Store = {
 
     async saveToSupabase() {
         try {
-            // Incrustar recompensas, canjes, anuncio y auditorÃ­a en actividades[0]
+            // Incrustar recompensas, canjes, anuncio, auditoría y denuncias en actividades[0]
             const actividadesToSave = this.data.actividades.map((a, idx) => {
                 if (idx === 0) {
                     return {
@@ -149,7 +151,8 @@ const Store = {
                         _recompensas: this.data.recompensas || [],
                         _canjes: this.data.canjes || [],
                         _anuncio: this.data.anuncio || null,
-                        _auditLog: this.data.auditLog || []
+                        _auditLog: this.data.auditLog || [],
+                        _denuncias: this.data.denuncias || []
                     };
                 }
                 return a;
@@ -157,7 +160,6 @@ const Store = {
 
             // IMPORTANTE: Solo incluir columnas que existen en la tabla de Supabase.
             // La tabla "familias" tiene: id, hijos, actividades, registros
-            // Las recompensas, canjes y anuncio viajan incrustados en actividades[0]._recompensas, ._canjes, ._anuncio
             const payload = {
                 id: FAMILIA_ID,
                 hijos: this.data.hijos,
@@ -200,6 +202,7 @@ const Store = {
                             if (payload.new.actividades[0]._recompensas) this.data.recompensas = payload.new.actividades[0]._recompensas;
                             if (payload.new.actividades[0]._canjes) this.data.canjes = payload.new.actividades[0]._canjes;
                             if (payload.new.actividades[0]._anuncio) this.data.anuncio = payload.new.actividades[0]._anuncio;
+                            if (payload.new.actividades[0]._denuncias) this.data.denuncias = payload.new.actividades[0]._denuncias;
                         }
                     }
                     if (payload.new.registros) this.data.registros = payload.new.registros;
