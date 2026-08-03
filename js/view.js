@@ -521,12 +521,9 @@ const View = {
                         </div>
                         <div class="row-right">
                             <span class="row-pts">⭐ ${item.puntos} pts</span>
-                        </div>
-                    </div>
                     <div class="progress-bar-bg" style="margin-top:8px;">
                         <div class="progress-bar-fill" style="width:${pct}%;background:${barColor};"></div>
                     </div>
-                    ${item.insignias.length > 0 ? `<div class="row-badges" style="margin-top:8px;">${medallasHtml}</div>` : ""}
                 </div>`;
         });
         listHtml += `</div></div>`;
@@ -536,9 +533,10 @@ const View = {
         this.renderHistorialCanjes();
     },
 
-    renderHistorialCanjes(filtroEstado = "todos", filtroHijo = "todos") {
-        let container = document.getElementById("historialCanjesContainer");
-        if (!container) return;
+    renderHistorialCanjes(filtroEstado = "todos", filtroHijo = "todos", targetId = null) {
+        const containers = targetId ? [document.getElementById(targetId)] : [document.getElementById("historialCanjesContainer"), document.getElementById("historialCanjesTiendaContainer")];
+        const validContainers = containers.filter(Boolean);
+        if (validContainers.length === 0) return;
 
         const canjes = Store.data.canjes || [];
         const hijos  = Store.data.hijos  || [];
@@ -551,10 +549,10 @@ const View = {
         }).sort((a, b) => b.id - a.id); // más reciente primero
 
         const estadoBadge = {
-            pendiente:      `<span style="background:#fef9c3;color:#b45309;border:1px solid #fcd34d;padding:2px 9px;border-radius:12px;font-size:11px;font-weight:700;">⏳ Pendiente</span>`,
-            aprobado:       `<span style="background:#dcfce7;color:#15803d;border:1px solid #86efac;padding:2px 9px;border-radius:12px;font-size:11px;font-weight:700;">✅ Aprobado</span>`,
-            rechazado:      `<span style="background:#fee2e2;color:#b91c1c;border:1px solid #fca5a5;padding:2px 9px;border-radius:12px;font-size:11px;font-weight:700;">❌ Rechazado</span>`,
-            contrapropuesta:`<span style="background:#e0f2fe;color:#0369a1;border:1px solid #7dd3fc;padding:2px 9px;border-radius:12px;font-size:11px;font-weight:700;">🔄 Contrapropuesta</span>`,
+            pendiente:      `<span style="background:#fef9c3;color:#b45309;border:1px solid #fcd34d;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;">⏳ Pendiente</span>`,
+            aprobado:       `<span style="background:#dcfce7;color:#15803d;border:1px solid #86efac;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;">✅ Aprobado</span>`,
+            rechazado:      `<span style="background:#fee2e2;color:#b91c1c;border:1px solid #fca5a5;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;">❌ Rechazado</span>`,
+            contrapropuesta:`<span style="background:#e0f2fe;color:#0369a1;border:1px solid #7dd3fc;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;">🔄 Contrapropuesta</span>`,
         };
 
         const hijoOptions = hijos.map(h =>
@@ -563,68 +561,83 @@ const View = {
 
         let html = `
             <div class="admin-panel" style="margin-top:24px;">
-                <h3>📜 Historial de Solicitudes de Recompensas</h3>
+                <h3>📋 Tabla de Solicitudes de Recompensas (Aceptadas, Rechazadas y Pendientes)</h3>
                 <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:center;">
-                    <div class="form-group" style="margin:0;min-width:140px;">
+                    <div class="form-group" style="margin:0;min-width:150px;">
                         <label style="font-size:12px;">Estado</label>
-                        <select id="histFiltroEstado" style="padding:8px 12px;border-radius:10px;border:1px solid #e2e8f0;font-size:13px;background:#fff;" onchange="View.renderHistorialCanjes(this.value, document.getElementById('histFiltroHijo').value)">
+                        <select id="histFiltroEstado" style="padding:8px 12px;border-radius:10px;border:1px solid #cbd5e1;font-size:13px;background:#fff;" onchange="View.renderHistorialCanjes(this.value, document.getElementById('histFiltroHijo').value)">
                             <option value="todos" ${filtroEstado==="todos"?"selected":""}>📋 Todos</option>
-                            <option value="pendiente" ${filtroEstado==="pendiente"?"selected":""}>⏳ Pendientes</option>
-                            <option value="aprobado" ${filtroEstado==="aprobado"?"selected":""}>✅ Aprobados</option>
+                            <option value="aprobado" ${filtroEstado==="aprobado"?"selected":""}>✅ Aprobados / Aceptados</option>
                             <option value="rechazado" ${filtroEstado==="rechazado"?"selected":""}>❌ Rechazados</option>
                             <option value="contrapropuesta" ${filtroEstado==="contrapropuesta"?"selected":""}>🔄 Contrapropuesta</option>
+                            <option value="pendiente" ${filtroEstado==="pendiente"?"selected":""}>⏳ Pendientes</option>
                         </select>
                     </div>
-                    <div class="form-group" style="margin:0;min-width:140px;">
+                    <div class="form-group" style="margin:0;min-width:150px;">
                         <label style="font-size:12px;">Hijo</label>
-                        <select id="histFiltroHijo" style="padding:8px 12px;border-radius:10px;border:1px solid #e2e8f0;font-size:13px;background:#fff;" onchange="View.renderHistorialCanjes(document.getElementById('histFiltroEstado').value, this.value)">
-                            <option value="todos" ${filtroHijo==="todos"?"selected":""}>👨‍👧 Todos</option>
+                        <select id="histFiltroHijo" style="padding:8px 12px;border-radius:10px;border:1px solid #cbd5e1;font-size:13px;background:#fff;" onchange="View.renderHistorialCanjes(document.getElementById('histFiltroEstado').value, this.value)">
+                            <option value="todos" ${filtroHijo==="todos"?"selected":""}>👨‍👧 Todos los Hijos</option>
                             ${hijoOptions}
                         </select>
                     </div>
-                    <div style="margin-left:auto;font-size:13px;color:#64748b;padding-top:20px;">
-                        ${lista.length} resultado${lista.length !== 1 ? "s" : ""}
+                    <div style="margin-left:auto;font-size:13px;color:#64748b;padding-top:18px;">
+                        Showing <strong>${lista.length}</strong> registro${lista.length !== 1 ? "s" : ""}
                     </div>
                 </div>`;
 
         if (lista.length === 0) {
-            html += `<div style="text-align:center;padding:32px;color:#94a3b8;font-size:14px;">
-                📭 No hay solicitudes con estos filtros
+            html += `<div style="text-align:center;padding:36px;color:#94a3b8;font-size:14px;">
+                📭 No hay solicitudes registradas con estos filtros.
             </div>`;
         } else {
-            html += `<div style="display:flex;flex-direction:column;gap:10px;">`;
-            lista.forEach(c => {
+            html += `
+            <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y;margin-top:10px;">
+                <table class="tabla-reporte">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>🎁 Premio / Recompensa</th>
+                            <th>👤 Hijo Beneficiario</th>
+                            <th>⭐ Puntos</th>
+                            <th>👤 Solicitado por</th>
+                            <th>📅 Fecha / Hora</th>
+                            <th>📌 Estado</th>
+                            <th>💬 Detalle / Nota Admin</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
+            lista.forEach((c, idx) => {
                 const esPremioEspecial = c.esEspecial || c.recompensaId === "especial";
+                const pts = c.puntosContrapropuesta || c.puntosPropuestos || c.puntos;
                 const rowBg = c.estado === "aprobado" ? "#f0fdf4"
                             : c.estado === "rechazado" ? "#fff1f2"
                             : c.estado === "contrapropuesta" ? "#f0f9ff"
                             : "#fffbeb";
-                const rowBorder = c.estado === "aprobado" ? "#bbf7d0"
-                                : c.estado === "rechazado" ? "#fecdd3"
-                                : c.estado === "contrapropuesta" ? "#bae6fd"
-                                : "#fde68a";
+
                 html += `
-                <div style="background:${rowBg};border:1px solid ${rowBorder};border-radius:14px;padding:14px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
-                    <div style="flex:1;min-width:200px;">
-                        <div style="font-weight:700;font-size:14px;color:#1e293b;display:flex;align-items:center;gap:6px;">
-                            ${esPremioEspecial ? '<span style="background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;padding:1px 7px;border-radius:10px;font-size:10px;font-weight:700;">✨ Especial</span>' : ''}
-                            ${c.nombreRecompensa}
-                        </div>
-                        <div style="font-size:12px;color:#475569;margin-top:4px;">
-                            👤 <strong>${Store.getNombreHijo(c.hijoId)}</strong> · 
-                            por <strong>@${c.usuario || "usuario"}</strong> · 
-                            ⭐ ${c.puntosPropuestos || c.puntos} pts ·
-                            <small>${(c.fechaHora || "").replace("T", " ").slice(0, 16)}</small>
-                        </div>
-                        ${c.notaContrapropuesta ? `<div style="font-size:11px;color:#0369a1;margin-top:3px;font-style:italic;">💬 Admin: "${c.notaContrapropuesta}"</div>` : ""}
-                    </div>
-                    <div>${estadoBadge[c.estado] || estadoBadge["pendiente"]}</div>
-                </div>`;
+                    <tr style="background:${rowBg};">
+                        <td><strong>${idx + 1}</strong></td>
+                        <td>
+                            <span style="font-weight:700;color:#1e293b;">
+                                ${esPremioEspecial ? '<span style="background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:700;margin-right:4px;">✨ Especial</span>' : ''}
+                                ${c.nombreRecompensa}
+                            </span>
+                        </td>
+                        <td><span class="badge-hijo">👤 ${Store.getNombreHijo(c.hijoId)}</span></td>
+                        <td><span class="badge-puntos">⭐ ${pts} pts</span></td>
+                        <td><span class="usuario-cell">@${c.usuario || 'usuario'}</span></td>
+                        <td><span class="fecha-hora-cell">${(c.fechaHora || '').replace('T', ' ').slice(0, 16)}</span></td>
+                        <td>${estadoBadge[c.estado] || estadoBadge['pendiente']}</td>
+                        <td style="font-size:12px;color:#475569;">
+                            ${c.notaContrapropuesta ? `💬 <em>"${c.notaContrapropuesta}"</em>` : (c.puntosPropuestos ? `Sugeridos: ${c.puntosPropuestos} pts` : '-')}
+                        </td>
+                    </tr>`;
             });
-            html += `</div>`;
+            html += `</tbody></table></div>`;
         }
         html += `</div>`;
-        container.innerHTML = html;
+
+        validContainers.forEach(el => { el.innerHTML = html; });
     },
 
     // ---------- Recompensas ----------
@@ -657,10 +670,10 @@ const View = {
             statusBox.innerHTML = "";
         }
 
-        // Mostrar contrapropuestas pendientes de respuesta del usuario
-        const contrapropuestas = canjes.filter(c => c.estado === "contrapropuesta");
+        // RESTRICCIÓN DE SEGURIDAD: Mostrar contrapropuestas pendientes ÚNICAMENTE al usuario que solicitó la recompensa
+        const contrapropuestas = canjes.filter(c => c.estado === "contrapropuesta" && user && c.usuario === user.username);
         if (contrapropuestas.length > 0 && statusBox) {
-            let cpHtml = `<div style="margin-top:14px;"><h4 style="color:#d97706;margin-bottom:8px;">🔄 Contrapropuestas de Premios Pendientes de tu Respuesta:</h4>`;
+            let cpHtml = `<div style="margin-top:14px;"><h4 style="color:#d97706;margin-bottom:8px;">🔄 Contrapropuestas de Premios Pendientes de Tu Respuesta:</h4>`;
             contrapropuestas.forEach(c => {
                 const disp = Store.getPuntosDisponiblesHijo(c.hijoId);
                 const ptsReq = c.puntosContrapropuesta || c.puntos;
@@ -672,7 +685,7 @@ const View = {
                             Para: 👤 <strong>${Store.getNombreHijo(c.hijoId)}</strong> (Puntos dispon.: ⭐ ${disp} pts)
                         </div>
                         <div style="font-size:13px;color:#92400e;margin-top:4px;">
-                            Puntos propuestos por usuario: <s>${c.puntosPropuestos || c.puntos} pts</s> ➔ <strong>Propuesta Admin: ⭐ ${ptsReq} pts</strong>
+                            Puntos propuestos por ti: <s>${c.puntosPropuestos || c.puntos} pts</s> ➔ <strong>Propuesta Admin: ⭐ ${ptsReq} pts</strong>
                         </div>
                         ${c.notaContrapropuesta ? `<div style="font-size:12px;color:#b45309;margin-top:4px;font-style:italic;">💬 Nota Admin: "${c.notaContrapropuesta}"</div>` : ''}
                         <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
@@ -804,6 +817,7 @@ const View = {
         });
         html += `</div>`;
         listaBox.innerHTML = html;
+        this.renderHistorialCanjes("todos", "todos", "historialCanjesTiendaContainer");
     },
 
     // ---------- Reportes ----------
@@ -821,7 +835,7 @@ const View = {
                 <span>${titulo}</span>
                 <span class="fecha-info">📊 ${listaOrdenada.length} registros</span>
             </div>
-            <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;">
+            <div class="tabla-scroll-container" style="width:100%;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y;">
                 <table class="tabla-reporte">
                     <thead><tr>
                         <th>#</th><th>👤 Hijo</th><th>🎯 Actividad</th><th>⭐ Puntos</th>

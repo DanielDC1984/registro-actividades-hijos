@@ -481,9 +481,13 @@ const Store = {
         return false;
     },
 
-    async responderContrapropuestaUsuario(canjeId, aceptar) {
+    async responderContrapropuestaUsuario(canjeId, aceptar, usuarioActual) {
         const canje = this.data.canjes.find(c => c.id == canjeId);
-        if (!canje || canje.estado !== "contrapropuesta") return { ok: false, msg: "Solicitud no encontrada o no estÃ¡ en contrapropuesta" };
+        if (!canje || canje.estado !== "contrapropuesta") return { ok: false, msg: "Solicitud no encontrada o no está en contrapropuesta" };
+
+        if (usuarioActual && canje.usuario && usuarioActual !== canje.usuario) {
+            return { ok: false, msg: `Acceso denegado: Solo el usuario @${canje.usuario} que solicitó la recompensa puede responder la contrapropuesta.` };
+        }
 
         if (aceptar) {
             const ptsRequeridos = canje.puntosContrapropuesta || canje.puntos;

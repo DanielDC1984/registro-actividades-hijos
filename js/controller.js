@@ -338,15 +338,19 @@ const AppController = {
         }
     },
 
-    responderContrapropuestaUsuario(canjeId, aceptar) {
-        const res = Store.responderContrapropuestaUsuario(canjeId, aceptar);
+    async responderContrapropuestaUsuario(canjeId, aceptar) {
+        const user = Auth.getCurrentUser();
+        if (!user) { showToast("⚠️ Debes iniciar sesión para responder la contrapropuesta", true); return; }
+
+        showToast("⏳ Procesando respuesta...");
+        const res = await Store.responderContrapropuestaUsuario(canjeId, aceptar, user.username);
         if (!res.ok) {
             showToast(`❌ ${res.msg}`, true);
         } else {
             View.renderRecompensas();
             View.renderRanking(this.rankingFiltroActual);
             if (aceptar) {
-                showToast("🎉 ¡Contrapropuesta aceptada! Premio canjeado.");
+                showToast("🎉 ¡Contrapropuesta aceptada! Premio canjeado con éxito.");
                 if (typeof confetti === "function") confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
             } else {
                 showToast("❌ Contrapropuesta rechazada");
