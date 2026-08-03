@@ -1,5 +1,5 @@
 // ============================================================
-// 📊 MODELO: DATOS DE LA FAMILIA (LocalStorage + Supabase)
+// ðŸ“Š MODELO: DATOS DE LA FAMILIA (LocalStorage + Supabase)
 // ============================================================
 const Store = {
     STORAGE_KEY: "actividadesData_global",
@@ -12,12 +12,12 @@ const Store = {
         auditLog: [],
         anuncio: {
             activo: true,
-            titulo: "📢 ¡Nueva actualización en el sistema!",
-            mensaje: "¡Hola a todos! A partir de ahora, cada actividad registrada otorga PUNTOS. Pueden competir en el 🏆 Ranking Familiar y canjear sus puntos por premios en la 🎁 Tienda de Recompensas."
+            titulo: "ðŸ“¢ Â¡Nueva actualizaciÃ³n en el sistema!",
+            mensaje: "Â¡Hola a todos! A partir de ahora, cada actividad registrada otorga PUNTOS. Pueden competir en el ðŸ† Ranking Familiar y canjear sus puntos por premios en la ðŸŽ Tienda de Recompensas."
         }
     },
 
-    // Helper de seguridad: verifica si el usuario en sesión es Admin
+    // Helper de seguridad: verifica si el usuario en sesiÃ³n es Admin
     isAdmin() {
         if (typeof Auth === "undefined") return false;
         const user = Auth.getCurrentUser();
@@ -42,12 +42,12 @@ const Store = {
         if (!this.data.anuncio) {
             this.data.anuncio = {
                 activo: true,
-                titulo: "📢 ¡Nueva actualización en el sistema!",
-                mensaje: "¡Hola a todos! A partir de ahora, cada actividad registrada otorga PUNTOS. Pueden competir en el 🏆 Ranking Familiar y canjear sus puntos por premios en la 🎁 Tienda de Recompensas."
+                titulo: "ðŸ“¢ Â¡Nueva actualizaciÃ³n en el sistema!",
+                mensaje: "Â¡Hola a todos! A partir de ahora, cada actividad registrada otorga PUNTOS. Pueden competir en el ðŸ† Ranking Familiar y canjear sus puntos por premios en la ðŸŽ Tienda de Recompensas."
             };
         }
 
-        // Migrar registros antiguos que solo tenían "fecha" (sin hora)
+        // Migrar registros antiguos que solo tenÃ­an "fecha" (sin hora)
         this.data.registros = (this.data.registros || []).map(r => (
             r.fecha && !r.fechaHora ? { ...r, fechaHora: r.fecha + "T00:00" } : r
         ));
@@ -177,6 +177,9 @@ const Store = {
                     .eq("id", FAMILIA_ID);
 
                 if (errUpdate) console.error("Error en update Supabase:", errUpdate.message);
+                else console.log("✅ Supabase actualizado mediante update()");
+            } else {
+                console.log("✅ Supabase actualizado mediante upsert()");
             }
         } catch (e) {
             console.error("Excepción en saveToSupabase:", e);
@@ -206,19 +209,19 @@ const Store = {
                     this.saveLocal();
                     onRemoteChange();
                 })
-            .subscribe();
+            .subscribe(status => { if (status === "SUBSCRIBED") console.log("ðŸ“¡ Escuchando cambios..."); });
     },
 
     // ---------- Anuncio del Sistema ----------
     async updateAnuncio(activo, titulo, mensaje) {
         if (!this.isAdmin()) {
-            console.warn("⛔ Intento no autorizado de modificar anuncio");
-            if (typeof showToast === "function") showToast("❌ Permiso denegado: solo Admin", true);
+            console.warn("â›” Intento no autorizado de modificar anuncio");
+            if (typeof showToast === "function") showToast("âŒ Permiso denegado: solo Admin", true);
             return false;
         }
         this.data.anuncio = {
             activo: Boolean(activo),
-            titulo: titulo || "📢 Anuncio",
+            titulo: titulo || "ðŸ“¢ Anuncio",
             mensaje: mensaje || ""
         };
         await this.persist();
@@ -242,8 +245,8 @@ const Store = {
     // ---------- Puntos y Ranking ----------
     async updatePuntosActividad(actividadId, puntos) {
         if (!this.isAdmin()) {
-            console.warn("⛔ Intento no autorizado de modificar puntos");
-            if (typeof showToast === "function") showToast("❌ Permiso denegado: solo el Administrador puede modificar los puntos", true);
+            console.warn("â›” Intento no autorizado de modificar puntos");
+            if (typeof showToast === "function") showToast("âŒ Permiso denegado: solo el Administrador puede modificar los puntos", true);
             return false;
         }
 
@@ -253,7 +256,7 @@ const Store = {
             const anteriorPts = act.puntos || 0;
 
             if (nuevoPts !== anteriorPts) {
-                // Registrar entrada de Auditoría
+                // Registrar entrada de AuditorÃ­a
                 if (!this.data.auditLog) this.data.auditLog = [];
                 const user = Auth.getCurrentUser();
                 const usuarioNombre = user ? user.username : "desconocido";
@@ -330,11 +333,23 @@ const Store = {
     getRanking(filtro = "general", desde = null, hasta = null) {
         let fDesde = desde;
         let fHasta = hasta;
+        const hoy = getFechaLocal();
 
-        if (["diario", "semanal", "mensual"].includes(filtro)) {
-            const rango = getRangoFecha(filtro);
-            fDesde = rango.fDesde;
-            fHasta = rango.fHasta;
+        if (filtro === "diario") {
+            fDesde = hoy;
+            fHasta = hoy;
+        } else if (filtro === "semanal") {
+            const now = new Date();
+            const day = now.getDay() || 7; // Convert Sunday to 7
+            if (day !== 1) now.setHours(-24 * (day - 1));
+            fDesde = now.toISOString().split("T")[0];
+            const endWeek = new Date(now);
+            endWeek.setDate(endWeek.getDate() + 6);
+            fHasta = endWeek.toISOString().split("T")[0];
+        } else if (filtro === "mensual") {
+            const now = new Date();
+            fDesde = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
+            fHasta = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split("T")[0];
         }
 
         const ranking = this.data.hijos.map(h => {
@@ -496,7 +511,7 @@ const Store = {
 
     async responderCanje(canjeId, estado) {
         if (!this.isAdmin()) {
-            if (typeof showToast === "function") showToast("❌ Solo Admin puede responder canjes", true);
+            if (typeof showToast === "function") showToast("âŒ Solo Admin puede responder canjes", true);
             return false;
         }
         const canje = this.data.canjes.find(c => c.id == canjeId);
@@ -522,7 +537,7 @@ const Store = {
         return true;
     },
 
-    // ---------- CRUD: Actividades (catálogo) ----------
+    // ---------- CRUD: Actividades (catÃ¡logo) ----------
     async addActividad(nombre, puntos = 0) {
         if (!this.isAdmin()) return false;
         this.data.actividades.push({ id: Date.now(), nombre, puntos: parseInt(puntos, 10) || 0 });
@@ -630,7 +645,7 @@ const Store = {
 
     // ---------- Denuncias / Irregularidades ----------
     async addDenuncia({ registroId, detalle, usuarioReporta }) {
-        if (!registroId || !detalle) return { ok: false, msg: "Selecciona un registro y describe la observación" };
+        if (!registroId || !detalle) return { ok: false, msg: "Selecciona un registro y describe la observaciÃ³n" };
         if (!this.data.denuncias) this.data.denuncias = [];
         const denuncia = {
             id: Date.now(),
@@ -660,7 +675,7 @@ const Store = {
         return false;
     },
 
-    // ---------- Analíticas y Estadísticas ----------
+    // ---------- AnalÃ­ticas y EstadÃ­sticas ----------
     getEstadisticasActividades({ filtroFecha = "semana", fechaInicio = null, fechaFin = null, hijoId = null } = {}) {
         let registros = (this.data.registros || []).filter(r => r.estado !== "anulado");
         
@@ -668,14 +683,34 @@ const Store = {
             registros = registros.filter(r => r.hijoId == hijoId);
         }
 
-        if (["hoy", "semana", "mes", "rango"].includes(filtroFecha)) {
-            const { fDesde, fHasta } = getRangoFecha(filtroFecha, fechaInicio, fechaFin);
-            if (fDesde && fHasta) {
-                registros = registros.filter(r => {
-                    const f = r.fechaHora ? r.fechaHora.split("T")[0] : r.fecha;
-                    return f >= fDesde && f <= fHasta;
-                });
-            }
+        const hoy = typeof getFechaLocal === "function" ? getFechaLocal() : new Date().toISOString().split("T")[0];
+        if (filtroFecha === "hoy") {
+            registros = registros.filter(r => (r.fechaHora ? r.fechaHora.split("T")[0] : r.fecha) === hoy);
+        } else if (filtroFecha === "semana") {
+            const now = new Date();
+            const day = now.getDay() || 7;
+            if (day !== 1) now.setHours(-24 * (day - 1));
+            const fDesde = now.toISOString().split("T")[0];
+            const endWeek = new Date(now);
+            endWeek.setDate(endWeek.getDate() + 6);
+            const fHasta = endWeek.toISOString().split("T")[0];
+            registros = registros.filter(r => {
+                const f = r.fechaHora ? r.fechaHora.split("T")[0] : r.fecha;
+                return f >= fDesde && f <= fHasta;
+            });
+        } else if (filtroFecha === "mes") {
+            const now = new Date();
+            const fDesde = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
+            const fHasta = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split("T")[0];
+            registros = registros.filter(r => {
+                const f = r.fechaHora ? r.fechaHora.split("T")[0] : r.fecha;
+                return f >= fDesde && f <= fHasta;
+            });
+        } else if (filtroFecha === "rango" && fechaInicio && fechaFin) {
+            registros = registros.filter(r => {
+                const f = r.fechaHora ? r.fechaHora.split("T")[0] : r.fecha;
+                return f >= fechaInicio && f <= fechaFin;
+            });
         }
 
         const totalRegistros = registros.length;
@@ -729,7 +764,7 @@ const Store = {
             const valA = a.fechaHora || (a.fecha ? a.fecha + "T00:00" : "");
             const valB = b.fechaHora || (b.fecha ? b.fecha + "T00:00" : "");
             if (valA !== valB) {
-                return valB.localeCompare(valA); // Más reciente primero ("2026-08-02T15:00" > "2026-08-02T10:00")
+                return valB.localeCompare(valA); // MÃ¡s reciente primero ("2026-08-02T15:00" > "2026-08-02T10:00")
             }
             return (b.id || 0) - (a.id || 0); // Desempate por ID (timestamp)
         });
