@@ -539,20 +539,31 @@ const View = {
         containerLista.innerHTML = listHtml;
     },
 
-    renderHistorialCanjes(filtroEstado = "todos", filtroHijo = "todos", targetId = null) {
+    renderHistorialCanjes(filtroEstado = "todos", filtroHijo = "todos", targetId = null, textoBusqueda = "") {
         const containers = targetId ? [document.getElementById(targetId)] : [document.getElementById("historialCanjesContainer"), document.getElementById("historialCanjesTiendaContainer")];
         const validContainers = containers.filter(Boolean);
         if (validContainers.length === 0) return;
 
         const canjes = Store.data.canjes || [];
         const hijos  = Store.data.hijos  || [];
+        const query = (textoBusqueda || "").toLowerCase().trim();
 
-        // Filtrar
+        // Ordenamiento estricto: desde el más reciente hasta el más antiguo por fecha/ID
         let lista = canjes.filter(c => {
             const porEstado = filtroEstado === "todos" || c.estado === filtroEstado;
             const porHijo   = filtroHijo === "todos" || String(c.hijoId) === String(filtroHijo);
-            return porEstado && porHijo;
-        }).sort((a, b) => b.id - a.id); // más reciente primero
+            let porTexto = true;
+            if (query) {
+                const nombrePremio = (c.nombreRecompensa || "").toLowerCase();
+                const usuario = (c.usuario || "").toLowerCase();
+                porTexto = nombrePremio.includes(query) || usuario.includes(query);
+            }
+            return porEstado && porHijo && porTexto;
+        }).sort((a, b) => {
+            const timeA = a.fechaHora ? new Date(a.fechaHora).getTime() : (a.id || 0);
+            const timeB = b.fechaHora ? new Date(b.fechaHora).getTime() : (b.id || 0);
+            return timeB - timeA; // Más reciente primero
+        });
 
         const estadoBadge = {
             pendiente:      `<span style="background:#fef9c3;color:#b45309;border:1px solid #fcd34d;padding:4px 10px;border-radius:12px;font-size:11px;font-weight:700;white-space:nowrap;display:inline-block;word-break:keep-all;">⏳ Pendiente</span>`,
@@ -567,26 +578,30 @@ const View = {
 
         let html = `
             <div class="admin-panel" style="margin-top:24px;">
-                <h3>📋 Tabla de Solicitudes de Recompensas (Aceptadas, Rechazadas y Pendientes)</h3>
-                <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:center;">
-                    <div class="form-group" style="margin:0;min-width:150px;">
+                <h3>📜 Tabla de Solicitudes de Recompensas (Ordenadas de Reciente a Antiguo)</h3>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:flex-end;">
+                    <div class="form-group" style="margin:0;min-width:140px;flex:1;">
                         <label style="font-size:12px;">Estado</label>
-                        <select id="histFiltroEstado" style="padding:8px 12px;border-radius:10px;border:1px solid #cbd5e1;font-size:13px;background:#fff;" onchange="View.renderHistorialCanjes(this.value, document.getElementById('histFiltroHijo').value)">
-                            <option value="todos" ${filtroEstado==="todos"?"selected":""}>📋 Todos</option>
+                        <select id="histFiltroEstado" style="padding:8px 12px;border-radius:10px;border:1px solid #cbd5e1;font-size:13px;background:#fff;" onchange="View.renderHistorialCanjes(this.value, document.getElementById('histFiltroHijo').value, null, document.getElementById('histFiltroBusqueda').value)">
+                            <option value="todos" ${filtroEstado==="todos"?"selected":""}>📋 Todos los Estados</option>
                             <option value="aprobado" ${filtroEstado==="aprobado"?"selected":""}>✅ Aprobados / Aceptados</option>
                             <option value="rechazado" ${filtroEstado==="rechazado"?"selected":""}>❌ Rechazados</option>
                             <option value="contrapropuesta" ${filtroEstado==="contrapropuesta"?"selected":""}>🔄 Contrapropuesta</option>
                             <option value="pendiente" ${filtroEstado==="pendiente"?"selected":""}>⏳ Pendientes</option>
                         </select>
                     </div>
-                    <div class="form-group" style="margin:0;min-width:150px;">
-                        <label style="font-size:12px;">Hijo</label>
-                        <select id="histFiltroHijo" style="padding:8px 12px;border-radius:10px;border:1px solid #cbd5e1;font-size:13px;background:#fff;" onchange="View.renderHistorialCanjes(document.getElementById('histFiltroEstado').value, this.value)">
+                    <div class="form-group" style="margin:0;min-width:140px;flex:1;">
+                        <label style="font-size:12px;">Hijo Beneficiario</label>
+                        <select id="histFiltroHijo" style="padding:8px 12px;border-radius:10px;border:1px solid #cbd5e1;font-size:13px;background:#fff;" onchange="View.renderHistorialCanjes(document.getElementById('histFiltroEstado').value, this.value, null, document.getElementById('histFiltroBusqueda').value)">
                             <option value="todos" ${filtroHijo==="todos"?"selected":""}>👨‍👧 Todos los Hijos</option>
                             ${hijoOptions}
                         </select>
                     </div>
-                    <div style="margin-left:auto;font-size:13px;color:#64748b;padding-top:18px;">
+                    <div class="form-group" style="margin:0;min-width:180px;flex:2;">
+                        <label style="font-size:12px;">🔍 Buscar Premio o Usuario</label>
+                        <input type="text" id="histFiltroBusqueda" value="${query}" placeholder="Ej: Helado, @admin..." style="padding:8px 12px;border-radius:10px;border:1px solid #cbd5e1;font-size:13px;background:#fff;" oninput="View.renderHistorialCanjes(document.getElementById('histFiltroEstado').value, document.getElementById('histFiltroHijo').value, null, this.value)">
+                    </div>
+                    <div style="margin-left:auto;font-size:13px;color:#64748b;padding-bottom:8px;">
                         Mostrando <strong>${lista.length}</strong> solicitud${lista.length !== 1 ? "es" : ""}
                     </div>
                 </div>`;
@@ -597,7 +612,7 @@ const View = {
             </div>`;
         } else {
             html += `
-            <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y;margin-top:10px;">
+            <div class="tabla-scroll-container" style="width:100%;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y;margin-top:10px;">
                 <table class="tabla-reporte" style="min-width:700px;">
                     <thead>
                         <tr>
@@ -606,7 +621,7 @@ const View = {
                             <th style="white-space:nowrap;">👤 Hijo Beneficiario</th>
                             <th style="white-space:nowrap;">⭐ Puntos</th>
                             <th style="white-space:nowrap;">👤 Solicitado por</th>
-                            <th style="white-space:nowrap;">📅 Fecha / Hora</th>
+                            <th style="white-space:nowrap;">📅 Fecha y Hora</th>
                             <th style="white-space:nowrap;">📌 Estado</th>
                             <th style="white-space:nowrap;">💬 Detalle / Nota Admin</th>
                         </tr>
@@ -885,7 +900,6 @@ const View = {
                     </td>
                     ${mostrarUsuario ? `<td class="usuario-cell">${r.usuario || "admin"}</td>` : ""}
                     <td class="col-acciones" style="white-space:nowrap;">
-                        <button style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;padding:4px 8px;border-radius:6px;font-size:11px;cursor:pointer;margin-right:2px;" onclick="View.observarRegistroDirecto(${r.id})" title="Reportar observación / irregularidad">🚨 Observar</button>
                         ${isAdmin && !esAnulado ? `
                             <button style="background:#ef4444;color:#fff;border:none;padding:4px 8px;border-radius:6px;font-size:11px;cursor:pointer;margin-right:2px;" onclick="AppController.anularRegistroAdmin(${r.id})" title="Anular actividad y restar puntos">🚫 Anular</button>
                         ` : ''}
