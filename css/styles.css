@@ -216,7 +216,10 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     .form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 }
 @media(max-width:767px){
-    .main-content{padding:12px}
+    .menu-toggle{position:fixed!important;top:12px!important;left:12px!important;z-index:1100!important;background:#ffffff!important;color:#1e293b!important;width:44px!important;height:44px!important;border-radius:14px!important;box-shadow:0 4px 18px rgba(0,0,0,.25)!important;display:flex!important;align-items:center!important;justify-content:center!important;border:1px solid #cbd5e1!important;font-size:24px!important;transition:transform .2s ease,background .2s ease!important}
+    .menu-toggle:active{transform:scale(.92)!important;background:#f1f5f9!important}
+    .topbar-title{margin-left:46px!important}
+    .main-content{padding:12px;padding-top:16px}
     .view-actions{flex-direction:column}
     .btn-pdf{width:100%;justify-content:center}
     .login-box{padding:28px 20px}
