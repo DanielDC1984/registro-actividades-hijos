@@ -480,13 +480,12 @@ const View = {
         podioHtml += `</div>`;
         containerPodio.innerHTML = podioHtml;
 
-        // ── Tabla Completa ────────────────────────────────────
+        // ── Lista Completa de Posiciones (Apilada Vertical) ──
         const maxPuntos = ranking[0] && ranking[0].puntos > 0 ? ranking[0].puntos : 1;
-        const rowColors = ["#fef3c7", "#f1f5f9", "#fef3c7"];
 
         let listHtml = `
             <div class="admin-panel">
-                <h3>📊 Tabla Completa de Posiciones</h3>
+                <h3>🏆 Lista Completa de Posiciones</h3>
                 <div class="ranking-rows">`;
 
         ranking.forEach((item, index) => {
@@ -499,7 +498,7 @@ const View = {
             if (index === 0)      { posIcon = "🥇"; posStyle = "background:#fef9c3;border:2px solid #fbbf24;"; }
             else if (index === 1) { posIcon = "🥈"; posStyle = "background:#f8fafc;border:2px solid #94a3b8;"; }
             else if (index === 2) { posIcon = "🥉"; posStyle = "background:#fdf6ee;border:2px solid #cd7c3f;"; }
-            else                  { posIcon = `#${index + 1}`; posStyle = ""; }
+            else                  { posIcon = `#${index + 1}`; posStyle = "background:#fff;"; }
 
             const barColor = index === 0 ? "linear-gradient(90deg,#f59e0b,#fbbf24)"
                            : index === 1 ? "linear-gradient(90deg,#64748b,#94a3b8)"
@@ -509,28 +508,28 @@ const View = {
             const iniciales = item.nombre.split(" ").map(p => p[0]).join("").toUpperCase().slice(0, 2);
 
             listHtml += `
-                <div class="ranking-row-item" style="${posStyle}">
-                    <div class="row-header">
-                        <div class="row-left">
-                            <span class="row-pos" style="font-size:${index < 3 ? '22px' : '15px'}">${posIcon}</span>
-                            <div style="width:36px;height:36px;border-radius:50%;background:${avatarColors[Math.min(index,2)] || '#4a6cf7'};color:#fff;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;">${iniciales}</div>
+                <div class="ranking-row-item" style="${posStyle};padding:14px;border-radius:14px;margin-bottom:10px;">
+                    <div class="row-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                        <div class="row-left" style="display:flex;align-items:center;gap:10px;">
+                            <span class="row-pos" style="font-size:${index < 3 ? '22px' : '16px'};font-weight:800;">${posIcon}</span>
+                            <div style="width:38px;height:38px;border-radius:50%;background:${avatarColors[Math.min(index,2)] || '#4a6cf7'};color:#fff;font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${iniciales}</div>
                             <div>
-                                <div class="row-name">${item.nombre}</div>
-                                <div class="row-acts">📋 ${item.totalActividades} actividades · 💰 ${item.puntosDisponibles} pts disponibles</div>
+                                <div class="row-name" style="font-weight:700;font-size:15px;color:#1e293b;">${item.nombre}</div>
+                                <div class="row-acts" style="font-size:12px;color:#64748b;">📋 ${item.totalActividades} actividades · 💰 ${item.puntosDisponibles} pts disponibles</div>
                             </div>
                         </div>
                         <div class="row-right">
-                            <span class="row-pts">⭐ ${item.puntos} pts</span>
+                            <span class="row-pts" style="font-size:15px;font-weight:800;color:#4a6cf7;">⭐ ${item.puntos} pts</span>
+                        </div>
+                    </div>
                     <div class="progress-bar-bg" style="margin-top:8px;">
                         <div class="progress-bar-fill" style="width:${pct}%;background:${barColor};"></div>
                     </div>
+                    ${item.insignias.length > 0 ? `<div class="row-badges" style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px;">${medallasHtml}</div>` : ""}
                 </div>`;
         });
         listHtml += `</div></div>`;
         containerLista.innerHTML = listHtml;
-
-        // ── Historial de Recompensas con Filtros ──────────────
-        this.renderHistorialCanjes();
     },
 
     renderHistorialCanjes(filtroEstado = "todos", filtroHijo = "todos", targetId = null) {
@@ -549,10 +548,10 @@ const View = {
         }).sort((a, b) => b.id - a.id); // más reciente primero
 
         const estadoBadge = {
-            pendiente:      `<span style="background:#fef9c3;color:#b45309;border:1px solid #fcd34d;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;">⏳ Pendiente</span>`,
-            aprobado:       `<span style="background:#dcfce7;color:#15803d;border:1px solid #86efac;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;">✅ Aprobado</span>`,
-            rechazado:      `<span style="background:#fee2e2;color:#b91c1c;border:1px solid #fca5a5;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;">❌ Rechazado</span>`,
-            contrapropuesta:`<span style="background:#e0f2fe;color:#0369a1;border:1px solid #7dd3fc;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;">🔄 Contrapropuesta</span>`,
+            pendiente:      `<span style="background:#fef9c3;color:#b45309;border:1px solid #fcd34d;padding:4px 10px;border-radius:12px;font-size:11px;font-weight:700;white-space:nowrap;display:inline-block;word-break:keep-all;">⏳ Pendiente</span>`,
+            aprobado:       `<span style="background:#dcfce7;color:#15803d;border:1px solid #86efac;padding:4px 10px;border-radius:12px;font-size:11px;font-weight:700;white-space:nowrap;display:inline-block;word-break:keep-all;">✅ Aprobado</span>`,
+            rechazado:      `<span style="background:#fee2e2;color:#b91c1c;border:1px solid #fca5a5;padding:4px 10px;border-radius:12px;font-size:11px;font-weight:700;white-space:nowrap;display:inline-block;word-break:keep-all;">❌ Rechazado</span>`,
+            contrapropuesta:`<span style="background:#e0f2fe;color:#0369a1;border:1px solid #7dd3fc;padding:4px 10px;border-radius:12px;font-size:11px;font-weight:700;white-space:nowrap;display:inline-block;word-break:keep-all;">🔄 Contrapropuesta</span>`,
         };
 
         const hijoOptions = hijos.map(h =>
@@ -581,7 +580,7 @@ const View = {
                         </select>
                     </div>
                     <div style="margin-left:auto;font-size:13px;color:#64748b;padding-top:18px;">
-                        Showing <strong>${lista.length}</strong> registro${lista.length !== 1 ? "s" : ""}
+                        Mostrando <strong>${lista.length}</strong> solicitud${lista.length !== 1 ? "es" : ""}
                     </div>
                 </div>`;
 
@@ -592,17 +591,17 @@ const View = {
         } else {
             html += `
             <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y;margin-top:10px;">
-                <table class="tabla-reporte">
+                <table class="tabla-reporte" style="min-width:700px;">
                     <thead>
                         <tr>
-                            <th>#</th>
-                            <th>🎁 Premio / Recompensa</th>
-                            <th>👤 Hijo Beneficiario</th>
-                            <th>⭐ Puntos</th>
-                            <th>👤 Solicitado por</th>
-                            <th>📅 Fecha / Hora</th>
-                            <th>📌 Estado</th>
-                            <th>💬 Detalle / Nota Admin</th>
+                            <th style="white-space:nowrap;">#</th>
+                            <th style="white-space:nowrap;">🎁 Premio / Recompensa</th>
+                            <th style="white-space:nowrap;">👤 Hijo Beneficiario</th>
+                            <th style="white-space:nowrap;">⭐ Puntos</th>
+                            <th style="white-space:nowrap;">👤 Solicitado por</th>
+                            <th style="white-space:nowrap;">📅 Fecha / Hora</th>
+                            <th style="white-space:nowrap;">📌 Estado</th>
+                            <th style="white-space:nowrap;">💬 Detalle / Nota Admin</th>
                         </tr>
                     </thead>
                     <tbody>`;
@@ -614,20 +613,23 @@ const View = {
                             : c.estado === "contrapropuesta" ? "#f0f9ff"
                             : "#fffbeb";
 
+                let cleanNombre = (c.nombreRecompensa || "").replace(/âœ¨|âœ|Ã|ðŸŽ®|ðŸ|â/g, "").trim();
+                if (!cleanNombre) cleanNombre = "Premio Especial";
+
                 html += `
                     <tr style="background:${rowBg};">
-                        <td><strong>${idx + 1}</strong></td>
+                        <td style="white-space:nowrap;"><strong>${idx + 1}</strong></td>
                         <td>
-                            <span style="font-weight:700;color:#1e293b;">
-                                ${esPremioEspecial ? '<span style="background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:700;margin-right:4px;">✨ Especial</span>' : ''}
-                                ${c.nombreRecompensa}
+                            <span style="font-weight:700;color:#1e293b;white-space:nowrap;display:inline-flex;align-items:center;gap:4px;">
+                                ${esPremioEspecial ? '<span style="background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;padding:2px 6px;border-radius:8px;font-size:10px;font-weight:700;white-space:nowrap;">✨ Especial</span>' : ''}
+                                ${cleanNombre}
                             </span>
                         </td>
-                        <td><span class="badge-hijo">👤 ${Store.getNombreHijo(c.hijoId)}</span></td>
-                        <td><span class="badge-puntos">⭐ ${pts} pts</span></td>
-                        <td><span class="usuario-cell">@${c.usuario || 'usuario'}</span></td>
-                        <td><span class="fecha-hora-cell">${(c.fechaHora || '').replace('T', ' ').slice(0, 16)}</span></td>
-                        <td>${estadoBadge[c.estado] || estadoBadge['pendiente']}</td>
+                        <td style="white-space:nowrap;"><span class="badge-hijo" style="white-space:nowrap;display:inline-block;">👤 ${Store.getNombreHijo(c.hijoId)}</span></td>
+                        <td style="white-space:nowrap;"><span class="badge-puntos" style="white-space:nowrap;display:inline-block;">⭐ ${pts} pts</span></td>
+                        <td style="white-space:nowrap;"><span class="usuario-cell" style="white-space:nowrap;">@${c.usuario || 'usuario'}</span></td>
+                        <td style="white-space:nowrap;"><span class="fecha-hora-cell" style="white-space:nowrap;">${(c.fechaHora || '').replace('T', ' ').slice(0, 16)}</span></td>
+                        <td style="white-space:nowrap;">${estadoBadge[c.estado] || estadoBadge['pendiente']}</td>
                         <td style="font-size:12px;color:#475569;">
                             ${c.notaContrapropuesta ? `💬 <em>"${c.notaContrapropuesta}"</em>` : (c.puntosPropuestos ? `Sugeridos: ${c.puntosPropuestos} pts` : '-')}
                         </td>
