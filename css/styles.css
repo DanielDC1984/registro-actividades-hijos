@@ -98,10 +98,10 @@ html,body{background:#f0f4f8;display:flex;min-height:100vh;width:100%;overflow-x
 .btn-edit:hover{background:#d97706}
 .btn-delete-reg{background:#ef4444;border:none;padding:4px 12px;border-radius:12px;color:#fff;font-size:11px;font-weight:600;cursor:pointer;transition:all .2s}
 .btn-delete-reg:hover{background:#dc2626}
-.activity-list{margin-top:12px;overflow-x:auto}
-.tabla-reporte{width:100%;border-collapse:collapse;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.06);min-width:500px}
+.activity-list, .tabla-wrapper, .table-container, .tabla-responsive{width:100%;max-width:100%;margin-top:12px;overflow-x:auto!important;overflow-y:hidden;-webkit-overflow-scrolling:touch!important;touch-action:pan-x pan-y!important;border-radius:14px}
+.tabla-reporte{width:100%;min-width:620px;border-collapse:collapse;background:#fff;border-radius:14px;box-shadow:0 2px 12px rgba(0,0,0,.06)}
 .tabla-reporte thead{background:#1a2a3a;color:#fff}
-.tabla-reporte thead th{padding:12px 14px;text-align:left;font-size:13px;font-weight:600;letter-spacing:.3px}
+.tabla-reporte thead th{padding:12px 14px;text-align:left;font-size:13px;font-weight:600;letter-spacing:.3px;white-space:nowrap}
 .tabla-reporte tbody tr{border-bottom:1px solid #eef2f7;transition:background .15s}
 .tabla-reporte tbody tr:hover{background:#f8fafc}
 .tabla-reporte tbody td{padding:12px 14px;font-size:14px;color:#1a2a3a;vertical-align:middle}
@@ -144,7 +144,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .modal-content .modal-actions .btn-secondary{flex:1;padding:14px;background:#eef2f7;color:#1a2a3a;border:none;border-radius:14px;font-size:16px;font-weight:600;cursor:pointer;transition:all .2s}
 .modal-content .modal-actions .btn-secondary:active{transform:scale(.97)}
 .badge-puntos{background:#dbeafe;color:#2563eb;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700}
-.badge-medalla{background:#fef3c7;color:#d97706;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;display:inline-block;margin:2px 2px 2px 0}
+.badge-medalla{background:#fffbeb;color:#b45309;border:1px solid #fde68a;padding:4px 10px;border-radius:14px;font-size:11px;font-weight:700;display:inline-flex;align-items:center;gap:4px;box-shadow:0 1px 3px rgba(0,0,0,.03)}
 
 /* Ranking Tabs */
 .ranking-tabs{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;margin-bottom:12px}
@@ -153,16 +153,18 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 
 /* Podium */
 .podium-container{display:flex;justify-content:center;margin-bottom:24px}
-.podium{display:flex;align-items:flex-end;justify-content:center;gap:12px;width:100%;max-width:460px;min-height:180px;padding:10px}
-.podium-place{display:flex;flex-direction:column;align-items:center;flex:1;max-width:130px;transition:transform .2s}
-.podium-place:hover{transform:translateY(-4px)}
-.podium-place .avatar{font-size:32px;margin-bottom:6px;filter:drop-shadow(0 4px 8px rgba(0,0,0,0.1))}
-.podium-place .name{font-weight:700;font-size:14px;color:#1e293b;text-align:center;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.podium{display:flex;align-items:flex-end;justify-content:center;gap:16px;width:100%;max-width:480px;min-height:200px;padding:10px}
+.podium-place{display:flex;flex-direction:column;align-items:center;flex:1;max-width:140px;transition:transform .25s}
+.podium-place:hover{transform:translateY(-6px)}
+.podium-medal{font-size:28px;margin-bottom:4px;filter:drop-shadow(0 3px 6px rgba(0,0,0,0.18));animation:medalPop .4s ease}
+@keyframes medalPop{0%{transform:scale(0.6) rotate(-10deg);opacity:0}100%{transform:scale(1) rotate(0deg);opacity:1}}
+.podium-place .avatar{margin-bottom:6px;box-shadow:0 4px 12px rgba(0,0,0,0.18)}
+.podium-place .name{font-weight:700;font-size:14px;color:#1e293b;text-align:center;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:2px}
 .podium-place .points{font-size:13px;font-weight:700;color:#4a6cf7;margin-bottom:6px}
-.podium-place .bar{width:100%;border-radius:16px 16px 0 0;display:flex;justify-content:center;align-items:center;color:#fff;font-weight:800;font-size:18px;box-shadow:0 4px 15px rgba(0,0,0,.08)}
-.place-1 .bar{height:110px;background:linear-gradient(180deg,#f59e0b,#d97706)}
-.place-2 .bar{height:85px;background:linear-gradient(180deg,#94a3b8,#64748b)}
-.place-3 .bar{height:65px;background:linear-gradient(180deg,#b45309,#78350f)}
+.podium-place .bar{width:100%;border-radius:16px 16px 0 0;display:flex;justify-content:center;align-items:center;color:#fff;font-weight:800;font-size:18px;box-shadow:0 4px 15px rgba(0,0,0,.1)}
+.place-1 .bar{height:120px;background:linear-gradient(180deg,#f59e0b,#d97706)}
+.place-2 .bar{height:90px;background:linear-gradient(180deg,#94a3b8,#64748b)}
+.place-3 .bar{height:70px;background:linear-gradient(180deg,#cd7c3f,#92400e)}
 
 /* Ranking Rows */
 .ranking-rows{display:flex;flex-direction:column;gap:12px;margin-top:10px}
