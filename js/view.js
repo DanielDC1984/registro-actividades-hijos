@@ -768,6 +768,9 @@ const View = {
             }
         }
 
+        // Renderizar siempre la tabla del historial de solicitudes de canjes
+        this.renderHistorialCanjes("todos", "todos", "historialCanjesTiendaContainer");
+
         // Renderizar catálogo de recompensas
         if (recompensas.length === 0) {
             listaBox.innerHTML = `<div class="empty-state"><span class="emoji">🎁</span><p>No hay recompensas disponibles aún</p></div>`;
