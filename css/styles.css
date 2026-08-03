@@ -1,5 +1,5 @@
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}
-html,body{background:#f0f4f8;display:flex;min-height:100vh;width:100%;overflow-x:hidden;touch-action:pan-y}
+html,body{background:#f0f4f8;display:flex;min-height:100vh;width:100%;overflow-x:hidden}
 .login-container{display:flex;justify-content:center;align-items:center;min-height:100vh;width:100%;background:linear-gradient(135deg,#1a2a3a,#2a4a6a);padding:20px}
 .login-box{background:#fff;padding:40px 32px;border-radius:24px;max-width:400px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3)}
 .login-box .logo{text-align:center;font-size:48px;margin-bottom:8px}
@@ -98,8 +98,8 @@ html,body{background:#f0f4f8;display:flex;min-height:100vh;width:100%;overflow-x
 .btn-edit:hover{background:#d97706}
 .btn-delete-reg{background:#ef4444;border:none;padding:4px 12px;border-radius:12px;color:#fff;font-size:11px;font-weight:600;cursor:pointer;transition:all .2s}
 .btn-delete-reg:hover{background:#dc2626}
-.activity-list, .tabla-wrapper, .table-container, .tabla-responsive{width:100%;max-width:100%;margin-top:12px;overflow-x:auto!important;overflow-y:hidden;-webkit-overflow-scrolling:touch!important;touch-action:pan-x pan-y!important;border-radius:14px}
-.tabla-reporte{width:100%;min-width:620px;border-collapse:collapse;background:#fff;border-radius:14px;box-shadow:0 2px 12px rgba(0,0,0,.06)}
+.activity-list, .tabla-scroll-container, .tabla-reporte-container, .tabla-wrapper, .table-container, .tabla-responsive{width:100%!important;max-width:100%!important;margin-top:12px;overflow-x:auto!important;overflow-y:hidden!important;-webkit-overflow-scrolling:touch!important;touch-action:pan-x pan-y!important;border-radius:14px;display:block!important}
+.tabla-reporte{width:100%!important;min-width:650px!important;border-collapse:collapse;background:#fff;border-radius:14px;box-shadow:0 2px 12px rgba(0,0,0,.06)}
 .tabla-reporte thead{background:#1a2a3a;color:#fff}
 .tabla-reporte thead th{padding:12px 14px;text-align:left;font-size:13px;font-weight:600;letter-spacing:.3px;white-space:nowrap}
 .tabla-reporte tbody tr{border-bottom:1px solid #eef2f7;transition:background .15s}
