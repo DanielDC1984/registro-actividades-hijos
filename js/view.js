@@ -953,7 +953,7 @@ const View = {
 
         const user = Auth.getCurrentUser();
         const usernameLower = user ? (user.username || "").toLowerCase() : "";
-        const esAdminUser = user && (user.role === "admin" || usernameLower === "admin");
+        const esAdminUser = user && (user.role === "admin" || usernameLower === "admin" || Store.isAdmin());
         const adminBox = document.getElementById("adminBuzonDenuncias");
         const listEl = document.getElementById("listaDenunciasAdmin");
 
@@ -961,12 +961,12 @@ const View = {
         if (listEl) {
             const denuncias = Store.data.denuncias || [];
             const listaMostrar = esAdminUser 
-                ? denuncias.filter(d => !d.atendida) 
-                : denuncias.filter(d => d.usuarioReporta === (user ? user.username : ""));
+                ? [...denuncias].sort((a, b) => b.id - a.id) 
+                : denuncias.filter(d => (d.usuarioReporta || "").toLowerCase() === usernameLower).sort((a, b) => b.id - a.id);
 
             if (listaMostrar.length === 0) {
-                listEl.innerHTML = `<p style="color:#6b7a8f;font-size:13px;margin:0;padding:12px;background:#fff;border-radius:10px;border:1px dashed #cbd5e1;">
-                    ${esAdminUser ? "🎉 No hay observaciones o denuncias pendientes por revisar." : "📭 No has registrado observaciones aún."}
+                listEl.innerHTML = `<p style="color:#6b7a8f;font-size:13px;margin:0;padding:14px;background:#fff;border-radius:10px;border:1px dashed #cbd5e1;text-align:center;">
+                    ${esAdminUser ? "🎉 No hay observaciones o denuncias en el sistema." : "📭 No has registrado observaciones aún."}
                 </p>`;
             } else {
                 let html = "";
