@@ -14,8 +14,8 @@ const Auth = {
             if (error) throw error;
             this.users = data || [];
             if (this.users.length === 0) {
-                // Primera vez: sembrar usuario admin por defecto
-                const admin = { username: "admin", password: "123321", role: "admin", approved: true, blocked: false };
+                // Primera vez: sembrar usuario admin por defecto (contraseña ya hasheada)
+                const admin = { username: "admin", password: await hashPassword("123321"), role: "admin", approved: true, blocked: false };
                 await this._upsertRemote(admin);
                 this.users = [admin];
             }
@@ -23,7 +23,7 @@ const Auth = {
         } catch (err) {
             console.error("Error cargando usuarios de Supabase:", err);
             const cached = localStorage.getItem(this.CACHE_KEY);
-            this.users = cached ? JSON.parse(cached) : [{ username: "admin", password: "123321", role: "admin", approved: true, blocked: false }];
+            this.users = cached ? JSON.parse(cached) : [{ username: "admin", password: await hashPassword("123321"), role: "admin", approved: true, blocked: false }];
         }
         return this.users;
     },
@@ -62,10 +62,22 @@ const Auth = {
     async login(username, password) {
         try {
             await this.load(); // refresca antes de validar, por si se registró desde otro dispositivo
-            const user = this.users.find(u => u.username === username && u.password === password);
+            const user = this.users.find(u => u.username === username);
             if (!user) return { ok: false, reason: "invalid" };
+
+            const passwordValida = await verificarPassword(password, user.password);
+            if (!passwordValida) return { ok: false, reason: "invalid" };
+
             if (user.blocked) return { ok: false, reason: "blocked" };
             if (!user.approved) return { ok: false, reason: "pending" };
+
+            // Migración transparente: si la contraseña todavía está en texto plano, se re-guarda hasheada
+            if (!esPasswordHasheada(user.password)) {
+                user.password = await hashPassword(password);
+                await this._upsertRemote(user);
+                this._cache();
+            }
+
             this.setCurrentUser(user);
             return { ok: true, user };
         } catch (err) {
@@ -79,7 +91,7 @@ const Auth = {
         try {
             await this.load();
             if (this.users.find(u => u.username === username)) return { ok: false, reason: "exists" };
-            const nuevo = { username, password, role: "user", approved: false, blocked: false };
+            const nuevo = { username, password: await hashPassword(password), role: "user", approved: false, blocked: false };
             await this._upsertRemote(nuevo);
             this.users.push(nuevo);
             this._cache();
@@ -134,10 +146,11 @@ const Auth = {
 
         const user = this.users.find(u => u.username === username);
         if (!user) return { ok: false, reason: "not_found" };
-        if (user.password !== oldPassword) return { ok: false, reason: "wrong_password" };
+        const oldValida = await verificarPassword(oldPassword, user.password);
+        if (!oldValida) return { ok: false, reason: "wrong_password" };
         if (!newPassword || newPassword.length < 6) return { ok: false, reason: "too_short" };
 
-        user.password = newPassword;
+        user.password = await hashPassword(newPassword);
         await this._upsertRemote(user);
         this._cache();
         return { ok: true };
@@ -153,7 +166,7 @@ const Auth = {
         if (!targetUser) return { ok: false, reason: "not_found" };
         if (!newPassword || newPassword.length < 6) return { ok: false, reason: "too_short" };
 
-        targetUser.password = newPassword;
+        targetUser.password = await hashPassword(newPassword);
         await this._upsertRemote(targetUser);
         this._cache();
         return { ok: true };
