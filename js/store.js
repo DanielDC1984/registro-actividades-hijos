@@ -1,5 +1,5 @@
-// ============================================================
-// 📊 MODELO: DATOS DE LA FAMILIA (LocalStorage + Supabase)
+﻿// ============================================================
+// ðŸ“Š MODELO: DATOS DE LA FAMILIA (LocalStorage + Supabase)
 // ============================================================
 const Store = {
     STORAGE_KEY: "actividadesData_global",
@@ -12,12 +12,12 @@ const Store = {
         auditLog: [],
         anuncio: {
             activo: true,
-            titulo: "📢 ¡Nueva actualización en el sistema!",
-            mensaje: "¡Hola a todos! A partir de ahora, cada actividad registrada otorga PUNTOS. Pueden competir en el 🏆 Ranking Familiar y canjear sus puntos por premios en la 🎁 Tienda de Recompensas."
+            titulo: "ðŸ“¢ Â¡Nueva actualizaciÃ³n en el sistema!",
+            mensaje: "Â¡Hola a todos! A partir de ahora, cada actividad registrada otorga PUNTOS. Pueden competir en el ðŸ† Ranking Familiar y canjear sus puntos por premios en la ðŸŽ Tienda de Recompensas."
         }
     },
 
-    // Helper de seguridad: verifica si el usuario en sesión es Admin
+    // Helper de seguridad: verifica si el usuario en sesiÃ³n es Admin
     isAdmin() {
         if (typeof Auth === "undefined") return false;
         const user = Auth.getCurrentUser();
@@ -41,12 +41,12 @@ const Store = {
         if (!this.data.anuncio) {
             this.data.anuncio = {
                 activo: true,
-                titulo: "📢 ¡Nueva actualización en el sistema!",
-                mensaje: "¡Hola a todos! A partir de ahora, cada actividad registrada otorga PUNTOS. Pueden competir en el 🏆 Ranking Familiar y canjear sus puntos por premios en la 🎁 Tienda de Recompensas."
+                titulo: "ðŸ“¢ Â¡Nueva actualizaciÃ³n en el sistema!",
+                mensaje: "Â¡Hola a todos! A partir de ahora, cada actividad registrada otorga PUNTOS. Pueden competir en el ðŸ† Ranking Familiar y canjear sus puntos por premios en la ðŸŽ Tienda de Recompensas."
             };
         }
 
-        // Migrar registros antiguos que solo tenían "fecha" (sin hora)
+        // Migrar registros antiguos que solo tenÃ­an "fecha" (sin hora)
         this.data.registros = (this.data.registros || []).map(r => (
             r.fecha && !r.fechaHora ? { ...r, fechaHora: r.fecha + "T00:00" } : r
         ));
@@ -68,7 +68,7 @@ const Store = {
         if (this.data.hijos.length === 0) {
             this.data.hijos = [
                 { id: 1, nombre: "Mateo", edad: 5 },
-                { id: 2, nombre: "Sofía", edad: 3 },
+                { id: 2, nombre: "SofÃ­a", edad: 3 },
             ];
         }
         if (this.data.actividades.length === 0) {
@@ -76,14 +76,14 @@ const Store = {
                 { id: 1, nombre: "Lectura", puntos: 10, activa: true },
                 { id: 2, nombre: "Dibujo", puntos: 5, activa: true },
                 { id: 3, nombre: "Deporte", puntos: 15, activa: true },
-                { id: 4, nombre: "Música", puntos: 10, activa: true },
+                { id: 4, nombre: "MÃºsica", puntos: 10, activa: true },
             ];
         }
         if (!stored && !this.data.recompensas.length) {
             this.data.recompensas = [
-                { id: 101, nombre: "1 hora de videojuegos / pantalla", puntos: 50, icono: "🎮", activa: true },
-                { id: 102, nombre: "Salida a comer helado", puntos: 80, icono: "🍦", activa: true },
-                { id: 103, nombre: "Elegir la película del fin de semana", puntos: 100, icono: "🎬", activa: true },
+                { id: 101, nombre: "1 hora de videojuegos / pantalla", puntos: 50, icono: "ðŸŽ®", activa: true },
+                { id: 102, nombre: "Salida a comer helado", puntos: 80, icono: "ðŸ¦", activa: true },
+                { id: 103, nombre: "Elegir la pelÃ­cula del fin de semana", puntos: 100, icono: "ðŸŽ¬", activa: true },
             ];
         }
         if (!this.data.canjes) this.data.canjes = [];
@@ -118,7 +118,7 @@ const Store = {
                         return { ...remoteAct, puntos: remotePts, activa: isActiva };
                     });
 
-                    // Cargar recompensas, canjes, anuncio y auditoría incrustados en actividades[0] si existen (autoritativos)
+                    // Cargar recompensas, canjes, anuncio y auditorÃ­a incrustados en actividades[0] si existen (autoritativos)
                     if (dbData.actividades[0]) {
                         if (Array.isArray(dbData.actividades[0]._recompensas)) this.data.recompensas = dbData.actividades[0]._recompensas;
                         if (Array.isArray(dbData.actividades[0]._canjes)) this.data.canjes = dbData.actividades[0]._canjes;
@@ -127,8 +127,8 @@ const Store = {
                     }
                 }
 
-                // NOTA: la tabla familias NO tiene columnas raíz "recompensas", "canjes", ni "anuncio".
-                // Esos datos viven ÚNICAMENTE en actividades[0]._recompensas, ._canjes, ._anuncio
+                // NOTA: la tabla familias NO tiene columnas raÃ­z "recompensas", "canjes", ni "anuncio".
+                // Esos datos viven ÃšNICAMENTE en actividades[0]._recompensas, ._canjes, ._anuncio
                 if (Array.isArray(dbData.registros)) this.data.registros = dbData.registros;
 
                 this.saveLocal();
@@ -140,7 +140,7 @@ const Store = {
 
     async saveToSupabase() {
         try {
-            // Incrustar recompensas, canjes, anuncio y auditoría en actividades[0]
+            // Incrustar recompensas, canjes, anuncio y auditorÃ­a en actividades[0]
             const actividadesToSave = this.data.actividades.map((a, idx) => {
                 if (idx === 0) {
                     return {
@@ -205,22 +205,22 @@ const Store = {
                     this.saveLocal();
                     onRemoteChange();
                 })
-            .subscribe(status => { if (status === "SUBSCRIBED") console.log("📡 Escuchando cambios..."); });
+            .subscribe(status => { if (status === "SUBSCRIBED") console.log("ðŸ“¡ Escuchando cambios..."); });
     },
 
     // ---------- Anuncio del Sistema ----------
-    updateAnuncio(activo, titulo, mensaje) {
+    async updateAnuncio(activo, titulo, mensaje) {
         if (!this.isAdmin()) {
-            console.warn("⛔ Intento no autorizado de modificar anuncio");
-            if (typeof showToast === "function") showToast("❌ Permiso denegado: solo Admin", true);
+            console.warn("â›” Intento no autorizado de modificar anuncio");
+            if (typeof showToast === "function") showToast("âŒ Permiso denegado: solo Admin", true);
             return false;
         }
         this.data.anuncio = {
             activo: Boolean(activo),
-            titulo: titulo || "📢 Anuncio",
+            titulo: titulo || "ðŸ“¢ Anuncio",
             mensaje: mensaje || ""
         };
-        this.persist();
+        await this.persist();
         return true;
     },
 
@@ -239,10 +239,10 @@ const Store = {
     },
 
     // ---------- Puntos y Ranking ----------
-    updatePuntosActividad(actividadId, puntos) {
+    async updatePuntosActividad(actividadId, puntos) {
         if (!this.isAdmin()) {
-            console.warn("⛔ Intento no autorizado de modificar puntos");
-            if (typeof showToast === "function") showToast("❌ Permiso denegado: solo el Administrador puede modificar los puntos", true);
+            console.warn("â›” Intento no autorizado de modificar puntos");
+            if (typeof showToast === "function") showToast("âŒ Permiso denegado: solo el Administrador puede modificar los puntos", true);
             return false;
         }
 
@@ -252,7 +252,7 @@ const Store = {
             const anteriorPts = act.puntos || 0;
 
             if (nuevoPts !== anteriorPts) {
-                // Registrar entrada de Auditoría
+                // Registrar entrada de AuditorÃ­a
                 if (!this.data.auditLog) this.data.auditLog = [];
                 const user = Auth.getCurrentUser();
                 const usuarioNombre = user ? user.username : "desconocido";
@@ -274,7 +274,7 @@ const Store = {
                 }
 
                 act.puntos = nuevoPts;
-                this.persist();
+                await this.persist();
                 return true;
             }
             return true;
@@ -310,16 +310,16 @@ const Store = {
         const registros = this.data.registros.filter(r => r.hijoId == hijoId);
         const totalPuntos = this.getPuntosGanadosHijo(hijoId);
 
-        if (registros.length >= 1) insignias.push({ icono: "🌟", nombre: "Primeros Pasos", desc: "Primera actividad registrada" });
-        if (registros.length >= 10) insignias.push({ icono: "⚡", nombre: "Super Activo", desc: "10+ actividades realizadas" });
-        if (totalPuntos >= 50) insignias.push({ icono: "🚀", nombre: "Impulso de 50 Pts", desc: "50+ puntos acumulados" });
-        if (totalPuntos >= 100) insignias.push({ icono: "👑", nombre: "Centenario de Puntos", desc: "100+ puntos acumulados" });
+        if (registros.length >= 1) insignias.push({ icono: "ðŸŒŸ", nombre: "Primeros Pasos", desc: "Primera actividad registrada" });
+        if (registros.length >= 10) insignias.push({ icono: "âš¡", nombre: "Super Activo", desc: "10+ actividades realizadas" });
+        if (totalPuntos >= 50) insignias.push({ icono: "ðŸš€", nombre: "Impulso de 50 Pts", desc: "50+ puntos acumulados" });
+        if (totalPuntos >= 100) insignias.push({ icono: "ðŸ‘‘", nombre: "Centenario de Puntos", desc: "100+ puntos acumulados" });
 
         const lecturas = registros.filter(r => {
             const nombreAct = this.getNombreActividad(r.actividadId).toLowerCase();
             return nombreAct.includes("lectura") || nombreAct.includes("leer");
         });
-        if (lecturas.length >= 3) insignias.push({ icono: "📚", nombre: "Lector Estrella", desc: "3+ actividades de lectura" });
+        if (lecturas.length >= 3) insignias.push({ icono: "ðŸ“š", nombre: "Lector Estrella", desc: "3+ actividades de lectura" });
 
         return insignias;
     },
@@ -373,7 +373,7 @@ const Store = {
     },
 
     // ---------- CRUD: Recompensas y Canjes ----------
-    addRecompensa(nombre, puntos, icono = "🎁") {
+    async addRecompensa(nombre, puntos, icono = "ðŸŽ") {
         if (!this.isAdmin()) return false;
         const nRecompensa = {
             id: Date.now(),
@@ -383,28 +383,28 @@ const Store = {
             activa: true
         };
         this.data.recompensas.push(nRecompensa);
-        this.persist();
+        await this.persist();
         return nRecompensa;
     },
 
-    updateRecompensa(id, nombre, puntos) {
+    async updateRecompensa(id, nombre, puntos) {
         if (!this.isAdmin()) return false;
         const rec = this.data.recompensas.find(r => r.id == id);
         if (rec) {
             rec.nombre = (nombre || "").trim() || rec.nombre;
             rec.puntos = Math.max(1, parseInt(puntos, 10) || 1);
-            this.persist();
+            await this.persist();
             return true;
         }
         return false;
     },
 
-    toggleEstadoRecompensa(id) {
+    async toggleEstadoRecompensa(id) {
         if (!this.isAdmin()) return false;
         const rec = this.data.recompensas.find(r => r.id == id);
         if (rec) {
             rec.activa = (rec.activa === false) ? true : false;
-            this.persist();
+            await this.persist();
             return true;
         }
         return false;
@@ -417,7 +417,7 @@ const Store = {
         return true;
     },
 
-    solicitarCanje(hijoId, recompensaId, usuario) {
+    async solicitarCanje(hijoId, recompensaId, usuario) {
         const rec = this.data.recompensas.find(r => r.id == recompensaId);
         if (!rec) return { ok: false, msg: "Recompensa no encontrada" };
 
@@ -437,7 +437,7 @@ const Store = {
             usuario
         };
         this.data.canjes.push(canje);
-        this.persist();
+        await this.persist();
         return { ok: true, canje };
     },
 
@@ -450,7 +450,7 @@ const Store = {
             id: Date.now(),
             hijoId,
             recompensaId: "especial",
-            nombreRecompensa: `✨ ${nombrePremio.trim()}`,
+            nombreRecompensa: `âœ¨ ${nombrePremio.trim()}`,
             puntosPropuestos: pts,
             puntos: pts,
             fechaHora: typeof getFechaHoraLocal === "function" ? getFechaHoraLocal() : new Date().toISOString(),
@@ -463,7 +463,7 @@ const Store = {
         return { ok: true, canje };
     },
 
-    contraproponerCanjeAdmin(canjeId, nuevosPuntos, notaAdmin) {
+    async contraproponerCanjeAdmin(canjeId, nuevosPuntos, notaAdmin) {
         if (!this.isAdmin()) return false;
         const canje = this.data.canjes.find(c => c.id == canjeId);
         if (canje) {
@@ -472,15 +472,15 @@ const Store = {
             canje.puntosContrapropuesta = pts;
             canje.puntos = pts;
             canje.notaContrapropuesta = (notaAdmin || "").trim();
-            this.persist();
+            await this.persist();
             return true;
         }
         return false;
     },
 
-    responderContrapropuestaUsuario(canjeId, aceptar) {
+    async responderContrapropuestaUsuario(canjeId, aceptar) {
         const canje = this.data.canjes.find(c => c.id == canjeId);
-        if (!canje || canje.estado !== "contrapropuesta") return { ok: false, msg: "Solicitud no encontrada o no está en contrapropuesta" };
+        if (!canje || canje.estado !== "contrapropuesta") return { ok: false, msg: "Solicitud no encontrada o no estÃ¡ en contrapropuesta" };
 
         if (aceptar) {
             const ptsRequeridos = canje.puntosContrapropuesta || canje.puntos;
@@ -490,62 +490,62 @@ const Store = {
             }
             canje.estado = "aprobado";
             canje.puntos = ptsRequeridos;
-            this.persist();
+            await this.persist();
             return { ok: true, estado: "aprobado" };
         } else {
             canje.estado = "rechazado";
-            this.persist();
+            await this.persist();
             return { ok: true, estado: "rechazado" };
         }
     },
 
-    responderCanje(canjeId, estado) {
+    async responderCanje(canjeId, estado) {
         if (!this.isAdmin()) {
-            if (typeof showToast === "function") showToast("❌ Solo Admin puede responder canjes", true);
+            if (typeof showToast === "function") showToast("âŒ Solo Admin puede responder canjes", true);
             return false;
         }
         const canje = this.data.canjes.find(c => c.id == canjeId);
         if (canje) {
             canje.estado = estado; // 'aprobado' | 'rechazado'
-            this.persist();
+            await this.persist();
             return true;
         }
         return false;
     },
 
     // ---------- CRUD: Hijos ----------
-    addHijo(nombre, edad) {
+    async addHijo(nombre, edad) {
         if (!this.isAdmin()) return false;
         this.data.hijos.push({ id: Date.now(), nombre, edad: edad ? parseInt(edad, 10) : null });
-        this.persist();
+        await this.persist();
         return true;
     },
-    deleteHijo(id) {
+    async deleteHijo(id) {
         if (!this.isAdmin()) return false;
         this.data.hijos = this.data.hijos.filter(h => h.id !== id);
-        this.persist();
+        await this.persist();
         return true;
     },
 
-    // ---------- CRUD: Actividades (catálogo) ----------
-    addActividad(nombre, puntos = 0) {
+    // ---------- CRUD: Actividades (catÃ¡logo) ----------
+    async addActividad(nombre, puntos = 0) {
         if (!this.isAdmin()) return false;
         this.data.actividades.push({ id: Date.now(), nombre, puntos: parseInt(puntos, 10) || 0 });
-        this.persist();
+        await this.persist();
         return true;
     },
-    deleteActividad(id) {
+    async deleteActividad(id) {
         if (!this.isAdmin()) return false;
         this.data.actividades = this.data.actividades.filter(a => a.id !== id);
-        this.persist();
+        await this.persist();
         return true;
     },
-    toggleEstadoActividad(id) {
+    async toggleEstadoActividad(id) {
         if (!this.isAdmin()) return false;
         const act = this.data.actividades.find(a => a.id == id);
         if (act) {
             act.activa = (act.activa === false) ? true : false;
-            this.persist();
+            await this.persist();
             return true;
         }
         return false;
@@ -575,7 +575,7 @@ const Store = {
     },
 
     // ---------- CRUD: Registros ----------
-    addRegistro({ hijoId, actividadId, descripcion, fechaHora, usuario }) {
+    async addRegistro({ hijoId, actividadId, descripcion, fechaHora, usuario }) {
         const hoy = (fechaHora || "").split("T")[0] || (typeof getFechaLocal === "function" ? getFechaLocal() : new Date().toISOString().split("T")[0]);
         const yaExisteHoy = (this.data.registros || []).some(r => r.hijoId == hijoId && r.actividadId == actividadId && r.estado !== "anulado" && (r.fechaHora ? r.fechaHora.split("T")[0] : r.fecha) === hoy);
 
@@ -591,11 +591,11 @@ const Store = {
         };
 
         this.data.registros.push(nReg);
-        this.persist();
+        await this.persist();
         return { ok: true, registro: nReg, esDuplicado: yaExisteHoy };
     },
 
-    anularRegistro(id, motivo = "Anulado por el Administrador") {
+    async anularRegistro(id, motivo = "Anulado por el Administrador") {
         if (!this.isAdmin()) return false;
         const reg = (this.data.registros || []).find(r => r.id == id);
         if (reg) {
@@ -612,30 +612,30 @@ const Store = {
                 motivo,
                 fechaHora: typeof getFechaHoraLocal === "function" ? getFechaHoraLocal() : new Date().toISOString()
             });
-            this.persist();
+            await this.persist();
             return true;
         }
         return false;
     },
 
-    updateRegistro(id, cambios) {
+    async updateRegistro(id, cambios) {
         const index = this.data.registros.findIndex(r => r.id === id);
         if (index === -1) return false;
         this.data.registros[index] = { ...this.data.registros[index], ...cambios };
-        this.persist();
+        await this.persist();
         return true;
     },
 
-    deleteRegistro(id) {
+    async deleteRegistro(id) {
         if (!this.isAdmin()) return false;
         this.data.registros = this.data.registros.filter(r => r.id !== id);
-        this.persist();
+        await this.persist();
         return true;
     },
 
     // ---------- Denuncias / Irregularidades ----------
-    addDenuncia({ registroId, detalle, usuarioReporta }) {
-        if (!registroId || !detalle) return { ok: false, msg: "Selecciona un registro y describe la observación" };
+    async addDenuncia({ registroId, detalle, usuarioReporta }) {
+        if (!registroId || !detalle) return { ok: false, msg: "Selecciona un registro y describe la observaciÃ³n" };
         if (!this.data.denuncias) this.data.denuncias = [];
         const denuncia = {
             id: Date.now(),
@@ -646,11 +646,11 @@ const Store = {
             atendida: false
         };
         this.data.denuncias.push(denuncia);
-        this.persist();
+        await this.persist();
         return { ok: true, denuncia };
     },
 
-    atenderDenuncia(denunciaId, anularAsociado = false, motivoAnulacion = "") {
+    async atenderDenuncia(denunciaId, anularAsociado = false, motivoAnulacion = "") {
         if (!this.isAdmin()) return false;
         if (!this.data.denuncias) this.data.denuncias = [];
         const d = this.data.denuncias.find(item => item.id == denunciaId);
@@ -659,13 +659,13 @@ const Store = {
             if (anularAsociado && d.registroId) {
                 this.anularRegistro(d.registroId, motivoAnulacion || `Anulado por denuncia #${d.id}`);
             }
-            this.persist();
+            await this.persist();
             return true;
         }
         return false;
     },
 
-    // ---------- Analíticas y Estadísticas ----------
+    // ---------- AnalÃ­ticas y EstadÃ­sticas ----------
     getEstadisticasActividades({ filtroFecha = "semana", fechaInicio = null, fechaFin = null, hijoId = null } = {}) {
         let registros = (this.data.registros || []).filter(r => r.estado !== "anulado");
         
@@ -754,7 +754,7 @@ const Store = {
             const valA = a.fechaHora || (a.fecha ? a.fecha + "T00:00" : "");
             const valB = b.fechaHora || (b.fecha ? b.fecha + "T00:00" : "");
             if (valA !== valB) {
-                return valB.localeCompare(valA); // Más reciente primero ("2026-08-02T15:00" > "2026-08-02T10:00")
+                return valB.localeCompare(valA); // MÃ¡s reciente primero ("2026-08-02T15:00" > "2026-08-02T10:00")
             }
             return (b.id || 0) - (a.id || 0); // Desempate por ID (timestamp)
         });
@@ -780,3 +780,6 @@ const Store = {
         return this.ordenarPorFechaReciente(this.data.registros || []);
     },
 };
+
+
+

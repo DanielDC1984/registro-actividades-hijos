@@ -370,7 +370,7 @@ const AppController = {
 
     // ---------- Formularios ----------
     initForms() {
-        document.getElementById("formActividad").addEventListener("submit", e => {
+        document.getElementById("formActividad").addEventListener("submit", async e => {
             e.preventDefault();
             const user = Auth.getCurrentUser();
             const hijoId = parseInt(document.getElementById("selectHijo").value, 10);
@@ -379,7 +379,11 @@ const AppController = {
             const fechaHora = document.getElementById("fechaHoraActividad").value;
             if (!hijoId || !actividadId || !fechaHora) { showToast("⚠️ Completa todos los campos", true); return; }
 
-            const res = Store.addRegistro({ hijoId, actividadId, descripcion, fechaHora, usuario: user ? user.username : "anonimo" });
+            const btnSubmit = e.target.querySelector("button[type=submit]");
+            if (btnSubmit) btnSubmit.disabled = true;
+            showToast("⏳ Guardando actividad...");
+
+            const res = await Store.addRegistro({ hijoId, actividadId, descripcion, fechaHora, usuario: user ? user.username : "anonimo" });
             View.renderAll();
             e.target.reset();
             document.getElementById("fechaHoraActividad").value = getFechaHoraLocal();
@@ -388,8 +392,9 @@ const AppController = {
             if (res && res.esDuplicado) {
                 showToast(`⚠️ Atención: Esta actividad ya fue registrada hoy para este hijo. Guardada con advertencia (+${pts} pts)`, true);
             } else {
-                showToast(`✅ Actividad registrada (+${pts} pts)`);
+                showToast(`✅ Actividad guardada correctamente (+${pts} pts)`);
             }
+            if (btnSubmit) btnSubmit.disabled = false;
             if (typeof confetti === "function") confetti({ particleCount: 60, spread: 50, origin: { y: 0.7 } });
         });
 
