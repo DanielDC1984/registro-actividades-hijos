@@ -161,6 +161,13 @@ const View = {
         document.getElementById("hijosCount").textContent = data.hijos.length;
         document.getElementById("actividadesCount").textContent = data.actividades.length;
         document.getElementById("totalRegistros").textContent = data.registros.length;
+
+        const denunciasEl = document.getElementById("denunciasCount");
+        if (denunciasEl) {
+            const pendientes = (data.denuncias || []).filter(d => !d.atendida).length;
+            denunciasEl.textContent = pendientes;
+            denunciasEl.style.background = pendientes > 0 ? "#ef4444" : "rgba(255,255,255,0.2)";
+        }
     },
 
     // ---------- Selects (hijo / actividad) ----------
@@ -508,21 +515,21 @@ const View = {
             const iniciales = item.nombre.split(" ").map(p => p[0]).join("").toUpperCase().slice(0, 2);
 
             listHtml += `
-                <div class="ranking-row-item" style="${posStyle};padding:14px;border-radius:14px;margin-bottom:10px;">
-                    <div class="row-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-                        <div class="row-left" style="display:flex;align-items:center;gap:10px;">
-                            <span class="row-pos" style="font-size:${index < 3 ? '22px' : '16px'};font-weight:800;">${posIcon}</span>
-                            <div style="width:38px;height:38px;border-radius:50%;background:${avatarColors[Math.min(index,2)] || '#4a6cf7'};color:#fff;font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${iniciales}</div>
-                            <div>
-                                <div class="row-name" style="font-weight:700;font-size:15px;color:#1e293b;">${item.nombre}</div>
-                                <div class="row-acts" style="font-size:12px;color:#64748b;">📋 ${item.totalActividades} actividades · 💰 ${item.puntosDisponibles} pts disponibles</div>
+                <div class="ranking-row-item" style="${posStyle};padding:14px;border-radius:16px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,0.03);">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:8px;">
+                        <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;">
+                            <span style="font-size:${index < 3 ? '24px' : '16px'};font-weight:800;min-width:28px;text-align:center;flex-shrink:0;">${posIcon}</span>
+                            <div style="width:40px;height:40px;border-radius:50%;background:${avatarColors[Math.min(index,2)] || '#4a6cf7'};color:#fff;font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 6px rgba(0,0,0,0.12);">${iniciales}</div>
+                            <div style="flex:1;min-width:0;overflow:hidden;">
+                                <div style="font-weight:800;font-size:16px;color:#1e293b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${item.nombre}</div>
+                                <div style="font-size:12px;color:#64748b;font-weight:500;margin-top:2px;word-break:break-word;">📋 ${item.totalActividades} act. · 💰 ${item.puntosDisponibles} pts disp.</div>
                             </div>
                         </div>
-                        <div class="row-right">
-                            <span class="row-pts" style="font-size:15px;font-weight:800;color:#4a6cf7;">⭐ ${item.puntos} pts</span>
+                        <div style="text-align:right;flex-shrink:0;">
+                            <span style="font-size:15px;font-weight:800;color:#4a6cf7;white-space:nowrap;background:#eff6ff;padding:4px 10px;border-radius:12px;display:inline-block;">⭐ ${item.puntos} pts</span>
                         </div>
                     </div>
-                    <div class="progress-bar-bg" style="margin-top:8px;">
+                    <div class="progress-bar-bg" style="margin-top:10px;">
                         <div class="progress-bar-fill" style="width:${pct}%;background:${barColor};"></div>
                     </div>
                     ${item.insignias.length > 0 ? `<div class="row-badges" style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px;">${medallasHtml}</div>` : ""}
@@ -928,40 +935,54 @@ const View = {
         this.actualizarSelectRegistrosDenuncia();
 
         const user = Auth.getCurrentUser();
-        const esAdminUser = user && (user.role === "admin" || user.username === "admin");
+        const usernameLower = user ? (user.username || "").toLowerCase() : "";
+        const esAdminUser = user && (user.role === "admin" || usernameLower === "admin");
         const adminBox = document.getElementById("adminBuzonDenuncias");
         const listEl = document.getElementById("listaDenunciasAdmin");
 
-        if (adminBox) adminBox.style.display = esAdminUser ? "block" : "none";
-        if (esAdminUser && listEl) {
+        if (adminBox) adminBox.style.display = "block";
+        if (listEl) {
             const denuncias = Store.data.denuncias || [];
-            const pendientes = denuncias.filter(d => !d.atendida);
+            const listaMostrar = esAdminUser 
+                ? denuncias.filter(d => !d.atendida) 
+                : denuncias.filter(d => d.usuarioReporta === (user ? user.username : ""));
 
-            if (pendientes.length === 0) {
-                listEl.innerHTML = `<p style="color:#6b7a8f;font-size:13px;margin:0;">No hay denuncias u observaciones pendientes por revisar.</p>`;
+            if (listaMostrar.length === 0) {
+                listEl.innerHTML = `<p style="color:#6b7a8f;font-size:13px;margin:0;padding:12px;background:#fff;border-radius:10px;border:1px dashed #cbd5e1;">
+                    ${esAdminUser ? "🎉 No hay observaciones o denuncias pendientes por revisar." : "📭 No has registrado observaciones aún."}
+                </p>`;
             } else {
                 let html = "";
-                pendientes.forEach(d => {
+                listaMostrar.forEach(d => {
                     const reg = (Store.data.registros || []).find(r => r.id == d.registroId);
                     const regText = reg ? `👤 ${Store.getNombreHijo(reg.hijoId)} - 🎯 ${Store.getNombreActividad(reg.actividadId)} (${reg.fechaHora || reg.fecha || ''})` : `Registro #${d.registroId}`;
                     const yaAnulado = reg && reg.estado === "anulado";
+                    const estadoBadge = d.atendida ? `<span style="background:#dcfce7;color:#15803d;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:700;">✅ Atendida</span>`
+                                                    : `<span style="background:#fef9c3;color:#b45309;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:700;">⏳ Pendiente de revisión</span>`;
 
                     html += `
-                        <div class="user-item" style="background:#fff;border:1px solid #fef08a;border-radius:10px;padding:12px;margin-bottom:10px;">
+                        <div class="user-item" style="background:#fff;border:1px solid #fef08a;border-radius:12px;padding:14px;margin-bottom:10px;box-shadow:0 2px 6px rgba(0,0,0,0.03);">
                             <div class="user-data" style="flex:1;">
-                                <div style="font-weight:700;color:#92400e;font-size:14px;">🚨 Observación de @${d.usuarioReporta}</div>
-                                <div style="font-size:12px;color:#6b7a8f;margin-top:2px;">Fecha reportada: ${d.fechaHora || ''}</div>
-                                <div style="font-size:13px;color:#78350f;margin-top:4px;font-style:italic;">💬 "${d.detalle}"</div>
+                                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                                    <div style="font-weight:700;color:#92400e;font-size:14px;">🚨 Observación de @${d.usuarioReporta}</div>
+                                    <div>${estadoBadge}</div>
+                                </div>
+                                <div style="font-size:12px;color:#6b7a8f;">Fecha reportada: ${(d.fechaHora || '').replace('T', ' ').slice(0, 16)}</div>
+                                <div style="font-size:13px;color:#78350f;margin-top:4px;font-style:italic;background:#fffbeb;padding:8px;border-radius:8px;border:1px solid #fde68a;">💬 "${d.detalle}"</div>
                                 <div style="font-size:12px;color:#b45309;margin-top:6px;font-weight:600;">
-                                    📌 Registro Asociado: ${regText} ${yaAnulado ? ' <span style="color:#dc2626;">(Ya anulado)</span>' : ''}
+                                    📌 Registro Asociado: ${regText} ${yaAnulado ? ' <span style="color:#dc2626;font-weight:700;">(Ya anulado)</span>' : ''}
                                 </div>
                             </div>
-                            <div class="actions" style="display:flex;gap:6px;flex-wrap:wrap;">
+                            ${esAdminUser ? `
+                            <div class="actions" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;">
                                 ${!yaAnulado ? `
                                     <button type="button" class="btn-delete-user" style="padding:6px 12px;font-size:12px;" onclick="AppController.atenderDenunciaAdmin(${d.id}, true)">🚫 Anular Actividad Observada</button>
                                 ` : ''}
-                                <button type="button" class="btn-primary" style="padding:6px 12px;font-size:12px;background:#16a34a;" onclick="AppController.atenderDenunciaAdmin(${d.id}, false)">✅ Marcar Atendida</button>
+                                ${!d.atendida ? `
+                                    <button type="button" class="btn-primary" style="padding:6px 12px;font-size:12px;background:#16a34a;" onclick="AppController.atenderDenunciaAdmin(${d.id}, false)">✅ Marcar Atendida</button>
+                                ` : ''}
                             </div>
+                            ` : ''}
                         </div>`;
                 });
                 listEl.innerHTML = html;
